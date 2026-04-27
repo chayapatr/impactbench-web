@@ -43,7 +43,7 @@ export async function loadScenarioDetail(
   modelId: string,
   scenarioId: string
 ): Promise<ScenarioDetail> {
-  const res = await fetch(`./data/scenarios/${benchmark}/${modelId}/${scenarioId}.json`);
+  const res = await fetch(`https://impactbench.from.pub/scenarios/${benchmark}/${modelId}/${scenarioId}.json`);
   if (!res.ok) throw new Error(`Failed to load scenario: ${res.status}`);
   return res.json();
 }
