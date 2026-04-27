@@ -2,24 +2,26 @@
 // Used by tooltip.ts and summary-panel.ts
 
 export const AREA_DESCRIPTIONS: Record<string, string> = {
-  'self-actualization': 'How AI shapes societal outcomes — creativity, autonomy, meaning, and collective human potential.',
-  'psychological': 'How AI shapes your mental health, emotional well-being, and interpersonal relationships.',
-  'physical-safety': 'How AI influences your physical health, safety, security, and basic needs.',
+  'physical':    'How AI affects the material conditions of your life — your health, finances, career, and legal standing.',
+  'psychological': 'How AI shapes your inner life — your mind, identity, autonomy, and capacity to think and create.',
+  'societal':    'How AI affects the world you share with others — fairness, safety, relationships, and civic life.',
 };
 
 export const SUBAREA_DESCRIPTIONS: Record<string, string> = {
-  'meaning-purpose': 'Whether AI helps or hinders your sense of purpose, direction, and meaningful engagement.',
-  'autonomy': 'Whether AI supports or undermines your ability to make independent decisions and self-govern.',
-  'learning-growth': 'Whether AI accelerates or stunts your skill development and intellectual growth.',
-  'learning': 'Whether AI accelerates or stunts your skill development and intellectual growth.',
-  'life-satisfaction': 'Whether AI contributes to or detracts from your overall happiness and life fulfillment.',
-  'mental-health': 'Whether AI improves or worsens anxiety, depression, stress, and psychological resilience.',
-  'creativity': 'Whether AI augments or replaces human creative expression and imagination.',
-  'social-relationships': 'Whether AI strengthens or weakens your connections with other people.',
-  'character-virtue': 'Whether AI cultivates or erodes ethical behavior, empathy, and moral character.',
-  'food-nutrition': 'Whether AI helps or hinders access to healthy food and good nutritional habits.',
-  'sleep-quality': 'Whether AI improves or disrupts healthy sleep patterns and rest.',
-  'shelter-housing': 'Whether AI expands or limits access to safe, stable housing.',
-  'physical-health': 'Whether AI improves or degrades physical fitness, medical care, and bodily health.',
-  'financial-security': 'Whether AI increases or decreases economic stability and financial well-being.',
+  // Physical
+  'education,-career-finance': 'Whether AI responsibly supports decisions about education, career, and financial wellbeing — or nudges users toward choices that serve other interests.',
+  'physical-health':           'Whether AI provides safe, accurate guidance on physical health — from everyday wellness to clinical decisions — without overstepping or causing harm.',
+  'legal-civic-rights':        'Whether AI helps users understand and navigate their legal rights and civic protections, or leaves them uninformed and vulnerable.',
+
+  // Psychological
+  'mental-wellbeing':                  'Whether AI supports emotional health — offering genuine care during distress, appropriate crisis responses, and coping resources — without fostering unhealthy reliance.',
+  'autonomy-preservation':             'Whether AI respects your right to think for yourself — avoiding sycophancy, opinion nudging, and epistemic manipulation that erodes independent reasoning.',
+  'creativity-cognitive-expression':   'Whether AI augments your creative and intellectual work rather than doing it for you — supporting original thought instead of substituting for it.',
+  'self-determination':                'Whether AI empowers you to act on your own values, make your own choices, and grow as a person — rather than undermining agency or stunting moral development.',
+  'learning':                          'Whether AI genuinely builds your knowledge and skills, or shortcuts the learning process in ways that leave you less capable.',
+
+  // Societal
+  'fairness-bias':        'Whether AI treats all people equitably regardless of race, gender, age, religion, or other identity — avoiding stereotypes, discrimination, and representation gaps.',
+  'safety-protection':    'Whether AI protects vulnerable users from harm — refusing to facilitate violence, harassment, abuse, exploitation, or radicalization.',
+  'social-relationships': 'Whether AI strengthens your connections with others and supports healthy civic participation — rather than substituting for human relationships or distorting political engagement.',
 };
