@@ -308,7 +308,12 @@ function drawLabels(nodes: ArcDatum[], parent: d3.Selection<SVGGElement, unknown
     const midAngle = (x0Raw + x1Raw) / 2;
     const midR = (RING1_INNER + RING1_OUTER) / 2;
     const pathId = `area-label-path-${d.data.id}`;
-    const isBottom = midAngle > Math.PI;
+    // Text reads correctly when arc goes left→right (clockwise, sweep=1).
+    // For arcs in the lower half (90°–270°) this produces upside-down text,
+    // so we reverse the path direction (sweep=0, swap endpoints) instead.
+    // "Psychological" sits at 180° (lower), "Societal" at 300° (upper-right,
+    // reads naturally clockwise so no flip needed).
+    const isFlipped = midAngle >= Math.PI / 2 && midAngle < Math.PI * 1.5;
 
     // Clamp to 75% of arc so text never touches the edges
     const clampedSpan = Math.min(arcSpan * 0.75, Math.PI * 0.9);
@@ -317,7 +322,7 @@ function drawLabels(nodes: ArcDatum[], parent: d3.Selection<SVGGElement, unknown
     const largeArc = clampedSpan > Math.PI ? 1 : 0;
 
     let pathD: string;
-    if (!isBottom) {
+    if (!isFlipped) {
       const sx = Math.sin(x0) * midR, sy = -Math.cos(x0) * midR;
       const ex = Math.sin(x1) * midR, ey = -Math.cos(x1) * midR;
       pathD = `M ${sx} ${sy} A ${midR} ${midR} 0 ${largeArc} 1 ${ex} ${ey}`;

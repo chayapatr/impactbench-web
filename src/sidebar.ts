@@ -998,7 +998,8 @@ function _renderMetric(
   metricName: string,
 ): void {
   const score = _scores[metricId] ?? 0;
-  const scenarios = _scenarioIndex?.[metricId] ?? [];
+  const currentAge = (document.getElementById("filter-age") as HTMLSelectElement | null)?.value ?? "adult";
+  const scenarios = (_scenarioIndex?.[metricId] ?? []).filter((sc) => sc.age === currentAge);
 
   // Look up whether this metric is harmful (affects pass/fail interpretation)
   let isHarmful = false;

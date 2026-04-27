@@ -3,4 +3,4 @@ node_modules/
 .DS_Store
 public/data/scenarios/
 dist/data/scenarios/
-.wrangler/
+.wrangler/dist/
