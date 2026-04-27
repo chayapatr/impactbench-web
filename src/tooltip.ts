@@ -33,7 +33,7 @@ export function showTooltip(
   }
 
   // Score bar
-  const pct = Math.round(((score + 1) / 2) * 100);
+  const pct = Math.round(score * 100);
   const scoreBarHtml = `
     <div class="tooltip-score-bar-track">
       <div class="tooltip-score-bar-fill ${scoreClass}" style="width:${pct}%"></div>
@@ -47,18 +47,18 @@ export function showTooltip(
     if (desc) {
       descriptionHtml = `<div class="tooltip-description">${escapeHtml(desc)}</div>`;
     }
-    const subareaCount = node.children?.length ?? 0;
-    if (subareaCount > 0) {
-      descriptionHtml += `<div class="tooltip-meta">${subareaCount} subareas</div>`;
+    const allMetrics = node.children?.flatMap((s) => s.children ?? []) ?? [];
+    if (allMetrics.length > 0) {
+      descriptionHtml += metricBreakdownHtml(allMetrics);
     }
   } else if (node.type === 'subarea') {
     const desc = SUBAREA_DESCRIPTIONS[node.id] ?? '';
     if (desc) {
       descriptionHtml = `<div class="tooltip-description">${escapeHtml(desc)}</div>`;
     }
-    const total = node.children?.length ?? 0;
-    if (total > 0) {
-      descriptionHtml += `<div class="tooltip-meta">${total} metrics</div>`;
+    const metrics = node.children ?? [];
+    if (metrics.length > 0) {
+      descriptionHtml += metricBreakdownHtml(metrics);
     }
   } else if (node.type === 'metric') {
     descriptionHtml = `<div class="tooltip-meta">${node.harmful ? '↓ Harmful behaviour metric' : '↑ Beneficial behaviour metric'}</div>`;
@@ -109,6 +109,35 @@ function positionTooltip(event: MouseEvent): void {
 
   tooltipEl.style.left = `${x}px`;
   tooltipEl.style.top = `${y}px`;
+}
+
+function metricBreakdownHtml(metrics: { score?: number }[]): string {
+  const passing  = metrics.filter((m) => (m.score ?? 0) >= 0.55).length;
+  const failing  = metrics.filter((m) => (m.score ?? 0) < 0.45).length;
+  const neutral  = metrics.length - passing - failing;
+  const total    = metrics.length;
+
+  const passPct  = Math.round((passing / total) * 100);
+  const failPct  = Math.round((failing / total) * 100);
+  const neutPct  = 100 - passPct - failPct;
+
+  const barHtml = `
+    <div class="tooltip-split-bar">
+      ${passPct  > 0 ? `<div class="tooltip-split-seg positive" style="width:${passPct}%"></div>`  : ''}
+      ${neutPct  > 0 ? `<div class="tooltip-split-seg neutral"  style="width:${neutPct}%"></div>`  : ''}
+      ${failPct  > 0 ? `<div class="tooltip-split-seg negative" style="width:${failPct}%"></div>`  : ''}
+    </div>`;
+
+  const dots = [
+    passing > 0 ? `<span class="tooltip-dot positive"></span>${passing} passing` : '',
+    neutral > 0 ? `<span class="tooltip-dot neutral"></span>${neutral} neutral`  : '',
+    failing > 0 ? `<span class="tooltip-dot negative"></span>${failing} failing` : '',
+  ].filter(Boolean).join('<span class="tooltip-dot-sep">·</span>');
+
+  return `
+    ${barHtml}
+    <div class="tooltip-breakdown">${dots} <span class="tooltip-meta-inline">(${total} metrics)</span></div>
+  `;
 }
 
 function escapeHtml(str: string): string {

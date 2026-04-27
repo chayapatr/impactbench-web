@@ -235,3 +235,63 @@ export function selectLeaderboardModel(modelId: string): void {
     row.classList.toggle('active', row.dataset.modelId === modelId);
   });
 }
+
+// ===== Smart ranking (by focus subarea IDs) =====
+
+export function renderSmartRankings(subareaIds: string[]): void {
+  const list = document.getElementById('leaderboard-list');
+  if (!list) return;
+
+  const ranked = _models
+    .map((m) => {
+      const key = makeBenchmarkKey(m.id, _age);
+      const scores = _benchmarkData[key];
+      if (!scores) return { model: m, avg: 0 };
+      const metricIds: string[] = [];
+      for (const area of _taxonomy.areas)
+        for (const sub of area.subareas)
+          if (subareaIds.includes(sub.id))
+            sub.metrics.forEach((metric) => metricIds.push(metric.id));
+      if (!metricIds.length) return { model: m, avg: 0 };
+      const vals = metricIds.map((id) => scores[id] ?? 0);
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+      return { model: m, avg };
+    })
+    .sort((a, b) => b.avg - a.avg);
+
+  list.innerHTML = '<div class="lb-smart-banner"><i class="fa-solid fa-wand-magic-sparkles"></i> Ranked on your focus areas</div>';
+  ranked.forEach(({ model, avg }, idx) => {
+    const rank = idx + 1;
+    const row = document.createElement('div');
+    row.className = 'lb-row';
+    row.dataset.modelId = model.id;
+    const scoreStr = formatScore(avg);
+    const rankClass = rank <= 3 ? 'lb-rank top-3' : 'lb-rank';
+    const pct = Math.round(avg * 100);
+    const cls = avg > 0.55 ? 'positive' : avg < 0.45 ? 'negative' : 'neutral';
+    row.innerHTML = `
+      <span class="${rankClass}">${rank}</span>
+      <div class="lb-info">
+        <div class="lb-name">${model.name}</div>
+        <div class="lb-provider">${model.provider}</div>
+      </div>
+      <div class="lb-split-track" aria-hidden="true">
+        <div class="lb-split-neg-half"></div>
+        <div class="lb-split-center"></div>
+        <div class="lb-split-pos-half">
+          <div class="lb-split-pos-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <span class="lb-score-badge ${cls}">${scoreStr}</span>
+    `;
+    row.addEventListener('click', () => {
+      selectLeaderboardModel(model.id);
+      _onModelSelect(model.id);
+    });
+    list.appendChild(row);
+  });
+}
+
+export function restoreNormalRankings(): void {
+  renderRankings();
+}

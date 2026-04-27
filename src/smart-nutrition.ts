@@ -114,7 +114,6 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
           <div class="smart-nl-area-track">
             <div class="smart-nl-area-fill ${cls}" style="width:${pct}%"></div>
           </div>
-          <div class="smart-nl-area-meta">${esc(r.c.benchmark)}</div>
         </div>
       `;
     })
@@ -127,8 +126,7 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
       return `
         <div class="smart-nl-warning">
           <div class="smart-nl-warning-head">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <span>${esc(w.heading)}</span>
+            <span class="smart-nl-warning-label">${esc(r.c.text)}</span>
             <span class="smart-nl-warning-score ${scoreClass(r.score)}">${fmtScore(r.score)}</span>
           </div>
           <div class="smart-nl-warning-body">${esc(w.body)}</div>

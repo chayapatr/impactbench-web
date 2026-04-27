@@ -1446,6 +1446,12 @@
     <header class="control-bar" id="control-bar">
       <div class="control-bar-inner">
         <nav class="main-nav" id="main-nav">
+          <img
+            src="/mit.svg"
+            alt="MIT"
+            class="nav-mit-logo"
+            aria-hidden="true"
+          />
           <button class="nav-tab" data-tab="home">
             <i class="fa-solid fa-house"></i> Home
           </button>
@@ -1514,13 +1520,21 @@
             >
               Cancel
             </button>
-            <button type="submit" class="modal-btn modal-btn-primary" id="smart-explore-submit">
+            <button
+              type="submit"
+              class="modal-btn modal-btn-primary"
+              id="smart-explore-submit"
+            >
               <i class="fa-solid fa-arrow-right"></i> Submit
             </button>
           </div>
           <div id="smart-explore-loading" hidden>
-            <div class="se-loading-bar"><div class="se-loading-fill"></div></div>
-            <p class="se-loading-hint">Analyzing your context… this takes about 10–15 seconds.</p>
+            <div class="se-loading-bar">
+              <div class="se-loading-fill"></div>
+            </div>
+            <!-- <p class="se-loading-hint">
+              Analyzing your context… this takes about 5–10 seconds.
+            </p> -->
           </div>
         </form>
       </div>
@@ -1643,6 +1657,19 @@
           </div>
           <div id="summary-panel">
             <p class="summary-loading">Loading...</p>
+          </div>
+          <div class="sidebar-site-footer">
+            <div class="sidebar-site-footer-address">
+              MIT Media Lab · 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307
+              USA ⋅
+              <a
+                href="https://accessibility.mit.edu/"
+                target="_blank"
+                rel="noopener"
+                class="sidebar-site-footer-link"
+                >Accessibility [↗]</a
+              >
+            </div>
           </div>
         </aside>
       </div>
@@ -3394,7 +3421,10 @@
           savedSubtitle: null,
         };
 
-        var CASPER_API = "https://casper-production-7f8e.up.railway.app";
+        var CASPER_API =
+          window.location.hostname === "localhost"
+            ? "http://localhost:8001"
+            : "https://casper-production-7f8e.up.railway.app";
 
         // Populated dynamically from casper API response.
         // primarySubarea = where the card routes to in FOCUS-SUBAREA mode.
@@ -3403,34 +3433,35 @@
 
         // Map casper benchmark IDs to FontAwesome icons
         var BENCHMARK_ICONS = {
-          "humanebench": "fa-heart-pulse",
+          humanebench: "fa-heart-pulse",
           "humanagency-bench": "fa-graduation-cap",
           "spillunder-effect": "fa-compass",
           "emotional-dependency": "fa-heart",
           "modulated-cognitive-autonomy-benchmark-mcab": "fa-brain",
-          "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses": "fa-seedling",
+          "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses":
+            "fa-seedling",
         };
 
-        // Map casper benchmark IDs to sunburst subarea IDs
-        var BENCHMARK_SUBAREA_MAP = {
-          "humanebench": ["mental-health", "social-relationship"],
-          "humanagency-bench": ["learning", "autonomy"],
-          "spillunder-effect": ["autonomy"],
-          "emotional-dependency": ["social-relationship", "mental-health"],
-          "modulated-cognitive-autonomy-benchmark-mcab": ["autonomy", "learning"],
-          "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses": ["autonomy"],
-        };
+        // Convert a subarea display name (from Casper) to the taxonomy slug ID
+        function subareaNameToId(name) {
+          return name
+            .toLowerCase()
+            .replace(/ & /g, "-")
+            .replace(/\s+/g, "-")
+            .replace(/[()]/g, "");
+        }
 
         function casperMetricToConstruct(metric) {
-          var subareas = BENCHMARK_SUBAREA_MAP[metric.benchmark] || ["autonomy"];
+          // Use subareas from Casper response (display names), convert to taxonomy IDs
+          var subareaIds = (metric.subareas || []).map(subareaNameToId);
+          if (!subareaIds.length) subareaIds = ["autonomy-preservation"];
           var icon = BENCHMARK_ICONS[metric.benchmark] || "fa-bullseye";
-          // Normalize score from casper's raw range to roughly [-1, 1]
-          // casper scores are unbounded positive floats; we scale relative to max
           return {
+            id: metric.id,
             text: metric.name,
             benchmark: metric.benchmark,
-            primarySubarea: subareas[0],
-            subareas: subareas,
+            primarySubarea: subareaIds[0],
+            subareas: subareaIds,
             icon: icon,
             score: metric.score,
             summary: metric.description,
@@ -3446,16 +3477,41 @@
             body: JSON.stringify({
               prompt: userText,
               query: userText,
-              top_n: 5,
-              per_benchmark_cap: 2,
+              top_n: 15,
+              per_benchmark_cap: 3,
             }),
           });
           if (!resp.ok) throw new Error("Casper API error: " + resp.status);
           var data = await resp.json();
-          return {
-            constructs: data.metrics.map(casperMetricToConstruct),
-            themes: data.themes,
-          };
+          // New shape: data.themes = [{name, description, metrics, avg_score}, ...]
+          // Each theme's metrics are [{id, name, benchmark, description, subareas, score}, ...]
+          var themes = (data.themes || []).map(function (theme) {
+            var metrics = (theme.metrics || []).map(casperMetricToConstruct);
+            // Collect all subarea IDs from metrics for sunburst highlighting
+            var subareaSet = {};
+            metrics.forEach(function (m) {
+              (m.subareas || []).forEach(function (id) {
+                subareaSet[id] = true;
+              });
+            });
+            var subareaIds = Object.keys(subareaSet);
+            if (!subareaIds.length) subareaIds = ["autonomy-preservation"];
+            var icon = metrics.length
+              ? metrics[0].icon || "fa-bullseye"
+              : "fa-bullseye";
+            return {
+              text: theme.name,
+              description: theme.description || "",
+              avg_score: theme.avg_score || 0,
+              metrics: metrics,
+              subareas: subareaIds,
+              primarySubarea: subareaIds[0],
+              icon: icon,
+              // For backward compat — use first metric's id for direct navigation
+              id: metrics.length ? metrics[0].id : null,
+            };
+          });
+          return { constructs: themes };
         }
 
         // Mock per-model focus scores (derived stand-in for tallied user-experience-evals)
@@ -3550,13 +3606,16 @@
             '<div class="sb-section-header">Your Focus Areas</div>' +
             '<div class="summary-section" style="padding-top:6px">' +
             '<div class="area-cards-list">';
-          FOCUS_CONSTRUCTS.forEach(function (c) {
-            var cls = scoreToClass(c.score);
-            var scoreStr = fmtScore(c.score);
+          FOCUS_CONSTRUCTS.forEach(function (c, idx) {
+            var cls = scoreToClass(
+              c.avg_score != null ? c.avg_score : c.score || 0,
+            );
+            var scoreStr = fmtScore(
+              c.avg_score != null ? c.avg_score : c.score || 0,
+            );
             html +=
-              "" +
               '<div class="area-card smart-focus-card" data-construct-idx="' +
-              escHtml(String(FOCUS_CONSTRUCTS.indexOf(c))) +
+              escHtml(String(idx)) +
               '" role="button" tabindex="0">' +
               '<div class="area-card-top">' +
               '<div class="area-card-header">' +
@@ -3572,13 +3631,14 @@
               '">' +
               scoreStr +
               "</div>" +
-              "</div>" +
-              '<div class="area-card-interp ' +
-              cls +
-              '">' +
-              escHtml(c.benchmark) +
-              "</div>" +
               "</div>";
+            if (c.description) {
+              html +=
+                '<div class="area-card-desc">' +
+                escHtml(c.description) +
+                "</div>";
+            }
+            html += "</div>";
           });
           html += "</div></div></div></div>";
           summaryPanel.innerHTML = html;
@@ -3593,8 +3653,22 @@
               var c = FOCUS_CONSTRUCTS[idx];
               if (!c) return;
               var open = function () {
-                var fn = window.__openSubarea;
-                if (typeof fn === "function") fn(c.primarySubarea);
+                if (
+                  typeof window.__openThemeMetrics === "function" &&
+                  c.metrics &&
+                  c.metrics.length
+                ) {
+                  var metricItems = c.metrics.map(function (m) {
+                    return { id: m.id, name: m.text, score: m.score };
+                  });
+                  window.__openThemeMetrics(
+                    c.text,
+                    c.description || "",
+                    metricItems,
+                  );
+                } else if (typeof window.__openSubarea === "function") {
+                  window.__openSubarea(c.primarySubarea);
+                }
               };
               card.addEventListener("click", open);
               card.addEventListener("keydown", function (e) {
@@ -3671,7 +3745,17 @@
           if (lbSubtitle)
             lbSubtitle.textContent = "Ranked on your selected focus areas.";
 
-          renderSmartLeaderboard();
+          var focusSubareaIds = [];
+          FOCUS_CONSTRUCTS.forEach(function (c) {
+            (c.subareas || []).forEach(function (id) {
+              if (focusSubareaIds.indexOf(id) === -1) focusSubareaIds.push(id);
+            });
+          });
+          if (typeof window.__renderSmartRankings === "function") {
+            window.__renderSmartRankings(focusSubareaIds);
+          } else {
+            renderSmartLeaderboard();
+          }
           renderFocusAreasPanel();
           // Sunburst arcs may render asynchronously; retry briefly
           applySunburstFocus();
@@ -3690,10 +3774,12 @@
             summaryPanel.innerHTML = smartState.savedSummary;
             smartState.savedSummary = null;
           }
-          if (leaderboardList && smartState.savedLeaderboard !== null) {
+          if (typeof window.__restoreNormalRankings === "function") {
+            window.__restoreNormalRankings();
+          } else if (leaderboardList && smartState.savedLeaderboard !== null) {
             leaderboardList.innerHTML = smartState.savedLeaderboard;
-            smartState.savedLeaderboard = null;
           }
+          smartState.savedLeaderboard = null;
           if (lbSubtitle && smartState.savedSubtitle !== null) {
             lbSubtitle.textContent = smartState.savedSubtitle;
             smartState.savedSubtitle = null;
@@ -3723,11 +3809,17 @@
         if (seOverlay)
           seOverlay.addEventListener("click", function (e) {
             var loadingEl = document.getElementById("smart-explore-loading");
-            if (e.target === seOverlay && (!loadingEl || loadingEl.hidden)) closeSmartExplore();
+            if (e.target === seOverlay && (!loadingEl || loadingEl.hidden))
+              closeSmartExplore();
           });
         document.addEventListener("keydown", function (e) {
           var loadingEl = document.getElementById("smart-explore-loading");
-          if (e.key === "Escape" && seOverlay && !seOverlay.hidden && (!loadingEl || loadingEl.hidden))
+          if (
+            e.key === "Escape" &&
+            seOverlay &&
+            !seOverlay.hidden &&
+            (!loadingEl || loadingEl.hidden)
+          )
             closeSmartExplore();
         });
         if (seForm)
@@ -3774,10 +3866,15 @@
               constructs: FOCUS_CONSTRUCTS.map(function (c) {
                 return {
                   text: c.text,
-                  benchmark: c.benchmark,
-                  score: c.score,
+                  benchmark:
+                    (c.metrics && c.metrics[0] && c.metrics[0].benchmark) ||
+                    "benchmark",
+                  score: c.avg_score != null ? c.avg_score : c.score || 0,
                   icon: c.icon,
-                  summary: c.summary,
+                  summary:
+                    c.description ||
+                    (c.metrics && c.metrics[0] && c.metrics[0].summary) ||
+                    "",
                 };
               }),
               topModels: FOCUS_MODEL_SCORES.slice(0, 3),
@@ -3907,48 +4004,7 @@
               "</div>";
           }
 
-          if (
-            behaviorsHeader &&
-            behaviorsHeader.nextElementSibling &&
-            behaviorsHeader.nextElementSibling.classList.contains(
-              "summary-section",
-            )
-          ) {
-            // Replace header label so it's clear these are scenario behaviors
-            behaviorsHeader.innerHTML = "Scenario Behaviors";
-            var rows = bs
-              .slice()
-              .sort(function (a, b) {
-                return b.score - a.score;
-              })
-              .map(function (b) {
-                var cls = scoreToClass(b.score);
-                var str = fmtScore(b.score);
-                var dot =
-                  b.valence === "positive"
-                    ? "var(--positive)"
-                    : "var(--negative)";
-                return (
-                  "" +
-                  '<div class="behavior-row" role="presentation">' +
-                  '<span class="behavior-valence-dot" style="background:' +
-                  dot +
-                  '"></span>' +
-                  '<span class="behavior-row-name">' +
-                  escHtml(b.name) +
-                  "</span>" +
-                  '<span class="summary-score-pill ' +
-                  cls +
-                  '">' +
-                  str +
-                  "</span>" +
-                  "</div>"
-                );
-              })
-              .join("");
-            behaviorsHeader.nextElementSibling.innerHTML =
-              '<div class="behavior-list">' + rows + "</div>";
-          }
+          // Leave the real metric list intact so users can click through to scenarios
 
           // ---- Append summary + scenario block ----
           var old = panel.querySelector(".smart-focus-extras");

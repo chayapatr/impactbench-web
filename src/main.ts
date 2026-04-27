@@ -10,7 +10,7 @@ import {
 import { initSunburst, renderSunburst, updateSunburst, resetZoom, resetZoomFull } from './sunburst';
 import { initControls, getCurrentFilters } from './controls';
 import { initTooltip } from './tooltip';
-import { initLeaderboard, selectLeaderboardModel, updateLeaderboardFilters } from './leaderboard';
+import { initLeaderboard, selectLeaderboardModel, updateLeaderboardFilters, renderSmartRankings, restoreNormalRankings } from './leaderboard';
 import {
   initSummaryPanel,
   showDefaultSummary,
@@ -19,6 +19,8 @@ import {
   setSidebarData,
   navigateToArea,
   navigateToSubarea,
+  navigateToMetric,
+  navigateToThemeMetrics,
 } from './sidebar';
 import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from './descriptions';
 import './smart-nutrition';
@@ -174,8 +176,16 @@ function handleSubareaClick(subareaId: string): void {
 }
 
 // Expose for inline smart-explore script
-(window as unknown as { __openSubarea?: (id: string) => void }).__openSubarea =
-  handleSubareaClick;
+(window as unknown as {
+  __openSubarea?: (id: string) => void;
+  __openMetric?: (id: string) => void;
+  __renderSmartRankings?: (subareaIds: string[]) => void;
+  __restoreNormalRankings?: () => void;
+}).__openSubarea = handleSubareaClick;
+(window as unknown as { __openMetric?: (id: string) => void }).__openMetric = navigateToMetric;
+(window as unknown as { __renderSmartRankings?: (subareaIds: string[]) => void }).__renderSmartRankings = renderSmartRankings;
+(window as unknown as { __restoreNormalRankings?: () => void }).__restoreNormalRankings = restoreNormalRankings;
+(window as unknown as { __openThemeMetrics?: (name: string, desc: string, metrics: { id: string; name: string; score: number }[]) => void }).__openThemeMetrics = navigateToThemeMetrics;
 
 function handleAreaClick(areaId: string): void {
   // Look up area directly from taxonomy to avoid D3 sort order issues

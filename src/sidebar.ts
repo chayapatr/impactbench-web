@@ -18,17 +18,17 @@ import { jsPDF } from "jspdf";
 
 function _scoreInterpretation(score: number): string {
   if (score >= 0.75)
-    return "Strongly benefits this dimension — AI is a clear positive force";
+    return "Strongly benefits this dimension: AI is a clear positive force";
   if (score >= 0.6)
-    return "Moderately beneficial — AI has a meaningful positive effect";
+    return "Moderately beneficial: AI has a meaningful positive effect";
   if (score >= 0.55)
-    return "Slight positive effect — modest benefit, room to improve";
-  if (score >= 0.45) return "Neutral — no significant net impact detected";
+    return "Slight positive effect: modest benefit, room to improve";
+  if (score >= 0.45) return "Neutral: no significant net impact detected";
   if (score >= 0.4)
-    return "Slight concern — AI may be undermining this dimension";
+    return "Slight concern: AI may be undermining this dimension";
   if (score >= 0.25)
-    return "Moderate concern — notable negative effects observed";
-  return "Significant concern — AI consistently harms this dimension";
+    return "Moderate concern: notable negative effects observed";
+  return "Significant concern: AI consistently harms this dimension";
 }
 
 // ===== Score-based Colors (replaces per-area colors) =====
@@ -54,12 +54,15 @@ let _currentModelId = "";
 let _scenarioIndex: ScenarioIndex | null = null;
 let _exportOverlay: HTMLElement | null = null;
 
+type ThemeMetricItem = { id: string; name: string; score: number };
+
 type NavLevel =
   | { type: "overview" }
   | { type: "area"; areaId: string }
   | { type: "subarea"; subareaId: string }
   | { type: "metric"; metricId: string; metricName: string }
-  | { type: "scenario"; metricId: string; scenarioMeta: ScenarioMeta };
+  | { type: "scenario"; metricId: string; scenarioMeta: ScenarioMeta }
+  | { type: "theme-metrics"; themeName: string; themeDesc: string; metrics: ThemeMetricItem[] };
 
 let _navStack: NavLevel[] = [{ type: "overview" }];
 
@@ -101,6 +104,36 @@ export function navigateToSubarea(subareaId: string): void {
   if (area) stack.push({ type: "area", areaId: area.id });
   stack.push({ type: "subarea", subareaId });
   _navStack = stack;
+  _renderCurrent(true);
+}
+
+export function navigateToMetric(metricId: string): void {
+  for (const area of _taxonomy?.areas ?? []) {
+    for (const sub of area.subareas) {
+      const metric = sub.metrics.find((m) => m.id === metricId);
+      if (metric) {
+        _navStack = [
+          { type: "overview" },
+          { type: "area", areaId: area.id },
+          { type: "subarea", subareaId: sub.id },
+          { type: "metric", metricId, metricName: metric.name },
+        ];
+        _renderCurrent(true);
+        return;
+      }
+    }
+  }
+}
+
+export function navigateToThemeMetrics(
+  themeName: string,
+  themeDesc: string,
+  metrics: ThemeMetricItem[],
+): void {
+  _navStack = [
+    { type: "overview" },
+    { type: "theme-metrics", themeName, themeDesc, metrics },
+  ];
   _renderCurrent(true);
 }
 
@@ -199,6 +232,9 @@ function _renderCurrent(forward: boolean): void {
       break;
     case "scenario":
       _renderScenario(panel, top.metricId, top.scenarioMeta);
+      break;
+    case "theme-metrics":
+      _renderThemeMetrics(panel, top.themeName, top.themeDesc, top.metrics);
       break;
   }
 }
@@ -558,6 +594,7 @@ function _buildExportContext(): ExportContext | null {
     subarea: "Subarea",
     metric: "Metric",
     scenario: "Scenario",
+    "theme-metrics": "Focus Area",
   };
 
   let areaName = "N/A";
@@ -836,6 +873,71 @@ function _renderArea(panel: HTMLElement, areaId: string): void {
   });
 }
 
+// ===== Theme Metrics List (Smart Explore focus area drill-down) =====
+
+function _renderThemeMetrics(
+  panel: HTMLElement,
+  themeName: string,
+  themeDesc: string,
+  metrics: ThemeMetricItem[],
+): void {
+  const avgScore = metrics.length
+    ? metrics.reduce((s, m) => s + m.score, 0) / metrics.length
+    : 0;
+  const colors = _scoreColors(avgScore);
+
+  const rows = metrics
+    .slice()
+    .sort((a, b) => b.score - a.score)
+    .map((m) => {
+      const str = formatScore(m.score);
+      const cls = scoreToClass(m.score);
+      return `
+        <div class="behavior-row" data-metric-id="${_esc(m.id)}" data-metric-name="${_esc(m.name)}" role="button" tabindex="0">
+          <span class="behavior-row-name">${_esc(m.name)}</span>
+          <span class="summary-score-pill ${cls}">${_esc(str)}</span>
+          <span class="behavior-row-arrow">›</span>
+        </div>
+      `;
+    })
+    .join("");
+
+  panel.innerHTML = `
+    <div class="sidebar-content">
+      <div class="sb-title-section" style="--sb-color:${colors.color};--sb-light:${colors.light};--sb-border:${colors.border}">
+        <div class="sb-anc-row">
+          <button class="sb-back-btn" aria-label="Back">‹</button>
+          <span class="sb-current-level-label">Focus Area</span>
+        </div>
+        <div class="sidebar-title-name">
+          <span>${_esc(themeName)}</span>
+          <span class="sb-title-score" style="color:${colors.color}">${formatScore(avgScore)}</span>
+        </div>
+      </div>
+      <div class="sidebar-content-body">
+        ${themeDesc ? `<div class="summary-section"><p class="summary-text">${_esc(themeDesc)}</p></div>` : ""}
+        <div class="sb-section-header">Metrics (${metrics.length})</div>
+        <div class="summary-section" style="padding-top:4px">
+          <div class="behavior-list">${rows}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  _bindBackAndAncestors(panel);
+
+  panel.querySelectorAll<HTMLElement>(".behavior-row").forEach((row) => {
+    const metricId = row.dataset.metricId ?? "";
+    const metricName = row.dataset.metricName ?? "";
+    if (!metricId) return;
+    const handler = () => _push({ type: "metric", metricId, metricName });
+    row.addEventListener("click", handler);
+    row.addEventListener("keydown", (e) => {
+      if ((e as KeyboardEvent).key === "Enter") handler();
+    });
+  });
+}
+
 // ===== Level 2: Subarea Detail =====
 
 function _renderSubarea(panel: HTMLElement, subareaId: string): void {
@@ -998,8 +1100,12 @@ function _renderMetric(
   metricName: string,
 ): void {
   const score = _scores[metricId] ?? 0;
-  const currentAge = (document.getElementById("filter-age") as HTMLSelectElement | null)?.value ?? "adult";
-  const scenarios = (_scenarioIndex?.[metricId] ?? []).filter((sc) => sc.age === currentAge);
+  const currentAge =
+    (document.getElementById("filter-age") as HTMLSelectElement | null)
+      ?.value ?? "adult";
+  const scenarios = (_scenarioIndex?.[metricId] ?? []).filter(
+    (sc) => sc.age === currentAge,
+  );
 
   // Look up whether this metric is harmful (affects pass/fail interpretation)
   let isHarmful = false;
