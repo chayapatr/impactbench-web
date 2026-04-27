@@ -3,6 +3,60 @@ import type { SunburstNodeData } from './types';
 import { scoreToColor } from './color-scale';
 import { showTooltip, moveTooltip, hideTooltip } from './tooltip';
 
+// ===== Subarea Gradient Helpers =====
+
+function buildSubareaGradients(
+  defs: d3.Selection<SVGDefsElement, unknown, null, undefined>,
+  nodes: ArcDatum[]
+): void {
+  const subareaNodes = nodes.filter((d) => d.depth === 2);
+
+  subareaNodes.forEach((d) => {
+    const metrics = d.data.children ?? [];
+    if (metrics.length === 0) return;
+
+    const scores = metrics.map((m) => m.score ?? 0);
+    const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+
+    // Sort scores to find the "best" end (inner) and "worst" end (outer)
+    const sorted = [...scores].sort((a, b) => b - a);
+    const topHalf = sorted.slice(0, Math.ceil(sorted.length / 2));
+    const bottomHalf = sorted.slice(Math.ceil(sorted.length / 2));
+    const innerScore = topHalf.reduce((a, b) => a + b, 0) / topHalf.length;
+    const outerScore = bottomHalf.reduce((a, b) => a + b, 0) / bottomHalf.length;
+
+    const x0 = (d as unknown as { x0: number }).x0;
+    const x1 = (d as unknown as { x1: number }).x1;
+    const midAngle = (x0 + x1) / 2;
+
+    // Radial gradient: inner radius point → outer radius point along arc midline
+    const ix = Math.sin(midAngle) * RING2_INNER;
+    const iy = -Math.cos(midAngle) * RING2_INNER;
+    const ox = Math.sin(midAngle) * RING2_OUTER;
+    const oy = -Math.cos(midAngle) * RING2_OUTER;
+
+    const gradId = `subarea-grad-${d.data.id}`;
+
+    const grad = defs.append('linearGradient')
+      .attr('id', gradId)
+      .attr('gradientUnits', 'userSpaceOnUse')
+      .attr('x1', ix).attr('y1', iy)
+      .attr('x2', ox).attr('y2', oy);
+
+    // Inner (good) → mid average → outer (concerning)
+    grad.append('stop').attr('offset', '0%').attr('stop-color', scoreToColor(innerScore));
+    grad.append('stop').attr('offset', '50%').attr('stop-color', scoreToColor(avgScore));
+    grad.append('stop').attr('offset', '100%').attr('stop-color', scoreToColor(outerScore));
+  });
+}
+
+function subareaFill(d: ArcDatum): string {
+  if (d.depth === 2 && (d.data.children?.length ?? 0) > 1) {
+    return `url(#subarea-grad-${d.data.id})`;
+  }
+  return scoreToColor(d.data.score ?? 0);
+}
+
 // ===== Constants =====
 
 const CENTER_R = 100;           // center image circle radius
@@ -152,6 +206,9 @@ function getArcPath(d: ArcDatum): string {
 function drawArcs(nodes: ArcDatum[], animate: boolean): void {
   const arcGroup = g.append('g').attr('class', 'arcs-group');
 
+  const defs = arcGroup.append<SVGDefsElement>('defs');
+  buildSubareaGradients(defs, nodes);
+
   const paths = arcGroup
     .selectAll<SVGPathElement, ArcDatum>('.arc-path')
     .data(nodes, (d) => d.data.id)
@@ -159,7 +216,7 @@ function drawArcs(nodes: ArcDatum[], animate: boolean): void {
     .attr('class', 'arc-path')
     .attr('data-id', (d) => d.data.id)
     .attr('data-type', (d) => d.data.type)
-    .attr('fill', (d) => scoreToColor(d.data.score ?? 0))
+    .attr('fill', (d) => subareaFill(d))
     .attr('d', (d) => getArcPath(d));
 
   if (animate) {
@@ -391,6 +448,11 @@ function drawLabels(nodes: ArcDatum[], parent: d3.Selection<SVGGElement, unknown
 function transitionArcs(nodes: ArcDatum[]): void {
   const arcGroup = g.select('.arcs-group');
 
+  // Rebuild gradients for updated scores
+  arcGroup.select('defs').remove();
+  const defs = arcGroup.insert<SVGDefsElement>('defs', ':first-child');
+  buildSubareaGradients(defs, nodes);
+
   const paths = arcGroup
     .selectAll<SVGPathElement, ArcDatum>('.arc-path')
     .data(nodes, (d) => d.data.id);
@@ -400,7 +462,7 @@ function transitionArcs(nodes: ArcDatum[]): void {
     .transition()
     .duration(TRANSITION_DURATION)
     .ease(d3.easeCubicInOut)
-    .attr('fill', (d) => scoreToColor(d.data.score ?? 0))
+    .attr('fill', (d) => subareaFill(d))
     .attr('d', (d) => getArcPath(d));
 
   // Enter new
@@ -409,7 +471,7 @@ function transitionArcs(nodes: ArcDatum[]): void {
     .append('path')
     .attr('class', 'arc-path')
     .attr('d', (d) => getArcPath(d))
-    .attr('fill', (d) => scoreToColor(d.data.score ?? 0))
+    .attr('fill', (d) => subareaFill(d))
     .attr('opacity', 0)
     .transition()
     .duration(TRANSITION_DURATION)
@@ -471,7 +533,7 @@ function highlightNode(target: ArcDatum): void {
       .classed('highlighted', isHighlighted)
       .attr('fill', isHighlighted
         ? lightenColor(scoreToColor(d.data.score ?? 0))
-        : scoreToColor(d.data.score ?? 0)
+        : subareaFill(d)
       );
   });
 }
@@ -480,7 +542,7 @@ function unhighlightAll(_nodes: ArcDatum[]): void {
   d3.selectAll<SVGPathElement, ArcDatum>('.arc-path')
     .classed('dimmed', false)
     .classed('highlighted', false)
-    .attr('fill', (d) => scoreToColor(d.data.score ?? 0));
+    .attr('fill', (d) => subareaFill(d));
 }
 
 function lightenColor(hex: string): string {
