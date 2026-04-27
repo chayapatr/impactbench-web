@@ -324,6 +324,40 @@ body.modal-open {
   filter: brightness(1.06);
 }
 
+.modal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.se-loading-bar {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.se-loading-fill {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, #00b3b0, #038d8f);
+  border-radius: 2px;
+  animation: se-loading-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes se-loading-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+.se-loading-hint {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-align: center;
+}
+
 /* ===== Smart Filter pill (replaces dropdowns when Smart Explore applied) ===== */
 .smart-filter-pill {
   position: relative;
@@ -2985,6 +3019,31 @@ body.gate-mode #smart-explore-overlay {
   background: #16a34a;
 }
 .form-submit-btn--green:hover { background: #15803d; }
+
+.form-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+}
+.form-submit-btn--loading .fa-paper-plane,
+.form-submit-btn--loading .fa-circle-check {
+  display: none;
+}
+.form-submit-btn--loading::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
 
 /* Success state */
 .form-success {
