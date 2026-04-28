@@ -11,6 +11,7 @@ let _onModelSelect: (modelId: string) => void = () => {};
 let _age = 'adult';
 let _selectedAreaId: string | null = null;
 let _selectedSubareaId: string | null = null;
+let _lastSmartRanked: { id: string; name: string; provider: string; score: number }[] = [];
 
 // ===== Score Computation =====
 
@@ -259,6 +260,13 @@ export function renderSmartRankings(subareaIds: string[]): void {
     })
     .sort((a, b) => b.avg - a.avg);
 
+  _lastSmartRanked = ranked.map(({ model, avg }) => ({
+    id: model.id,
+    name: model.name,
+    provider: model.provider,
+    score: avg,
+  }));
+
   list.innerHTML = '<div class="lb-smart-banner"><i class="fa-solid fa-wand-magic-sparkles"></i> Ranked on your focus areas</div>';
   ranked.forEach(({ model, avg }, idx) => {
     const rank = idx + 1;
@@ -294,4 +302,41 @@ export function renderSmartRankings(subareaIds: string[]): void {
 
 export function restoreNormalRankings(): void {
   renderRankings();
+}
+
+export function getSmartRanked(): { id: string; name: string; provider: string; score: number }[] {
+  return _lastSmartRanked;
+}
+
+export function getWorstSubareasForModel(
+  modelId: string,
+  count: number = 3,
+): { name: string; score: number }[] {
+  const key = makeBenchmarkKey(modelId, _age);
+  const scores = _benchmarkData[key];
+  if (!scores || !_taxonomy) return [];
+
+  const subareaAvgs: { name: string; score: number }[] = [];
+  for (const area of _taxonomy.areas) {
+    for (const sub of area.subareas) {
+      const vals = sub.metrics.map((m) => scores[m.id] ?? null).filter((v) => v !== null) as number[];
+      if (!vals.length) continue;
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+      subareaAvgs.push({ name: sub.name, score: avg });
+    }
+  }
+  return subareaAvgs.sort((a, b) => a.score - b.score).slice(0, count);
+}
+
+export function getConstructScoresForModel(
+  modelId: string,
+  themeMetricIds: string[][],
+): number[] {
+  const key = makeBenchmarkKey(modelId, _age);
+  const scores = _benchmarkData[key];
+  if (!scores) return themeMetricIds.map(() => 0);
+  return themeMetricIds.map((ids) => {
+    const vals = ids.map((id) => scores[id] ?? null).filter((v) => v !== null) as number[];
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  });
 }

@@ -1,7 +1,4 @@
 // ===== Smart Explore Nutrition Label =====
-// Opens a modal showing top 3 models from the Smart Filter, their per-focus-area
-// performance, and 3 "things to note" warnings based on their weakest focus
-// areas. Users can toggle between models, and save the label as a PDF.
 
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -17,7 +14,9 @@ export interface SmartConstruct {
 export interface SmartTopModel {
   name: string;
   provider: string;
-  score: number;
+  score: number;                              // avg benchmark score across focus theme metrics
+  constructScores: number[];                  // real per-construct benchmark avg, parallel to opts.constructs
+  worstAreas: { name: string; score: number }[]; // lowest subareas from full taxonomy for this model
 }
 
 export interface SmartNutritionOpts {
@@ -26,36 +25,12 @@ export interface SmartNutritionOpts {
   topModels: SmartTopModel[];
 }
 
-// Deterministic small hash used to jitter per-model per-construct scores.
-function hash(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0) / 4294967295; // 0..1
-}
-
-// Each top-3 model gets an overall offset; jitter varies per construct.
-const MODEL_RANK_OFFSET = [0.06, -0.01, -0.09];
-
-function modelScoreForConstruct(
-  model: SmartTopModel,
-  modelRank: number,
-  c: SmartConstruct
-): number {
-  const offset = MODEL_RANK_OFFSET[modelRank] ?? 0;
-  const jitter = (hash(model.name + '::' + c.text) - 0.5) * 0.18;
-  const raw = c.score + offset + jitter;
-  return Math.max(-1, Math.min(1, raw));
-}
-
 function fmtScore(s: number): string {
   return (s >= 0 ? '+' : '') + s.toFixed(2);
 }
 function scoreClass(s: number): string {
-  if (s > 0.05) return 'positive';
-  if (s < -0.05) return 'negative';
+  if (s > 0.55) return 'positive';
+  if (s < 0.45) return 'negative';
   return 'neutral';
 }
 function esc(s: string): string {
@@ -80,36 +55,21 @@ function close(): void {
   }
 }
 
-function buildWarning(c: SmartConstruct, score: number): { heading: string; body: string } {
-  const heading = `Watch out on "${c.text}"`;
-  const base = c.summary && c.summary.trim().length
-    ? c.summary
-    : `This model scored ${fmtScore(score)} on ${c.text}. Verify your product doesn't amplify risks in this area.`;
-  const prefix = score < -0.1
-    ? 'Ensure that your product doesn\u2019t amplify this risk — '
-    : 'Keep an eye on this area in deployment — ';
-  return { heading, body: prefix + base };
-}
-
 function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
   const model = opts.topModels[activeIdx];
   if (!model) return '';
 
-  const perArea = opts.constructs.map((c) => ({
-    c,
-    score: modelScoreForConstruct(model, activeIdx, c),
-  }));
-
-  const areaRows = perArea
-    .map((r) => {
-      const pct = Math.max(4, Math.min(100, Math.round(Math.abs(r.score) * 100)));
-      const cls = scoreClass(r.score);
+  const areaRows = opts.constructs
+    .map((c, i) => {
+      const score = model.constructScores[i] ?? 0;
+      const pct = Math.max(4, Math.min(100, Math.round(score * 100)));
+      const cls = scoreClass(score);
       return `
         <div class="smart-nl-area">
           <div class="smart-nl-area-top">
-            <span class="smart-nl-area-icon"><i class="fa-solid ${esc(r.c.icon || 'fa-bullseye')}"></i></span>
-            <span class="smart-nl-area-name">${esc(r.c.text)}</span>
-            <span class="smart-nl-area-score ${cls}">${fmtScore(r.score)}</span>
+            <span class="smart-nl-area-icon"><i class="fa-solid ${esc(c.icon || 'fa-bullseye')}"></i></span>
+            <span class="smart-nl-area-name">${esc(c.text)}</span>
+            <span class="smart-nl-area-score ${cls}">${fmtScore(score)}</span>
           </div>
           <div class="smart-nl-area-track">
             <div class="smart-nl-area-fill ${cls}" style="width:${pct}%"></div>
@@ -119,24 +79,23 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
     })
     .join('');
 
-  const weakest = perArea.slice().sort((a, b) => a.score - b.score).slice(0, 3);
-  const warningsHtml = weakest
-    .map((r) => {
-      const w = buildWarning(r.c, r.score);
+  const warningsHtml = (model.worstAreas || [])
+    .slice(0, 3)
+    .map((w) => {
+      const cls = scoreClass(w.score);
       return `
         <div class="smart-nl-warning">
           <div class="smart-nl-warning-head">
-            <span class="smart-nl-warning-label">${esc(r.c.text)}</span>
-            <span class="smart-nl-warning-score ${scoreClass(r.score)}">${fmtScore(r.score)}</span>
+            <span class="smart-nl-warning-label">${esc(w.name)}</span>
+            <span class="smart-nl-warning-score ${cls}">${fmtScore(w.score)}</span>
           </div>
-          <div class="smart-nl-warning-body">${esc(w.body)}</div>
         </div>
       `;
     })
     .join('');
 
   const overallCls = scoreClass(model.score);
-  const overallPct = Math.max(0, Math.min(100, ((model.score + 1) / 2) * 100));
+  const overallPct = Math.max(0, Math.min(100, model.score * 100));
 
   return `
     <div class="nutrition-headline">AI Nutrition Label</div>
@@ -151,7 +110,7 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
     <div class="nutrition-thick-rule"></div>
 
     <div class="nutrition-score-row">
-      <div class="nutrition-score-label">Net Impact Score</div>
+      <div class="nutrition-score-label">Focus Area Score</div>
       <div class="nutrition-score-value ${overallCls}">${fmtScore(model.score)}</div>
     </div>
     <div class="smart-nl-overall-track" aria-hidden="true">
@@ -161,18 +120,18 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
 
     <div class="nutrition-thick-rule"></div>
 
-    <div class="smart-nl-section-title">Performance on your 5 focus areas</div>
+    <div class="smart-nl-section-title">Performance on your focus areas</div>
     <div class="smart-nl-areas">${areaRows}</div>
 
     <div class="nutrition-thick-rule"></div>
 
-    <div class="smart-nl-section-title">Things to note <span class="smart-nl-section-sub">3 warnings from weakest focus areas</span></div>
+    <div class="smart-nl-section-title">Things to watch out <span class="smart-nl-section-sub">lowest scoring areas for this model</span></div>
     <div class="smart-nl-warnings">${warningsHtml}</div>
 
     <div class="nutrition-thick-rule"></div>
     <div class="nutrition-footnote">
       Generated from your Smart Explore context: &ldquo;${esc(opts.userText || '(no context provided)')}&rdquo;.
-      Per-area scores derive from the scenario evals in this benchmark.
+      Scores derive from scenario evaluations in this benchmark.
     </div>
   `;
 }

@@ -10,7 +10,7 @@ import {
 import { initSunburst, renderSunburst, updateSunburst, resetZoom, resetZoomFull } from './sunburst';
 import { initControls, getCurrentFilters } from './controls';
 import { initTooltip } from './tooltip';
-import { initLeaderboard, selectLeaderboardModel, updateLeaderboardFilters, renderSmartRankings, restoreNormalRankings } from './leaderboard';
+import { initLeaderboard, selectLeaderboardModel, updateLeaderboardFilters, renderSmartRankings, restoreNormalRankings, getSmartRanked, getWorstSubareasForModel, getConstructScoresForModel } from './leaderboard';
 import {
   initSummaryPanel,
   showDefaultSummary,
@@ -21,6 +21,7 @@ import {
   navigateToSubarea,
   navigateToMetric,
   navigateToThemeMetrics,
+  getBenchmarkScores,
 } from './sidebar';
 import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from './descriptions';
 import './smart-nutrition';
@@ -186,6 +187,10 @@ function handleSubareaClick(subareaId: string): void {
 (window as unknown as { __renderSmartRankings?: (subareaIds: string[]) => void }).__renderSmartRankings = renderSmartRankings;
 (window as unknown as { __restoreNormalRankings?: () => void }).__restoreNormalRankings = restoreNormalRankings;
 (window as unknown as { __openThemeMetrics?: (name: string, desc: string, metrics: { id: string; name: string; score: number }[]) => void }).__openThemeMetrics = navigateToThemeMetrics;
+(window as unknown as { __getSmartRanked?: () => { id: string; name: string; provider: string; score: number }[] }).__getSmartRanked = getSmartRanked;
+(window as unknown as { __getBenchmarkScores?: () => Record<string, number> }).__getBenchmarkScores = getBenchmarkScores;
+(window as unknown as { __getWorstSubareas?: (modelId: string, count?: number) => { name: string; score: number }[] }).__getWorstSubareas = getWorstSubareasForModel;
+(window as unknown as { __getConstructScores?: (modelId: string, themeMetricIds: string[][]) => number[] }).__getConstructScores = getConstructScoresForModel;
 
 function handleAreaClick(areaId: string): void {
   // Look up area directly from taxonomy to avoid D3 sort order issues

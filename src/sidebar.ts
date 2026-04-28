@@ -91,6 +91,10 @@ export function setSidebarData(
   }
 }
 
+export function getBenchmarkScores(): Record<string, number> {
+  return _scores;
+}
+
 export function navigateToArea(areaId: string): void {
   _navStack = [{ type: "overview" }, { type: "area", areaId }];
   _renderCurrent(true);
@@ -881,17 +885,33 @@ function _renderThemeMetrics(
   themeDesc: string,
   metrics: ThemeMetricItem[],
 ): void {
-  const avgScore = metrics.length
-    ? metrics.reduce((s, m) => s + m.score, 0) / metrics.length
-    : 0;
-  const colors = _scoreColors(avgScore);
+  // Use real benchmark scores from _scores, not Casper relevance scores
+  const scored = metrics.map((m) => ({
+    ...m,
+    benchmarkScore: _scores[m.id] ?? null,
+  }));
 
-  const rows = metrics
+  const withScores = scored.filter((m) => m.benchmarkScore !== null) as (ThemeMetricItem & { benchmarkScore: number })[];
+  const avgScore = withScores.length
+    ? withScores.reduce((s, m) => s + m.benchmarkScore, 0) / withScores.length
+    : 0;
+
+  const rows = scored
     .slice()
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => (b.benchmarkScore ?? -1) - (a.benchmarkScore ?? -1))
     .map((m) => {
-      const str = formatScore(m.score);
-      const cls = scoreToClass(m.score);
+      const score = m.benchmarkScore;
+      if (score === null) {
+        return `
+          <div class="behavior-row" data-metric-id="${_esc(m.id)}" data-metric-name="${_esc(m.name)}" role="button" tabindex="0">
+            <span class="behavior-row-name">${_esc(m.name)}</span>
+            <span class="summary-score-pill neutral">N/A</span>
+            <span class="behavior-row-arrow">›</span>
+          </div>
+        `;
+      }
+      const str = formatScore(score);
+      const cls = scoreToClass(score);
       return `
         <div class="behavior-row" data-metric-id="${_esc(m.id)}" data-metric-name="${_esc(m.name)}" role="button" tabindex="0">
           <span class="behavior-row-name">${_esc(m.name)}</span>
@@ -904,16 +924,7 @@ function _renderThemeMetrics(
 
   panel.innerHTML = `
     <div class="sidebar-content">
-      <div class="sb-title-section" style="--sb-color:${colors.color};--sb-light:${colors.light};--sb-border:${colors.border}">
-        <div class="sb-anc-row">
-          <button class="sb-back-btn" aria-label="Back">‹</button>
-          <span class="sb-current-level-label">Focus Area</span>
-        </div>
-        <div class="sidebar-title-name">
-          <span>${_esc(themeName)}</span>
-          <span class="sb-title-score" style="color:${colors.color}">${formatScore(avgScore)}</span>
-        </div>
-      </div>
+      ${_stickyNavHead("Focus Area", themeName, null, avgScore, "sb-level-subarea")}
       <div class="sidebar-content-body">
         ${themeDesc ? `<div class="summary-section"><p class="summary-text">${_esc(themeDesc)}</p></div>` : ""}
         <div class="sb-section-header">Metrics (${metrics.length})</div>

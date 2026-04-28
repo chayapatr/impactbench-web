@@ -3514,19 +3514,6 @@
           return { constructs: themes };
         }
 
-        // Mock per-model focus scores (derived stand-in for tallied user-experience-evals)
-        var FOCUS_MODEL_SCORES = [
-          { name: "Claude 3.5 Sonnet", provider: "Anthropic", score: 0.41 },
-          { name: "Claude 3.7 Sonnet", provider: "Anthropic", score: 0.38 },
-          { name: "GPT-5 Chat", provider: "OpenAI", score: 0.22 },
-          { name: "Gemini Ultra", provider: "Google", score: 0.18 },
-          { name: "ChatGPT 4o", provider: "OpenAI", score: 0.05 },
-          { name: "Claude 3 Opus", provider: "Anthropic", score: -0.02 },
-          { name: "o3", provider: "OpenAI", score: -0.09 },
-          { name: "GPT-4.5", provider: "OpenAI", score: -0.14 },
-          { name: "Gemini 2.5 Pro", provider: "Google", score: -0.18 },
-          { name: "GPT-5", provider: "OpenAI", score: -0.24 },
-        ];
 
         function escHtml(s) {
           return String(s).replace(/[&<>"']/g, function (c) {
@@ -3554,49 +3541,17 @@
           return (s >= 0 ? "+" : "") + s.toFixed(2);
         }
 
-        function renderSmartLeaderboard() {
-          if (!leaderboardList) return;
-          var html =
-            '<div class="lb-smart-banner"><i class="fa-solid fa-wand-magic-sparkles"></i> Ranked on your focus areas</div>';
-          FOCUS_MODEL_SCORES.forEach(function (m, idx) {
-            var rank = idx + 1;
-            var pct = Math.max(0, Math.min(100, ((m.score + 1) / 2) * 100));
-            var cls = scoreToClass(m.score);
-            var color = scoreToColor(m.score);
-            html +=
-              "" +
-              '<div class="lb-row">' +
-              '<span class="' +
-              (rank <= 3 ? "lb-rank top-3" : "lb-rank") +
-              '">' +
-              rank +
-              "</span>" +
-              '<div class="lb-info">' +
-              '<div class="lb-name">' +
-              escHtml(m.name) +
-              "</div>" +
-              '<div class="lb-provider">' +
-              escHtml(m.provider) +
-              "</div>" +
-              "</div>" +
-              '<div class="lb-scale-track" aria-hidden="true">' +
-              '<div class="lb-scale-zero"></div>' +
-              '<div class="lb-scale-marker ' +
-              cls +
-              '" style="left:' +
-              pct +
-              "%;background:" +
-              color +
-              '"></div>' +
-              "</div>" +
-              '<span class="lb-score-badge ' +
-              cls +
-              '">' +
-              fmtScore(m.score) +
-              "</span>" +
-              "</div>";
-          });
-          leaderboardList.innerHTML = html;
+        function themeAvgBenchmarkScore(c) {
+          var scores = typeof window.__getBenchmarkScores === "function"
+            ? window.__getBenchmarkScores()
+            : {};
+          var metricIds = (c.metrics || []).map(function (m) { return m.id; });
+          var vals = metricIds
+            .map(function (id) { return scores[id]; })
+            .filter(function (v) { return v != null; });
+          return vals.length
+            ? vals.reduce(function (a, b) { return a + b; }, 0) / vals.length
+            : null;
         }
 
         function renderFocusAreasPanel() {
@@ -3607,12 +3562,10 @@
             '<div class="summary-section" style="padding-top:6px">' +
             '<div class="area-cards-list">';
           FOCUS_CONSTRUCTS.forEach(function (c, idx) {
-            var cls = scoreToClass(
-              c.avg_score != null ? c.avg_score : c.score || 0,
-            );
-            var scoreStr = fmtScore(
-              c.avg_score != null ? c.avg_score : c.score || 0,
-            );
+            var benchmarkAvg = themeAvgBenchmarkScore(c);
+            var displayScore = benchmarkAvg != null ? benchmarkAvg : null;
+            var cls = displayScore != null ? scoreToClass(displayScore) : "neutral";
+            var scoreStr = displayScore != null ? fmtScore(displayScore) : "—";
             html +=
               '<div class="area-card smart-focus-card" data-construct-idx="' +
               escHtml(String(idx)) +
@@ -3658,8 +3611,10 @@
                   c.metrics &&
                   c.metrics.length
                 ) {
+                  var benchScores = typeof window.__getBenchmarkScores === "function"
+                    ? window.__getBenchmarkScores() : {};
                   var metricItems = c.metrics.map(function (m) {
-                    return { id: m.id, name: m.text, score: m.score };
+                    return { id: m.id, name: m.text, score: benchScores[m.id] != null ? benchScores[m.id] : m.score };
                   });
                   window.__openThemeMetrics(
                     c.text,
@@ -3753,8 +3708,6 @@
           });
           if (typeof window.__renderSmartRankings === "function") {
             window.__renderSmartRankings(focusSubareaIds);
-          } else {
-            renderSmartLeaderboard();
           }
           renderFocusAreasPanel();
           // Sunburst arcs may render asynchronously; retry briefly
@@ -3861,23 +3814,39 @@
           sePillSavePdf.addEventListener("click", function () {
             var fn = window.__openSmartNutritionLabel;
             if (typeof fn !== "function") return;
+            var constructs = FOCUS_CONSTRUCTS.map(function (c) {
+              return {
+                text: c.text,
+                benchmark: (c.metrics && c.metrics[0] && c.metrics[0].benchmark) || "benchmark",
+                score: 0,
+                icon: c.icon,
+                summary: c.description || "",
+              };
+            });
+            // Metric IDs per theme, for per-model construct score computation
+            var themeMetricIds = FOCUS_CONSTRUCTS.map(function (c) {
+              return (c.metrics || []).map(function (m) { return m.id; });
+            });
+            var smartRanked = typeof window.__getSmartRanked === "function" ? window.__getSmartRanked() : [];
+            var topModels = smartRanked.slice(0, 3).map(function (m) {
+              var constructScores = typeof window.__getConstructScores === "function"
+                ? window.__getConstructScores(m.id, themeMetricIds)
+                : themeMetricIds.map(function () { return 0; });
+              var worstAreas = typeof window.__getWorstSubareas === "function"
+                ? window.__getWorstSubareas(m.id, 3)
+                : [];
+              return {
+                name: m.name,
+                provider: m.provider,
+                score: m.score,
+                constructScores: constructScores,
+                worstAreas: worstAreas,
+              };
+            });
             fn({
               userText: smartState.userText || "",
-              constructs: FOCUS_CONSTRUCTS.map(function (c) {
-                return {
-                  text: c.text,
-                  benchmark:
-                    (c.metrics && c.metrics[0] && c.metrics[0].benchmark) ||
-                    "benchmark",
-                  score: c.avg_score != null ? c.avg_score : c.score || 0,
-                  icon: c.icon,
-                  summary:
-                    c.description ||
-                    (c.metrics && c.metrics[0] && c.metrics[0].summary) ||
-                    "",
-                };
-              }),
-              topModels: FOCUS_MODEL_SCORES.slice(0, 3),
+              constructs: constructs,
+              topModels: topModels,
             });
           });
 
