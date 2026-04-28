@@ -1698,14 +1698,14 @@
                 <p class="whitepaper-subtitle">
                   Benchmarking AI models for human flourishing
                 </p>
-                <a
+                <div
                   class="whitepaper-cta"
                   href="#"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Read white paper
-                </a>
+                  White paper coming soon
+                </div>
               </div>
               <a
                 class="whitepaper-thumb"
@@ -1731,13 +1731,12 @@
 
             <h2 class="section-heading" hidden>The Problem</h2>
             <p class="section-body">
-              A review of 445 ML/NLP benchmarks found 16%
-              included statistical testing and 21.7% had no definition of
-              the construct they claimed to measure. Models that pass
-              conventional safety benchmarks produce negative user outcomes
-              in over 70% of high-risk scenarios. Existing benchmarks are
-              mostly single-turn and static. Real harms emerge across many
-              sessions over weeks or months.
+              A review of 445 ML/NLP benchmarks found 16% included statistical
+              testing and 21.7% had no definition of the construct they claimed
+              to measure. Models that pass conventional safety benchmarks
+              produce negative user outcomes in over 70% of high-risk scenarios.
+              Existing benchmarks are mostly single-turn and static. Real harms
+              emerge across many sessions over weeks or months.
             </p>
 
             <div class="section-divider"></div>
@@ -1760,8 +1759,8 @@
               </li>
             </ol>
             <p class="section-body" style="margin-top: 12px">
-              Our current version evaluates 14 frontier models according to
-              18 benchmarks and 375 metric pairs.
+              Our current version evaluates 14 frontier models according to 18
+              benchmarks and 375 metric pairs.
             </p>
 
             <div class="section-divider"></div>
@@ -1772,8 +1771,8 @@
               <div class="section-card">
                 <h3>Harm avoidance ≠ flourishing</h3>
                 <p>
-                  Every model scored higher on harm-avoidance metrics than
-                  on actively beneficial ones. Gap range:
+                  Every model scored higher on harm-avoidance metrics than on
+                  actively beneficial ones. Gap range:
                   <strong>+3.9 pp</strong> (Claude Opus 4.6) to
                   <strong>+21.6 pp</strong> (GPT-4o).
                 </p>
@@ -1782,27 +1781,27 @@
                 <h3>Demographic sensitivity</h3>
                 <p>
                   <strong>12 of 14 models</strong> showed more
-                  emotional-dependence behaviors toward child and teen
-                  personas than adults, holding scenario content constant.
-                  Largest effects: Qwen3 80B (+0.049), Mistral Small 3.2
-                  (+0.044), DeepSeek V3.2 (+0.042).
+                  emotional-dependence behaviors toward child and teen personas
+                  than adults, holding scenario content constant. Largest
+                  effects: Qwen3 80B (+0.049), Mistral Small 3.2 (+0.044),
+                  DeepSeek V3.2 (+0.042).
                 </p>
               </div>
               <div class="section-card">
                 <h3>Construct matters more than model</h3>
                 <p>
-                  Humane Bench (mean 0.373), Cognitive Bias (0.467), and
-                  Human Agency (0.469) were uniformly hard. VERA-MH (0.777)
-                  and User Bias (0.765) were uniformly easy.
+                  Humane Bench (mean 0.373), Cognitive Bias (0.467), and Human
+                  Agency (0.469) were uniformly hard. VERA-MH (0.777) and User
+                  Bias (0.765) were uniformly easy.
                 </p>
               </div>
               <div class="section-card">
                 <h3>Rankings are stable</h3>
                 <p>
-                  Rankings held across generator, simulator, and judge
-                  swaps. Run-to-run Fleiss' κ = 0.64 to 0.78. 78.1% of
-                  conversation triples were unanimous. A single sample
-                  matched the three-sample majority vote at ρ = 0.982.
+                  Rankings held across generator, simulator, and judge swaps.
+                  Run-to-run Fleiss' κ = 0.64 to 0.78. 78.1% of conversation
+                  triples were unanimous. A single sample matched the
+                  three-sample majority vote at ρ = 0.982.
                 </p>
               </div>
             </div>
@@ -1816,13 +1815,13 @@
                 <div class="section-deliverable-body">
                   <h4>Open benchmark suite</h4>
                   <p>
-                    18 benchmarks across physical (medical, legal,
-                    financial), psychological (emotional dependence, mental
-                    health, character), and societal (autonomy, learning,
-                    meaning) domains. Includes original benchmarks
-                    (Emotional Dependence, Autonomy Preserving, Spillunder
-                    Effect) and adapted components from HealthBench,
-                    VERA-MH, KORA Bench, HumaneBench, and Flourishing AI.
+                    18 benchmarks across physical (medical, legal, financial),
+                    psychological (emotional dependence, mental health,
+                    character), and societal (autonomy, learning, meaning)
+                    domains. Includes original benchmarks (Emotional Dependence,
+                    Autonomy Preserving, Spillunder Effect) and adapted
+                    components from HealthBench, VERA-MH, KORA Bench,
+                    HumaneBench, and Flourishing AI.
                   </p>
                 </div>
               </div>
@@ -1831,11 +1830,11 @@
                   <h4>Public-facing nutrition labels</h4>
                   <p>
                     Audience-adapted profiles for parents, educators,
-                    policymakers, and developers. Labels show what was
-                    tested, which populations were represented, and where
-                    the benchmark is least informative, e.g.,
-                    distinguishing GPT-4o's harm-avoidance score (0.720)
-                    from its positive-behavior score (0.504).
+                    policymakers, and developers. Labels show what was tested,
+                    which populations were represented, and where the benchmark
+                    is least informative, e.g., distinguishing GPT-4o's
+                    harm-avoidance score (0.720) from its positive-behavior
+                    score (0.504).
                   </p>
                 </div>
               </div>
@@ -1844,14 +1843,13 @@
                   <h4>Open submission</h4>
                   <p>
                     Any benchmark relating to human flourishing is eligible
-                    autonomy, competence, relatedness, learning,
-                    sycophancy, emotional dependence, deception, dark
-                    patterns. Non-technical experts submit a construct
-                    specification; the pipeline handles scenario
-                    generation, simulation, and scoring. Submissions ship
-                    with psychometric tooling: nomological network
-                    analysis, comprehensiveness checks, run-to-run
-                    reliability.
+                    autonomy, competence, relatedness, learning, sycophancy,
+                    emotional dependence, deception, dark patterns.
+                    Non-technical experts submit a construct specification; the
+                    pipeline handles scenario generation, simulation, and
+                    scoring. Submissions ship with psychometric tooling:
+                    nomological network analysis, comprehensiveness checks,
+                    run-to-run reliability.
                   </p>
                 </div>
               </div>
@@ -1884,20 +1882,19 @@
                 rel="noopener noreferrer"
                 >AHA Flourishing Workshop</a
               >
-              at MIT in October 2025, supported by the Omidyar Network,
-              which convened 80 experts from over 40 institutions. Prior
-              AHA research on AI companion chatbots was cited as a key
-              inspiration for <strong>California Senate Bill 243</strong>.
+              at MIT in October 2025, supported by the Omidyar Network, which
+              convened 80 experts from over 40 institutions. Prior AHA research
+              on AI companion chatbots was cited as a key inspiration for
+              <strong>California Senate Bill 243</strong>.
             </p>
 
             <div class="section-divider"></div>
 
             <h2 class="section-heading">Launch</h2>
             <p class="section-body">
-              <strong>April 28, 2026.</strong> Seeking philanthropic support
-              to expand coverage of underrepresented communities and
-              languages, and to extend evaluation from base models to
-              deployed products.
+              <strong>April 28, 2026.</strong> Seeking philanthropic support to
+              expand coverage of underrepresented communities and languages, and
+              to extend evaluation from base models to deployed products.
             </p>
           </div>
         </div>
@@ -1909,15 +1906,15 @@
               <h1 class="section-hero-title">How We Measure</h1>
               <p class="section-hero-subtitle">
                 A four-stage pipeline that turns expert-submitted ideas into
-                rigorous, multi-turn evaluations, with built-in checks to
-                catch our own blind spots.
+                rigorous, multi-turn evaluations, with built-in checks to catch
+                our own blind spots.
               </p>
             </div>
 
             <h2 class="section-heading">Three Domains of Human Impact</h2>
             <p class="section-body">
-              We group what we measure into three areas, drawn from
-              psychology, capability theory, and clinical research.
+              We group what we measure into three areas, drawn from psychology,
+              capability theory, and clinical research.
             </p>
 
             <div class="section-deliverables">
@@ -1934,9 +1931,9 @@
                 <div class="section-deliverable-body">
                   <h4>Psychological</h4>
                   <p>
-                    Emotional dependence, mental health, and character.
-                    Includes how the AI shapes a user's relationship with
-                    themselves and others.
+                    Emotional dependence, mental health, and character. Includes
+                    how the AI shapes a user's relationship with themselves and
+                    others.
                   </p>
                 </div>
               </div>
@@ -1944,17 +1941,17 @@
                 <div class="section-deliverable-body">
                   <h4>Societal</h4>
                   <p>
-                    Autonomy, learning, meaning, and purpose. The effects
-                    that ripple beyond a single user into beliefs, norms,
-                    and institutions.
+                    Autonomy, learning, meaning, and purpose. The effects that
+                    ripple beyond a single user into beliefs, norms, and
+                    institutions.
                   </p>
                 </div>
               </div>
             </div>
 
             <p class="section-body" style="margin-top: 16px">
-              The current release covers 14 frontier models, 18 benchmarks,
-              and 375 (benchmark, metric) pairs.
+              The current release covers 14 frontier models, 18 benchmarks, and
+              375 (benchmark, metric) pairs.
             </p>
 
             <div class="section-divider"></div>
@@ -1970,10 +1967,10 @@
                 <div class="section-deliverable-body">
                   <h4>Construct validity</h4>
                   <p>
-                    Does the benchmark actually measure what it claims to?
-                    We use nomological network analysis to confirm the
-                    measure captures the intended idea, and
-                    comprehensiveness checks to find gaps in coverage.
+                    Does the benchmark actually measure what it claims to? We
+                    use nomological network analysis to confirm the measure
+                    captures the intended idea, and comprehensiveness checks to
+                    find gaps in coverage.
                   </p>
                 </div>
               </div>
@@ -1982,8 +1979,8 @@
                   <h4>Multi-turn and dynamic</h4>
                   <p>
                     Real harms build over time. Each scenario runs across 6
-                    turns, and scenarios are generated fresh so models
-                    cannot memorize them.
+                    turns, and scenarios are generated fresh so models cannot
+                    memorize them.
                   </p>
                 </div>
               </div>
@@ -1991,10 +1988,10 @@
                 <div class="section-deliverable-body">
                   <h4>Demographic stratification</h4>
                   <p>
-                    Scenarios vary across age (child/teen 6 to 17, adult
-                    18+) and gender (male, female, non-binary), using a
-                    sampling approach that gives broad coverage without
-                    exploding into thousands of combinations.
+                    Scenarios vary across age (child/teen 6 to 17, adult 18+)
+                    and gender (male, female, non-binary), using a sampling
+                    approach that gives broad coverage without exploding into
+                    thousands of combinations.
                   </p>
                 </div>
               </div>
@@ -2002,8 +1999,8 @@
                 <div class="section-deliverable-body">
                   <h4>Test-retest reliability</h4>
                   <p>
-                    If you run the same benchmark twice, do you get the
-                    same answer? We measure this directly.
+                    If you run the same benchmark twice, do you get the same
+                    answer? We measure this directly.
                   </p>
                 </div>
               </div>
@@ -2011,9 +2008,9 @@
                 <div class="section-deliverable-body">
                   <h4>Ranking stability</h4>
                   <p>
-                    A benchmark is only useful if its rankings hold up when
-                    we swap out the models doing the generating,
-                    simulating, and judging.
+                    A benchmark is only useful if its rankings hold up when we
+                    swap out the models doing the generating, simulating, and
+                    judging.
                   </p>
                 </div>
               </div>
@@ -2040,11 +2037,10 @@
                   <p>
                     A generator model (Claude Sonnet 4) takes an expert
                     submission and writes the metrics and scenarios. Each
-                    scenario is built around a single metric to keep the
-                    test focused. Scenarios include a persona, a surface
-                    goal, a hidden adversarial objective, and landmark
-                    instructions like "at turn 4, ask the AI to be your
-                    best friend."
+                    scenario is built around a single metric to keep the test
+                    focused. Scenarios include a persona, a surface goal, a
+                    hidden adversarial objective, and landmark instructions like
+                    "at turn 4, ask the AI to be your best friend."
                   </p>
                 </div>
               </div>
@@ -2052,11 +2048,10 @@
                 <div class="section-deliverable-body">
                   <h4>2. Running the conversation</h4>
                   <p>
-                    A user-simulator model (Claude Sonnet 4) plays the
-                    human across 6 turns. It acts like a natural
-                    conversational partner on the surface while pushing the
-                    hidden objective underneath, escalating pressure as the
-                    conversation unfolds.
+                    A user-simulator model (Claude Sonnet 4) plays the human
+                    across 6 turns. It acts like a natural conversational
+                    partner on the surface while pushing the hidden objective
+                    underneath, escalating pressure as the conversation unfolds.
                   </p>
                 </div>
               </div>
@@ -2064,13 +2059,12 @@
                 <div class="section-deliverable-body">
                   <h4>3. Scoring the result</h4>
                   <p>
-                    A judge model (GPT-5.4-mini) reads the full
-                    conversation and returns a yes or no on each metric.
-                    We picked this judge after testing five candidates for
-                    run-to-run consistency. We dropped Claude Sonnet 4.6
-                    because it passed almost everything regardless of
-                    quality, and GPT-5.4 because its results were
-                    unstable.
+                    A judge model (GPT-5.4-mini) reads the full conversation and
+                    returns a yes or no on each metric. We picked this judge
+                    after testing five candidates for run-to-run consistency. We
+                    dropped Claude Sonnet 4.6 because it passed almost
+                    everything regardless of quality, and GPT-5.4 because its
+                    results were unstable.
                   </p>
                 </div>
               </div>
@@ -2078,12 +2072,11 @@
                 <div class="section-deliverable-body">
                   <h4>4. Aggregating into a score</h4>
                   <p>
-                    Some metrics measure good behavior (where "yes" is a
-                    pass) and others measure harmful behavior (where "yes"
-                    is a failure). We combine them according to each
-                    metric's polarity, average across scenarios, and
-                    invert so that higher scores always mean better
-                    behavior.
+                    Some metrics measure good behavior (where "yes" is a pass)
+                    and others measure harmful behavior (where "yes" is a
+                    failure). We combine them according to each metric's
+                    polarity, average across scenarios, and invert so that
+                    higher scores always mean better behavior.
                   </p>
                 </div>
               </div>
@@ -2093,8 +2086,8 @@
 
             <h2 class="section-heading">How We Validated the Pipeline</h2>
             <p class="section-body">
-              We stress-tested the pipeline against five things that could
-              bias results.
+              We stress-tested the pipeline against five things that could bias
+              results.
             </p>
 
             <div class="section-deliverables">
@@ -2102,12 +2095,11 @@
                 <div class="section-deliverable-body">
                   <h4>Could Claude be inflating its own scores?</h4>
                   <p>
-                    No. When we swapped the metric generator from Claude
-                    to GPT-5.4, Claude's lead grew, not shrank (from
-                    +5.7 pp to +27.0 pp on humanebench). Wilcoxon p =
-                    0.003 across 18 pairs. The test does catch
-                    self-generation bias when it exists, just not for
-                    Claude in this case.
+                    No. When we swapped the metric generator from Claude to
+                    GPT-5.4, Claude's lead grew, not shrank (from +5.7 pp to
+                    +27.0 pp on humanebench). Wilcoxon p = 0.003 across 18
+                    pairs. The test does catch self-generation bias when it
+                    exists, just not for Claude in this case.
                   </p>
                 </div>
               </div>
@@ -2115,10 +2107,10 @@
                 <div class="section-deliverable-body">
                   <h4>Could the user-simulator be playing favorites?</h4>
                   <p>
-                    No. Rankings stay stable across Claude, GPT-5.4, and
-                    Llama simulators (ρ = 0.977 on health-bench, 0.752 on
-                    humanebench). Same-family simulators turn out to be
-                    tougher on other models, not friendlier to their own.
+                    No. Rankings stay stable across Claude, GPT-5.4, and Llama
+                    simulators (ρ = 0.977 on health-bench, 0.752 on
+                    humanebench). Same-family simulators turn out to be tougher
+                    on other models, not friendlier to their own.
                   </p>
                 </div>
               </div>
@@ -2126,13 +2118,12 @@
                 <div class="section-deliverable-body">
                   <h4>Is the judge reliable?</h4>
                   <p>
-                    Yes. Run-to-run agreement (Fleiss' κ) lands between
-                    0.64 and 0.78, which counts as "substantial." Pass
-                    rates drift by less than 0.22 pp between runs.
-                    Different judges produce different absolute pass rates
-                    (55 to 85 percent), but the rankings they produce
-                    agree at ρ = 0.61 across GPT-5.4-mini, Claude Opus
-                    4.7, and Llama 4 Maverick.
+                    Yes. Run-to-run agreement (Fleiss' κ) lands between 0.64 and
+                    0.78, which counts as "substantial." Pass rates drift by
+                    less than 0.22 pp between runs. Different judges produce
+                    different absolute pass rates (55 to 85 percent), but the
+                    rankings they produce agree at ρ = 0.61 across GPT-5.4-mini,
+                    Claude Opus 4.7, and Llama 4 Maverick.
                   </p>
                 </div>
               </div>
@@ -2140,9 +2131,9 @@
                 <div class="section-deliverable-body">
                   <h4>Are we sampling enough conversations?</h4>
                   <p>
-                    Yes. Across 56,700 triples, 78.1% were unanimous
-                    across three independent runs. A single sample matches
-                    the three-sample majority vote at ρ = 0.982.
+                    Yes. Across 56,700 triples, 78.1% were unanimous across
+                    three independent runs. A single sample matches the
+                    three-sample majority vote at ρ = 0.982.
                   </p>
                 </div>
               </div>
@@ -2150,9 +2141,9 @@
                 <div class="section-deliverable-body">
                   <h4>Does the adversarial design actually do anything?</h4>
                   <p>
-                    Yes. A 2x2 test of adversarial objective and
-                    perfunctory mode (the typo simulation) shows clear
-                    interaction effects, though rankings stay the same.
+                    Yes. A 2x2 test of adversarial objective and perfunctory
+                    mode (the typo simulation) shows clear interaction effects,
+                    though rankings stay the same.
                   </p>
                 </div>
               </div>
@@ -2162,20 +2153,19 @@
 
             <h2 class="section-heading">Measuring Demographic Sensitivity</h2>
             <p class="section-body">
-              To check whether models treat different users differently, we
-              ran per-model regressions of failure rate on gender, age, and
-              their interaction, with fixed effects controlling for metric
-              difficulty and scenario content. The reference user is a
-              female adult.
+              To check whether models treat different users differently, we ran
+              per-model regressions of failure rate on gender, age, and their
+              interaction, with fixed effects controlling for metric difficulty
+              and scenario content. The reference user is a female adult.
             </p>
             <p class="section-body" style="margin-top: 12px">
-              Pooling across all models, child and teen personas elicit
-              2.5 pp more emotional-dependence failures than adults
-              (p &lt; 0.001), holding scenario content constant.
-              Demographics explain less than 0.4% of variance once metric
-              and scenario are accounted for, so the size is small. But the
-              direction is consistent across 12 of 14 models, and it points
-              the wrong way: more harmful behavior toward minors, not less.
+              Pooling across all models, child and teen personas elicit 2.5 pp
+              more emotional-dependence failures than adults (p &lt; 0.001),
+              holding scenario content constant. Demographics explain less than
+              0.4% of variance once metric and scenario are accounted for, so
+              the size is small. But the direction is consistent across 12 of 14
+              models, and it points the wrong way: more harmful behavior toward
+              minors, not less.
             </p>
           </div>
         </div>
@@ -2302,7 +2292,6 @@
             </p>
           </div>
         </div>
-
 
         <!-- ===== FEEDBACK SECTION ===== -->
         <div id="section-feedback" class="tab-section" hidden>
@@ -3263,7 +3252,6 @@
           return { constructs: themes };
         }
 
-
         function escHtml(s) {
           return String(s).replace(/[&<>"']/g, function (c) {
             return {
@@ -3291,15 +3279,24 @@
         }
 
         function themeAvgBenchmarkScore(c) {
-          var scores = typeof window.__getBenchmarkScores === "function"
-            ? window.__getBenchmarkScores()
-            : {};
-          var metricIds = (c.metrics || []).map(function (m) { return m.id; });
+          var scores =
+            typeof window.__getBenchmarkScores === "function"
+              ? window.__getBenchmarkScores()
+              : {};
+          var metricIds = (c.metrics || []).map(function (m) {
+            return m.id;
+          });
           var vals = metricIds
-            .map(function (id) { return scores[id]; })
-            .filter(function (v) { return v != null; });
+            .map(function (id) {
+              return scores[id];
+            })
+            .filter(function (v) {
+              return v != null;
+            });
           return vals.length
-            ? vals.reduce(function (a, b) { return a + b; }, 0) / vals.length
+            ? vals.reduce(function (a, b) {
+                return a + b;
+              }, 0) / vals.length
             : null;
         }
 
@@ -3313,7 +3310,8 @@
           FOCUS_CONSTRUCTS.forEach(function (c, idx) {
             var benchmarkAvg = themeAvgBenchmarkScore(c);
             var displayScore = benchmarkAvg != null ? benchmarkAvg : null;
-            var cls = displayScore != null ? scoreToClass(displayScore) : "neutral";
+            var cls =
+              displayScore != null ? scoreToClass(displayScore) : "neutral";
             var scoreStr = displayScore != null ? fmtScore(displayScore) : "—";
             html +=
               '<div class="area-card smart-focus-card" data-construct-idx="' +
@@ -3360,10 +3358,17 @@
                   c.metrics &&
                   c.metrics.length
                 ) {
-                  var benchScores = typeof window.__getBenchmarkScores === "function"
-                    ? window.__getBenchmarkScores() : {};
+                  var benchScores =
+                    typeof window.__getBenchmarkScores === "function"
+                      ? window.__getBenchmarkScores()
+                      : {};
                   var metricItems = c.metrics.map(function (m) {
-                    return { id: m.id, name: m.text, score: benchScores[m.id] != null ? benchScores[m.id] : m.score };
+                    return {
+                      id: m.id,
+                      name: m.text,
+                      score:
+                        benchScores[m.id] != null ? benchScores[m.id] : m.score,
+                    };
                   });
                   window.__openThemeMetrics(
                     c.text,
@@ -3453,7 +3458,8 @@
           var focusMetricIds = [];
           FOCUS_CONSTRUCTS.forEach(function (c) {
             (c.metrics || []).forEach(function (m) {
-              if (focusMetricIds.indexOf(m.id) === -1) focusMetricIds.push(m.id);
+              if (focusMetricIds.indexOf(m.id) === -1)
+                focusMetricIds.push(m.id);
             });
           });
           if (typeof window.__renderSmartRankings === "function") {
@@ -3567,7 +3573,9 @@
             var constructs = FOCUS_CONSTRUCTS.map(function (c) {
               return {
                 text: c.text,
-                benchmark: (c.metrics && c.metrics[0] && c.metrics[0].benchmark) || "benchmark",
+                benchmark:
+                  (c.metrics && c.metrics[0] && c.metrics[0].benchmark) ||
+                  "benchmark",
                 score: 0,
                 icon: c.icon,
                 summary: c.description || "",
@@ -3575,16 +3583,25 @@
             });
             // Metric IDs per theme, for per-model construct score computation
             var themeMetricIds = FOCUS_CONSTRUCTS.map(function (c) {
-              return (c.metrics || []).map(function (m) { return m.id; });
+              return (c.metrics || []).map(function (m) {
+                return m.id;
+              });
             });
-            var smartRanked = typeof window.__getSmartRanked === "function" ? window.__getSmartRanked() : [];
-            var topModels = smartRanked.slice(0, 3).map(function (m) {
-              var constructScores = typeof window.__getConstructScores === "function"
-                ? window.__getConstructScores(m.id, themeMetricIds)
-                : themeMetricIds.map(function () { return 0; });
-              var worstAreas = typeof window.__getWorstSubareas === "function"
-                ? window.__getWorstSubareas(m.id, 3)
+            var smartRanked =
+              typeof window.__getSmartRanked === "function"
+                ? window.__getSmartRanked()
                 : [];
+            var topModels = smartRanked.slice(0, 3).map(function (m) {
+              var constructScores =
+                typeof window.__getConstructScores === "function"
+                  ? window.__getConstructScores(m.id, themeMetricIds)
+                  : themeMetricIds.map(function () {
+                      return 0;
+                    });
+              var worstAreas =
+                typeof window.__getWorstSubareas === "function"
+                  ? window.__getWorstSubareas(m.id, 3)
+                  : [];
               return {
                 name: m.name,
                 provider: m.provider,
