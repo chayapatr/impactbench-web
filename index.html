@@ -3700,14 +3700,15 @@
           if (lbSubtitle)
             lbSubtitle.textContent = "Ranked on your selected focus areas.";
 
-          var focusSubareaIds = [];
+          // Rank on the actual Casper metric IDs — direct and reliable
+          var focusMetricIds = [];
           FOCUS_CONSTRUCTS.forEach(function (c) {
-            (c.subareas || []).forEach(function (id) {
-              if (focusSubareaIds.indexOf(id) === -1) focusSubareaIds.push(id);
+            (c.metrics || []).forEach(function (m) {
+              if (focusMetricIds.indexOf(m.id) === -1) focusMetricIds.push(m.id);
             });
           });
           if (typeof window.__renderSmartRankings === "function") {
-            window.__renderSmartRankings(focusSubareaIds);
+            window.__renderSmartRankings(focusMetricIds);
           }
           renderFocusAreasPanel();
           // Sunburst arcs may render asynchronously; retry briefly

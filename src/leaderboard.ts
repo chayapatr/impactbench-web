@@ -239,7 +239,7 @@ export function selectLeaderboardModel(modelId: string): void {
 
 // ===== Smart ranking (by focus subarea IDs) =====
 
-export function renderSmartRankings(subareaIds: string[]): void {
+export function renderSmartRankings(metricIds: string[]): void {
   const list = document.getElementById('leaderboard-list');
   if (!list) return;
 
@@ -247,14 +247,9 @@ export function renderSmartRankings(subareaIds: string[]): void {
     .map((m) => {
       const key = makeBenchmarkKey(m.id, _age);
       const scores = _benchmarkData[key];
-      if (!scores) return { model: m, avg: 0 };
-      const metricIds: string[] = [];
-      for (const area of _taxonomy.areas)
-        for (const sub of area.subareas)
-          if (subareaIds.includes(sub.id))
-            sub.metrics.forEach((metric) => metricIds.push(metric.id));
-      if (!metricIds.length) return { model: m, avg: 0 };
-      const vals = metricIds.map((id) => scores[id] ?? 0);
+      if (!scores || !metricIds.length) return { model: m, avg: 0 };
+      const vals = metricIds.map((id) => scores[id] ?? null).filter((v) => v !== null) as number[];
+      if (!vals.length) return { model: m, avg: 0 };
       const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
       return { model: m, avg };
     })
