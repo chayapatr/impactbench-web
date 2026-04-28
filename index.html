@@ -1687,9 +1687,6 @@
         <button class="about-subtab" data-subtab="team">
           <i class="fa-solid fa-people-group"></i> Team
         </button>
-        <button class="about-subtab" data-subtab="summary">
-          <i class="fa-solid fa-file-lines"></i> Summary
-        </button>
       </aside>
       <div class="about-content">
         <!-- ===== ABOUT SECTION ===== -->
@@ -1725,87 +1722,144 @@
             </section>
 
             <div class="section-hero">
-              <h1 class="section-hero-title">About the Project</h1>
+              <h1 class="section-hero-title">AI Human Impact Bench</h1>
               <p class="section-hero-subtitle">
-                Today's AI systems are evaluated on technical performance alone.
-                No widely adopted framework measures whether AI actually
-                benefits the people who use it. We're building the first open
-                benchmark that does.
+                A multi-turn benchmark suite measuring how AI systems affect
+                users across physical, psychological, and societal dimensions.
               </p>
             </div>
 
+            <h2 class="section-heading" hidden>The Problem</h2>
+            <p class="section-body">
+              A review of 445 ML/NLP benchmarks found 16%
+              included statistical testing and 21.7% had no definition of
+              the construct they claimed to measure. Models that pass
+              conventional safety benchmarks produce negative user outcomes
+              in over 70% of high-risk scenarios. Existing benchmarks are
+              mostly single-turn and static. Real harms emerge across many
+              sessions over weeks or months.
+            </p>
+
+            <div class="section-divider"></div>
+
+            <h2 class="section-heading">What We Built</h2>
+            <p class="section-body">A pipeline with four stages:</p>
+            <ol class="section-body about-ordered">
+              <li>Expert-submitted constructs are decomposed into metrics.</li>
+              <li>
+                Metrics expand into 6-turn scenarios with latent adversarial
+                user goals, stratified by age and gender.
+              </li>
+              <li>
+                A user-simulator model probes a target model; a judge model
+                returns binary verdicts.
+              </li>
+              <li>
+                Results pass through a psychometric audit: test-retest
+                reliability, generator/judge swaps, run-to-run consistency.
+              </li>
+            </ol>
+            <p class="section-body" style="margin-top: 12px">
+              Our current version evaluates 14 frontier models according to
+              18 benchmarks and 375 metric pairs.
+            </p>
+
+            <div class="section-divider"></div>
+
+            <h2 class="section-heading">Findings</h2>
+
             <div class="section-cards-grid">
-              <div class="section-card section-card-highlight">
-                <div class="section-card-icon">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <h3>The Challenge</h3>
+              <div class="section-card">
+                <h3>Harm avoidance ≠ flourishing</h3>
                 <p>
-                  As AI is increasingly present in our daily lives, in how we
-                  choose to work and relate to one another, there has been no
-                  better time to evaluate AI's impact on our lives as a whole.
-                  Even top-performing AI models produce harmful outcomes in over
-                  70% of high-risk scenarios. Real harms build up across long,
-                  multi-turn conversations, not single prompts. And while
-                  researchers have started consolidating AI benchmarks, none of
-                  them measure human flourishing.
+                  Every model scored higher on harm-avoidance metrics than
+                  on actively beneficial ones. Gap range:
+                  <strong>+3.9 pp</strong> (Claude Opus 4.6) to
+                  <strong>+21.6 pp</strong> (GPT-4o).
                 </p>
               </div>
               <div class="section-card">
-                <div class="section-card-icon">
-                  <i class="fa-solid fa-flask"></i>
-                </div>
-                <h3>Our Approach</h3>
+                <h3>Demographic sensitivity</h3>
                 <p>
-                  We are researchers from <strong>MIT Media Lab</strong>,
-                  <strong>USC</strong>, and
-                  <strong>UC Berkeley</strong> collaborating to evaluate the
-                  impact of AI across the physical, societal, and psychological
-                  domains of our lives. Each metric is tested through multi-turn
-                  simulations with realistic, demographically varied users, and
-                  validated by domain experts on our team.
+                  <strong>12 of 14 models</strong> showed more
+                  emotional-dependence behaviors toward child and teen
+                  personas than adults, holding scenario content constant.
+                  Largest effects: Qwen3 80B (+0.049), Mistral Small 3.2
+                  (+0.044), DeepSeek V3.2 (+0.042).
+                </p>
+              </div>
+              <div class="section-card">
+                <h3>Construct matters more than model</h3>
+                <p>
+                  Humane Bench (mean 0.373), Cognitive Bias (0.467), and
+                  Human Agency (0.469) were uniformly hard. VERA-MH (0.777)
+                  and User Bias (0.765) were uniformly easy.
+                </p>
+              </div>
+              <div class="section-card">
+                <h3>Rankings are stable</h3>
+                <p>
+                  Rankings held across generator, simulator, and judge
+                  swaps. Run-to-run Fleiss' κ = 0.64 to 0.78. 78.1% of
+                  conversation triples were unanimous. A single sample
+                  matched the three-sample majority vote at ρ = 0.982.
                 </p>
               </div>
             </div>
 
             <div class="section-divider"></div>
 
-            <h2 class="section-heading">
-              <i class="fa-solid fa-network-wired"></i> Origins &amp;
-              Collaborators
-            </h2>
-            <p class="section-body">
-              This work began at an
-              <a
-                class="section-inline-link"
-                href="https://www.media.mit.edu/events/aha-flourishing-workshop/"
-                target="_blank"
-                rel="noopener noreferrer"
-                >AHA Flourishing Workshop</a
-              >
-              held at MIT in October 2025 with support from the Omidyar Network,
-              where we convened
-              <strong
-                >80 interdisciplinary experts from over 40 institutions</strong
-              >
-              to address this gap. Through intensive collaboration, participants
-              developed novel evaluation frameworks for assessing AI's impact on
-              human flourishing across three core dimensions.
-            </p>
-            <p class="section-body" style="margin-top: 10px">
-              The workshop produced a
-              <a
-                class="section-inline-link"
-                href="https://www.media.mit.edu/projects/report-benchmarks-for-human-flourishing-with-ai/overview/"
-                target="_blank"
-                rel="noopener noreferrer"
-                >report on benchmarks for human flourishing with AI</a
-              >
-              and a community-driven initiative to design human-centered AI
-              benchmarks, including <strong>PsychoRisk Bench</strong> (our MIT
-              effort), <strong>Humane Bench</strong>, and more.
-            </p>
+            <h2 class="section-heading">Deliverables</h2>
 
+            <div class="section-deliverables">
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Open benchmark suite</h4>
+                  <p>
+                    18 benchmarks across physical (medical, legal,
+                    financial), psychological (emotional dependence, mental
+                    health, character), and societal (autonomy, learning,
+                    meaning) domains. Includes original benchmarks
+                    (Emotional Dependence, Autonomy Preserving, Spillunder
+                    Effect) and adapted components from HealthBench,
+                    VERA-MH, KORA Bench, HumaneBench, and Flourishing AI.
+                  </p>
+                </div>
+              </div>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Public-facing nutrition labels</h4>
+                  <p>
+                    Audience-adapted profiles for parents, educators,
+                    policymakers, and developers. Labels show what was
+                    tested, which populations were represented, and where
+                    the benchmark is least informative, e.g.,
+                    distinguishing GPT-4o's harm-avoidance score (0.720)
+                    from its positive-behavior score (0.504).
+                  </p>
+                </div>
+              </div>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Open submission</h4>
+                  <p>
+                    Any benchmark relating to human flourishing is eligible
+                    autonomy, competence, relatedness, learning,
+                    sycophancy, emotional dependence, deception, dark
+                    patterns. Non-technical experts submit a construct
+                    specification; the pipeline handles scenario
+                    generation, simulation, and scoring. Submissions ship
+                    with psychometric tooling: nomological network
+                    analysis, comprehensiveness checks, run-to-run
+                    reliability.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <h2 class="section-heading">Collaborators</h2>
             <div class="section-collab-list">
               <div class="section-collab-item">
                 <i class="fa-solid fa-university"></i> MIT Media Lab
@@ -1815,100 +1869,36 @@
                 Institute
               </div>
               <div class="section-collab-item">
-                <i class="fa-solid fa-graduation-cap"></i> University of
-                Southern California
+                <i class="fa-solid fa-graduation-cap"></i> USC Neely Center
               </div>
               <div class="section-collab-item">
                 <i class="fa-solid fa-graduation-cap"></i> UC Berkeley
               </div>
             </div>
+            <p class="section-body" style="margin-top: 14px">
+              The project began at the
+              <a
+                class="section-inline-link"
+                href="https://www.media.mit.edu/events/aha-flourishing-workshop/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >AHA Flourishing Workshop</a
+              >
+              at MIT in October 2025, supported by the Omidyar Network,
+              which convened 80 experts from over 40 institutions. Prior
+              AHA research on AI companion chatbots was cited as a key
+              inspiration for <strong>California Senate Bill 243</strong>.
+            </p>
 
             <div class="section-divider"></div>
 
-            <h2 class="section-heading">
-              <i class="fa-solid fa-box-open"></i> Three Deliverables
-            </h2>
-
-            <div class="section-deliverables">
-              <div class="section-deliverable">
-                <div class="section-deliverable-num">01</div>
-                <div class="section-deliverable-body">
-                  <h4>Open Benchmark Suite</h4>
-                  <p>
-                    A comprehensive, publicly available set of evaluation
-                    scenarios spanning all six flourishing domains. Each
-                    benchmark follows a rigorous structure: a realistic
-                    multi-turn interaction, clear definitions of positive and
-                    negative model behaviors, and grounding in peer-reviewed
-                    literature from learning science, psychology, and
-                    human-computer interaction.
-                  </p>
-                  <p style="margin-top: 8px">
-                    The team is developing original benchmarks and aggregating
-                    existing ones, including <em>SycophancyBench</em>,
-                    <em>CoraBench</em> (focused on children), and OpenAI's
-                    <em>HealthBench</em>, to build a unified, independent
-                    evaluation controlled by no single company.
-                  </p>
-                </div>
-              </div>
-              <div class="section-deliverable">
-                <div class="section-deliverable-num">02</div>
-                <div class="section-deliverable-body">
-                  <h4>Public-Facing "Nutrition Label" for AI</h4>
-                  <p>
-                    Technical scores alone do not help parents, teachers, or
-                    policymakers make informed decisions. This deliverable
-                    translates benchmark results into accessible, human-readable
-                    profiles analogous to nutrition labels on food packaging or
-                    Common Sense Media ratings.
-                  </p>
-                  <p style="margin-top: 8px">
-                    A parent asking "Is this AI safe for my child?" or a teacher
-                    asking "Does this tool support learning?" receives a clear,
-                    contextualized answer. The label adapts to its audience,
-                    offering different views for end users, AI developers, and
-                    policymakers.
-                  </p>
-                </div>
-              </div>
-              <div class="section-deliverable">
-                <div class="section-deliverable-num">03</div>
-                <div class="section-deliverable-body">
-                  <h4>Open Submission &amp; Community Participation</h4>
-                  <p>
-                    Any benchmark relating to human psychological well-being or
-                    flourishing is eligible for inclusion, whether it addresses
-                    positive outcomes such as autonomy and competence, or
-                    negative outcomes such as codependence and psychological
-                    distress.
-                  </p>
-                  <p style="margin-top: 8px">
-                    Submissions follow a standardized structure covering
-                    benchmark justification, scenario details, and scoring
-                    criteria. The project is designed as a living resource,
-                    welcoming contributions from interdisciplinary experts
-                    worldwide.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <div class="section-callout">
-              <i class="fa-solid fa-calendar-star"></i>
-              <div>
-                <strong>Public Launch: April 28, 2026</strong>
-                <p>
-                  The initiative is seeking philanthropic support to execute a
-                  public launch. AHA's research has already shaped policy, the
-                  team's findings on AI companion chatbots were cited as key
-                  inspiration in <strong>California Senate Bill 243</strong>,
-                  protecting children from harmful AI relationships.
-                </p>
-              </div>
-            </div>
+            <h2 class="section-heading">Launch</h2>
+            <p class="section-body">
+              <strong>April 28, 2026.</strong> Seeking philanthropic support
+              to expand coverage of underrepresented communities and
+              languages, and to extend evaluation from base models to
+              deployed products.
+            </p>
           </div>
         </div>
 
@@ -1916,160 +1906,124 @@
         <div id="section-methodology" class="tab-section" hidden>
           <div class="tab-section-inner">
             <div class="section-hero">
-              <div class="section-hero-tag">
-                <i class="fa-solid fa-flask"></i> How We Measure
-              </div>
-              <h1 class="section-hero-title">Methodology</h1>
+              <h1 class="section-hero-title">How We Measure</h1>
               <p class="section-hero-subtitle">
-                Building benchmarks that measure AI's impact on human
-                flourishing requires a rigorous, multi-step evaluation process
-                grounded in both psychological science and AI engineering.
+                A four-stage pipeline that turns expert-submitted ideas into
+                rigorous, multi-turn evaluations, with built-in checks to
+                catch our own blind spots.
               </p>
             </div>
 
-            <h2 class="section-heading">
-              <i class="fa-solid fa-sitemap"></i> Six Dimensions of Human
-              Flourishing
-            </h2>
+            <h2 class="section-heading">Three Domains of Human Impact</h2>
             <p class="section-body">
-              Drawing on psychology, education research, clinical science, and
-              human-computer interaction, the AHA team has developed a framework
-              that evaluates AI across six core domains of human experience.
+              We group what we measure into three areas, drawn from
+              psychology, capability theory, and clinical research.
             </p>
 
-            <div class="section-domains-grid">
-              <div class="section-domain-card">
-                <div class="section-domain-num">01</div>
-                <h4>Happiness &amp; Life Satisfaction</h4>
-                <p>
-                  Does the AI contribute to users' subjective well-being,
-                  positive affect, and overall sense of life satisfaction?
-                </p>
+            <div class="section-deliverables">
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Physical</h4>
+                  <p>
+                    High-stakes practical questions: medical advice, legal
+                    advice, financial advice, healthcare decisions.
+                  </p>
+                </div>
               </div>
-              <div class="section-domain-card">
-                <div class="section-domain-num">02</div>
-                <h4>Mental &amp; Physical Health</h4>
-                <p>
-                  Does the AI support mental health, encourage healthy
-                  behaviors, and avoid fostering anxiety, dependency, or harmful
-                  patterns?
-                </p>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Psychological</h4>
+                  <p>
+                    Emotional dependence, mental health, and character.
+                    Includes how the AI shapes a user's relationship with
+                    themselves and others.
+                  </p>
+                </div>
               </div>
-              <div class="section-domain-card">
-                <div class="section-domain-num">03</div>
-                <h4>Meaning &amp; Purpose</h4>
-                <p>
-                  Does the AI help users find meaning, pursue goals, and develop
-                  a sense of direction and personal significance?
-                </p>
-              </div>
-              <div class="section-domain-card">
-                <div class="section-domain-num">04</div>
-                <h4>Character &amp; Virtue</h4>
-                <p>
-                  Does the AI support the development of moral character,
-                  honesty, integrity, and ethical reasoning?
-                </p>
-              </div>
-              <div class="section-domain-card">
-                <div class="section-domain-num">05</div>
-                <h4>Close Social Relationships</h4>
-                <p>
-                  Does the AI strengthen human connections, support healthy
-                  relationships, and avoid replacing genuine social bonds?
-                </p>
-              </div>
-              <div class="section-domain-card">
-                <div class="section-domain-num">06</div>
-                <h4>Financial &amp; Material Stability</h4>
-                <p>
-                  Does the AI help users achieve economic security and practical
-                  stability rather than fostering dependence or vulnerability?
-                </p>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Societal</h4>
+                  <p>
+                    Autonomy, learning, meaning, and purpose. The effects
+                    that ripple beyond a single user into beliefs, norms,
+                    and institutions.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <p class="section-body section-attribution">
-              Framework informed by the
-              <a
-                href="https://hfh.fas.harvard.edu/measuring-flourishing"
-                target="_blank"
-                rel="noopener"
-                >Harvard Human Flourishing Program</a
-              >.
+            <p class="section-body" style="margin-top: 16px">
+              The current release covers 14 frontier models, 18 benchmarks,
+              and 375 (benchmark, metric) pairs.
             </p>
 
             <div class="section-divider"></div>
 
-            <h2 class="section-heading">
-              <i class="fa-solid fa-check-double"></i> What Makes a Good
-              Benchmark?
-            </h2>
+            <h2 class="section-heading">What Makes a Good Benchmark</h2>
             <p class="section-body">
-              Not all benchmarks are equal. We evaluate each benchmark candidate
-              against a rigorous quality framework before including it in the
-              suite.
+              Before any benchmark joins the suite, we check it against six
+              criteria.
             </p>
 
-            <div class="section-criteria-list">
-              <div class="section-criterion">
-                <i class="fa-solid fa-circle-check"></i>
-                <div>
-                  <strong>Ecologically Valid</strong>
+            <div class="section-deliverables">
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Construct validity</h4>
                   <p>
-                    Multi-turn simulations that reflect real-world user
-                    interactions, judged representative by human experts.
+                    Does the benchmark actually measure what it claims to?
+                    We use nomological network analysis to confirm the
+                    measure captures the intended idea, and
+                    comprehensiveness checks to find gaps in coverage.
                   </p>
                 </div>
               </div>
-              <div class="section-criterion">
-                <i class="fa-solid fa-circle-check"></i>
-                <div>
-                  <strong>Construct Fidelity</strong>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Multi-turn and dynamic</h4>
                   <p>
-                    Simulated inputs are consistently representative of the
-                    construct of interest, verified by human experts and LLM
-                    judges.
+                    Real harms build over time. Each scenario runs across 6
+                    turns, and scenarios are generated fresh so models
+                    cannot memorize them.
                   </p>
                 </div>
               </div>
-              <div class="section-criterion">
-                <i class="fa-solid fa-circle-check"></i>
-                <div>
-                  <strong>Broad Coverage</strong>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Demographic stratification</h4>
                   <p>
-                    Inputs capture a broad, complete set of scenarios, measured
-                    through semantic diversity analysis.
+                    Scenarios vary across age (child/teen 6 to 17, adult
+                    18+) and gender (male, female, non-binary), using a
+                    sampling approach that gives broad coverage without
+                    exploding into thousands of combinations.
                   </p>
                 </div>
               </div>
-              <div class="section-criterion">
-                <i class="fa-solid fa-circle-check"></i>
-                <div>
-                  <strong>Automatable</strong>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Test-retest reliability</h4>
                   <p>
-                    Benchmarks can be run automatically with LLM-as-judge
-                    systems that approximate human judgment.
+                    If you run the same benchmark twice, do you get the
+                    same answer? We measure this directly.
                   </p>
                 </div>
               </div>
-              <div class="section-criterion">
-                <i class="fa-solid fa-circle-check"></i>
-                <div>
-                  <strong>Model Sensitivity</strong>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Ranking stability</h4>
                   <p>
-                    Benchmark differentiates between better and worse models,
-                    later models should score higher than earlier ones.
+                    A benchmark is only useful if its rankings hold up when
+                    we swap out the models doing the generating,
+                    simulating, and judging.
                   </p>
                 </div>
               </div>
-              <div class="section-criterion">
-                <i class="fa-solid fa-circle-check"></i>
-                <div>
-                  <strong>Reliable Judgment</strong>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Resistance to gaming</h4>
                   <p>
-                    LLM-as-judge appropriately and consistently detects
-                    harm/benefit, validated against human rater judgments.
+                    We add realistic typos, lowercase shifts, and dropped
+                    characters so models cannot detect that they are being
+                    tested.
                   </p>
                 </div>
               </div>
@@ -2077,69 +2031,59 @@
 
             <div class="section-divider"></div>
 
-            <h2 class="section-heading">
-              <i class="fa-solid fa-list-ol"></i> Five-Step Evaluation Process
-            </h2>
+            <h2 class="section-heading">The Four-Stage Pipeline</h2>
 
-            <div class="section-steps">
-              <div class="section-step">
-                <div class="section-step-num">1</div>
-                <div class="section-step-body">
-                  <h4>Submission Received</h4>
+            <div class="section-deliverables">
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>1. Building the test</h4>
                   <p>
-                    Benchmark submitters provide the construct definition,
-                    example interaction patterns, and expected model behaviors.
-                    The community identifies what patterns within user input
-                    messages are expected to elicit behaviors of interest.
+                    A generator model (Claude Sonnet 4) takes an expert
+                    submission and writes the metrics and scenarios. Each
+                    scenario is built around a single metric to keep the
+                    test focused. Scenarios include a persona, a surface
+                    goal, a hidden adversarial objective, and landmark
+                    instructions like "at turn 4, ask the AI to be your
+                    best friend."
                   </p>
                 </div>
               </div>
-              <div class="section-step">
-                <div class="section-step-num">2</div>
-                <div class="section-step-body">
-                  <h4>Run the Simulation</h4>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>2. Running the conversation</h4>
                   <p>
-                    LLMs generate additional related simulations from the seed
-                    examples, expanding coverage. For example: given 3 example
-                    messages expressing distress, the model generates 20
-                    semantically related variations to ensure broad scenario
-                    coverage.
+                    A user-simulator model (Claude Sonnet 4) plays the
+                    human across 6 turns. It acts like a natural
+                    conversational partner on the surface while pushing the
+                    hidden objective underneath, escalating pressure as the
+                    conversation unfolds.
                   </p>
                 </div>
               </div>
-              <div class="section-step">
-                <div class="section-step-num">3</div>
-                <div class="section-step-body">
-                  <h4>Validate Input Pattern</h4>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>3. Scoring the result</h4>
                   <p>
-                    We ask the LLM whether generated examples match the intended
-                    input pattern, comparing against submitter intent and human
-                    expert judgments. This reveals whether examples capture the
-                    construct or drift beyond it.
+                    A judge model (GPT-5.4-mini) reads the full
+                    conversation and returns a yes or no on each metric.
+                    We picked this judge after testing five candidates for
+                    run-to-run consistency. We dropped Claude Sonnet 4.6
+                    because it passed almost everything regardless of
+                    quality, and GPT-5.4 because its results were
+                    unstable.
                   </p>
                 </div>
               </div>
-              <div class="section-step">
-                <div class="section-step-num">4</div>
-                <div class="section-step-body">
-                  <h4>LLM-as-Judge Evaluation</h4>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>4. Aggregating into a score</h4>
                   <p>
-                    The LLM evaluates whether model responses are harmful or
-                    helpful (depending on whether the construct is negatively or
-                    positively framed). Human raters independently judge the
-                    same outputs to validate LLM judge accuracy.
-                  </p>
-                </div>
-              </div>
-              <div class="section-step">
-                <div class="section-step-num">5</div>
-                <div class="section-step-body">
-                  <h4>Generate Statistics &amp; Report</h4>
-                  <p>
-                    We compute test-retest reliability and sensitivity
-                    statistics across models. Scored metrics include: semantic
-                    diversity of conversations, variation in LLM-judge scores,
-                    and differentiation across model generations and providers.
+                    Some metrics measure good behavior (where "yes" is a
+                    pass) and others measure harmful behavior (where "yes"
+                    is a failure). We combine them according to each
+                    metric's polarity, average across scenarios, and
+                    invert so that higher scores always mean better
+                    behavior.
                   </p>
                 </div>
               </div>
@@ -2147,79 +2091,92 @@
 
             <div class="section-divider"></div>
 
-            <h2 class="section-heading">
-              <i class="fa-solid fa-table"></i> Comprehensiveness Framework
-            </h2>
+            <h2 class="section-heading">How We Validated the Pipeline</h2>
             <p class="section-body">
-              We use a three-dimensional framework to ensure our benchmark suite
-              provides balanced, comprehensive coverage. Benchmarks are mapped
-              across: <strong>level of need</strong> (Physical → Psychological →
-              Moral/Self-Actualization), <strong>valence</strong> (positive
-              outcomes vs. prevention of harm), and
-              <strong>scope</strong> (individual focus vs. societal focus).
+              We stress-tested the pipeline against five things that could
+              bias results.
             </p>
 
-            <div class="section-table-wrapper">
-              <table class="section-table">
-                <thead>
-                  <tr>
-                    <th>Level</th>
-                    <th>Valence</th>
-                    <th>Individual Focus</th>
-                    <th>Society Focus</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td rowspan="2" class="section-table-level moral">
-                      Moral / Self-Actualization
-                    </td>
-                    <td class="section-table-val positive">Positive</td>
-                    <td>Supporting Individual Creativity</td>
-                    <td>Design for Equity and Inclusion (HumaneBench)</td>
-                  </tr>
-                  <tr>
-                    <td class="section-table-val negative">Negative</td>
-                    <td>Cognitive Offloading</td>
-                    <td>Copyright &amp; Intellectual Property</td>
-                  </tr>
-                  <tr>
-                    <td rowspan="2" class="section-table-level psychological">
-                      Psychological
-                    </td>
-                    <td class="section-table-val positive">Positive</td>
-                    <td>
-                      Foster Healthy Relationships · Enable Meaningful Choices
-                    </td>
-                    <td>
-                      Prioritize Long-term Wellbeing · Social Navigation
-                      (Sotopia)
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="section-table-val negative">Negative</td>
-                    <td>
-                      Attachment/Dependency (AAP) · Protect Dignity
-                      (HumaneBench)
-                    </td>
-                    <td>Human-Like Simulation · Suicidality Assessment</td>
-                  </tr>
-                  <tr>
-                    <td rowspan="2" class="section-table-level physical">
-                      Physical
-                    </td>
-                    <td class="section-table-val positive">Positive</td>
-                    <td>Enhance Human Capabilities (HumaneBench)</td>
-                    <td>Improve Peace &amp; Conflict Resolution</td>
-                  </tr>
-                  <tr>
-                    <td class="section-table-val negative">Negative</td>
-                    <td>Respect User Attention (HumaneBench)</td>
-                    <td>Energy Efficiency (QueueLab)</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="section-deliverables">
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Could Claude be inflating its own scores?</h4>
+                  <p>
+                    No. When we swapped the metric generator from Claude
+                    to GPT-5.4, Claude's lead grew, not shrank (from
+                    +5.7 pp to +27.0 pp on humanebench). Wilcoxon p =
+                    0.003 across 18 pairs. The test does catch
+                    self-generation bias when it exists, just not for
+                    Claude in this case.
+                  </p>
+                </div>
+              </div>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Could the user-simulator be playing favorites?</h4>
+                  <p>
+                    No. Rankings stay stable across Claude, GPT-5.4, and
+                    Llama simulators (ρ = 0.977 on health-bench, 0.752 on
+                    humanebench). Same-family simulators turn out to be
+                    tougher on other models, not friendlier to their own.
+                  </p>
+                </div>
+              </div>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Is the judge reliable?</h4>
+                  <p>
+                    Yes. Run-to-run agreement (Fleiss' κ) lands between
+                    0.64 and 0.78, which counts as "substantial." Pass
+                    rates drift by less than 0.22 pp between runs.
+                    Different judges produce different absolute pass rates
+                    (55 to 85 percent), but the rankings they produce
+                    agree at ρ = 0.61 across GPT-5.4-mini, Claude Opus
+                    4.7, and Llama 4 Maverick.
+                  </p>
+                </div>
+              </div>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Are we sampling enough conversations?</h4>
+                  <p>
+                    Yes. Across 56,700 triples, 78.1% were unanimous
+                    across three independent runs. A single sample matches
+                    the three-sample majority vote at ρ = 0.982.
+                  </p>
+                </div>
+              </div>
+              <div class="section-deliverable">
+                <div class="section-deliverable-body">
+                  <h4>Does the adversarial design actually do anything?</h4>
+                  <p>
+                    Yes. A 2x2 test of adversarial objective and
+                    perfunctory mode (the typo simulation) shows clear
+                    interaction effects, though rankings stay the same.
+                  </p>
+                </div>
+              </div>
             </div>
+
+            <div class="section-divider"></div>
+
+            <h2 class="section-heading">Measuring Demographic Sensitivity</h2>
+            <p class="section-body">
+              To check whether models treat different users differently, we
+              ran per-model regressions of failure rate on gender, age, and
+              their interaction, with fixed effects controlling for metric
+              difficulty and scenario content. The reference user is a
+              female adult.
+            </p>
+            <p class="section-body" style="margin-top: 12px">
+              Pooling across all models, child and teen personas elicit
+              2.5 pp more emotional-dependence failures than adults
+              (p &lt; 0.001), holding scenario content constant.
+              Demographics explain less than 0.4% of variance once metric
+              and scenario are accounted for, so the size is small. But the
+              direction is consistent across 12 of 14 models, and it points
+              the wrong way: more harmful behavior toward minors, not less.
+            </p>
           </div>
         </div>
 
@@ -2270,9 +2227,7 @@
 
             <div class="section-divider"></div>
 
-            <h2 class="section-heading">
-              <i class="fa-solid fa-users"></i> Team
-            </h2>
+            <h2 class="section-heading">Team</h2>
             <ul class="team-list">
               <li><strong>Pat Pataranutaporn</strong>, MIT Media Lab</li>
               <li><strong>Pattie Maes</strong>, MIT Media Lab</li>
@@ -2302,8 +2257,7 @@
             <div class="section-divider"></div>
 
             <h2 class="section-heading">
-              <i class="fa-solid fa-handshake"></i> Support in helping define
-              and launch project
+              Support in helping define and launch project
             </h2>
             <ul class="team-list">
               <li>Noesis Collaborative</li>
@@ -2313,8 +2267,7 @@
             <div class="section-divider"></div>
 
             <h2 class="section-heading">
-              <i class="fa-solid fa-flask-vial"></i> Support in contributing
-              benchmarks and benchmark expertise
+              Support in contributing benchmarks and benchmark expertise
             </h2>
             <ul class="team-list">
               <li>
@@ -2350,209 +2303,6 @@
           </div>
         </div>
 
-        <!-- ===== SUMMARY SECTION ===== -->
-        <div id="section-summary" class="tab-section" hidden>
-          <div class="tab-section-inner">
-            <div class="section-hero">
-              <div class="section-hero-tag">
-                <i class="fa-solid fa-file-lines"></i> Framework Overview
-              </div>
-              <h1 class="section-hero-title">
-                Mapping AI Impact to Human Flourishing
-              </h1>
-              <p class="section-hero-subtitle">
-                Rather than defining yet another taxonomy, this benchmark allows
-                anyone to define a construct that relates to human flourishing,
-                and places those constructs within a unified, evidence-based
-                framework.
-              </p>
-            </div>
-
-            <h2 class="section-heading">
-              <i class="fa-solid fa-layer-group"></i> A Hierarchy of Human Needs
-            </h2>
-            <p class="section-body">
-              Many dimensions of flourishing map naturally onto Maslow's
-              hierarchy of human needs. A flourishing society supports users'
-              <strong>physical needs</strong> (health, safety from harm), which
-              enables people to pursue
-              <strong>social and relational needs</strong> (belonging,
-              meaningful relationships), which in turn creates space for
-              <strong>psychological needs</strong> (autonomy, competence,
-              relatedness), ultimately leading to
-              <strong>self-actualization</strong> (purpose, meaning, moral
-              values).
-            </p>
-            <p class="section-body" style="margin-top: 10px">
-              LLM benchmarks exist at every level of this hierarchy, and this
-              framework lets us ensure comprehensive coverage across all levels.
-            </p>
-
-            <div class="section-hierarchy">
-              <div class="section-hierarchy-level h-self">
-                <div class="section-hierarchy-label">Self-Actualization</div>
-                <div class="section-hierarchy-desc">
-                  Meaning, purpose, creativity, moral values, identity
-                </div>
-              </div>
-              <div class="section-hierarchy-level h-psych">
-                <div class="section-hierarchy-label">Psychological</div>
-                <div class="section-hierarchy-desc">
-                  Autonomy, competence, relatedness, character, mental health
-                </div>
-              </div>
-              <div class="section-hierarchy-level h-social">
-                <div class="section-hierarchy-label">Social</div>
-                <div class="section-hierarchy-desc">
-                  Belonging, relationships, trust, community, social skills
-                </div>
-              </div>
-              <div class="section-hierarchy-level h-physical">
-                <div class="section-hierarchy-label">Physical</div>
-                <div class="section-hierarchy-desc">
-                  Health, safety, financial security, shelter, nutrition
-                </div>
-              </div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <h2 class="section-heading">
-              <i class="fa-solid fa-arrows-left-right"></i> Positive and
-              Negative Dimensions
-            </h2>
-            <p class="section-body">
-              Within each level, every construct can be considered along both
-              positive and negative dimensions. The
-              <strong>positive dimension</strong> refers to the extent to which
-              AI systems actively enhance valued outcomes (e.g. fostering a
-              sense of belonging). The
-              <strong>negative dimension</strong> refers to the extent to which
-              they prevent or mitigate harmful outcomes (e.g. avoiding shame and
-              social exclusion).
-            </p>
-            <p class="section-body" style="margin-top: 10px">
-              This dual framing is consistent with established frameworks like
-              Schwartz's taxonomy of values, which recognizes dimensions of
-              <em>conservation vs. openness to change</em> and
-              <em>self-enhancement vs. self-transcendence</em>.
-            </p>
-
-            <div class="section-dimension-cards">
-              <div class="section-dimension-card positive-card">
-                <div class="section-dimension-icon">
-                  <i class="fa-solid fa-circle-plus"></i>
-                </div>
-                <h4>Positive Outcomes</h4>
-                <p>
-                  AI actively enhances valued aspects of human flourishing,
-                  supporting creativity, strengthening relationships, fostering
-                  autonomy, building competence, enriching meaning.
-                </p>
-              </div>
-              <div class="section-dimension-card negative-card">
-                <div class="section-dimension-icon">
-                  <i class="fa-solid fa-circle-minus"></i>
-                </div>
-                <h4>Harm Prevention</h4>
-                <p>
-                  AI prevents or mitigates harmful outcomes, avoiding
-                  dependency, protecting dignity, respecting attention, reducing
-                  anxiety, preventing exploitation or manipulation.
-                </p>
-              </div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <h2 class="section-heading">
-              <i class="fa-solid fa-chart-pie"></i> How to Read the
-              Visualization
-            </h2>
-            <p class="section-body">
-              The sunburst visualization on the Explore tab maps AI model
-              behavior scores onto this human flourishing framework. Each ring
-              represents a level of the hierarchy:
-            </p>
-
-            <div class="section-viz-guide">
-              <div class="section-viz-ring">
-                <div
-                  class="section-viz-ring-dot"
-                  style="background: var(--accent)"
-                ></div>
-                <div>
-                  <strong>Inner Ring</strong>, Three core well-being areas:
-                  Societal, Psychological, Physical
-                </div>
-              </div>
-              <div class="section-viz-ring">
-                <div
-                  class="section-viz-ring-dot"
-                  style="background: #00b3b099"
-                ></div>
-                <div>
-                  <strong>Outer Ring</strong>, 13 subareas (e.g. Mental Health,
-                  Creativity, Autonomy, Sleep, Financial Security)
-                </div>
-              </div>
-            </div>
-
-            <p class="section-body" style="margin-top: 16px">
-              Arc color indicates impact direction and magnitude:
-            </p>
-
-            <div class="section-color-guide">
-              <div class="section-color-item">
-                <div
-                  class="section-color-swatch"
-                  style="background: #dc2626"
-                ></div>
-                <div>
-                  <strong>Red</strong>, AI behavior consistently harms this
-                  dimension of human flourishing. Scores approach −1.
-                </div>
-              </div>
-              <div class="section-color-item">
-                <div
-                  class="section-color-swatch"
-                  style="background: #e5e7eb"
-                ></div>
-                <div>
-                  <strong>Grey/Neutral</strong>, AI has no measurable net effect
-                  on this dimension. Score near 0.
-                </div>
-              </div>
-              <div class="section-color-item">
-                <div
-                  class="section-color-swatch"
-                  style="background: #16a34a"
-                ></div>
-                <div>
-                  <strong>Green</strong>, AI behavior actively promotes this
-                  dimension of human flourishing. Scores approach +1.
-                </div>
-              </div>
-            </div>
-
-            <div class="section-divider"></div>
-
-            <div class="section-callout">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              <div>
-                <strong>Important Caveat</strong>
-                <p>
-                  All scores in this visualization are currently
-                  <strong>synthetic/simulated</strong> for demonstration
-                  purposes. The benchmark framework is open and intended to be
-                  populated with real evaluation data through rigorous
-                  multi-turn simulation studies. We invite researchers to
-                  contribute benchmarks through our open submission process.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- ===== FEEDBACK SECTION ===== -->
         <div id="section-feedback" class="tab-section" hidden>
@@ -3076,7 +2826,6 @@
           "about",
           "methodology",
           "team",
-          "summary",
           "feedback",
           "request-access",
           "support",

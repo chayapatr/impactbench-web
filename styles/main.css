@@ -2169,7 +2169,7 @@ body.modal-open {
 /* Hero visual block (sunburst on a clean white circular card hugging the wheel) */
 .gate-hero-visual {
   position: relative;
-  margin: -36px auto 0;
+  margin: 24px auto 0;
   width: min(880px, 92vh);
   aspect-ratio: 1 / 1;
   display: flex;
@@ -5475,3 +5475,242 @@ body.about-mode #about-page {
 .gate-sb-tip-ex i { margin-top: 3px; font-size: 10px; }
 .gate-sb-tip-ex.pos i { color: #16a34a; }
 .gate-sb-tip-ex.neg i { color: #ef4444; }
+
+
+/* ===== Editorial typography overrides for About + Methodology pages =====
+   header: Source Serif Pro 32px (page hero) / 21px section
+   subheader: Source Serif Pro 19px
+   body: Inter 14px, primary text color, regular weight
+   Strips container borders/backgrounds for a flat, editorial layout.
+*/
+#section-about .section-card,
+#section-about .section-card-highlight,
+#section-about .section-deliverable,
+#section-about .section-collab-item,
+#section-about .section-callout,
+#section-about .section-domain-card,
+#section-about .section-criterion,
+#section-methodology .section-card,
+#section-methodology .section-card-highlight,
+#section-methodology .section-deliverable,
+#section-methodology .section-collab-item,
+#section-methodology .section-callout,
+#section-methodology .section-domain-card,
+#section-methodology .section-criterion {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+#section-about .section-cards-grid,
+#section-methodology .section-cards-grid {
+  gap: 28px 32px;
+  margin: 20px 0 8px;
+}
+
+#section-about .section-deliverables,
+#section-methodology .section-deliverables { gap: 28px; }
+
+#section-about .section-deliverable,
+#section-methodology .section-deliverable {
+  gap: 18px;
+  align-items: flex-start;
+}
+
+#section-about .section-collab-list,
+#section-methodology .section-collab-list {
+  gap: 18px 22px;
+  margin: 14px 0 4px;
+}
+#section-about .section-collab-item,
+#section-methodology .section-collab-item {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+#section-about .section-collab-item i,
+#section-methodology .section-collab-item i { font-size: 13px; }
+
+#section-about .section-callout,
+#section-methodology .section-callout {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 4px 0 !important;
+}
+
+/* Headings */
+#section-about .section-hero-title,
+#section-methodology .section-hero-title {
+  font-family: 'Source Serif Pro', Georgia, serif;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+#section-about .section-hero-subtitle,
+#section-methodology .section-hero-subtitle {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  max-width: 720px;
+  font-weight: 400;
+}
+
+#section-about .section-heading,
+#section-methodology .section-heading {
+  font-family: 'Source Serif Pro', Georgia, serif;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+  margin-bottom: 14px;
+  color: var(--text-primary);
+}
+#section-about .section-heading i,
+#section-methodology .section-heading i {
+  font-size: 16px;
+  color: var(--accent);
+}
+
+/* Subheaders inside cards / deliverables */
+#section-about .section-card h3,
+#section-about .section-deliverable-body h4,
+#section-about .section-callout strong,
+#section-methodology .section-card h3,
+#section-methodology .section-deliverable-body h4,
+#section-methodology .section-callout strong {
+  font-family: 'Source Serif Pro', Georgia, serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Body text — Inter 14px, primary color, no bold */
+#section-about .section-body,
+#section-about .section-card p,
+#section-about .section-deliverable-body p,
+#section-about .section-callout p,
+#section-about ol.about-ordered,
+#section-methodology .section-body,
+#section-methodology .section-card p,
+#section-methodology .section-deliverable-body p,
+#section-methodology .section-callout p,
+#section-methodology ol.about-ordered {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-weight: 400;
+}
+
+#section-about .section-body strong,
+#section-about .section-card p strong,
+#section-about .section-deliverable-body p strong,
+#section-about .section-callout p strong,
+#section-about .section-hero-subtitle strong,
+#section-about ol.about-ordered strong,
+#section-methodology .section-body strong,
+#section-methodology .section-card p strong,
+#section-methodology .section-deliverable-body p strong,
+#section-methodology .section-callout p strong,
+#section-methodology .section-hero-subtitle strong,
+#section-methodology ol.about-ordered strong {
+  font-weight: 400;
+  color: inherit;
+}
+
+#section-about .section-card-icon,
+#section-methodology .section-card-icon {
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+#section-about .section-deliverable-num,
+#section-methodology .section-deliverable-num {
+  font-family: 'Source Serif Pro', Georgia, serif;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--accent);
+  opacity: 0.85;
+  padding-top: 2px;
+  min-width: 36px;
+}
+
+#section-about .section-divider,
+#section-methodology .section-divider {
+  margin: 32px 0;
+  background: var(--border);
+  opacity: 0.6;
+}
+
+#section-about .section-callout > i,
+#section-methodology .section-callout > i {
+  font-size: 18px;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+#section-about ol.about-ordered,
+#section-methodology ol.about-ordered {
+  padding-left: 22px;
+  margin: 8px 0 0;
+}
+#section-about ol.about-ordered li,
+#section-methodology ol.about-ordered li { margin-bottom: 6px; }
+
+/* ===== Extend editorial typography overrides to Team page ===== */
+#section-team .section-hero-title {
+  font-family: 'Source Serif Pro', Georgia, serif;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+#section-team .section-hero-subtitle,
+#section-team .section-body,
+#section-team .team-list,
+#section-team .team-partners-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-weight: 400;
+}
+#section-team .section-heading {
+  font-family: 'Source Serif Pro', Georgia, serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+#section-team .team-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#section-team .team-list li {
+  padding: 4px 0;
+}
+#section-team .team-list strong {
+  font-weight: 500;
+  color: inherit;
+}
+#section-team .section-divider {
+  margin: 28px 0;
+  background: var(--border);
+  opacity: 0.6;
+}
