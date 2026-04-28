@@ -1,7 +1,7 @@
 // ===== Smart Explore Nutrition Label =====
 
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 export interface SmartConstruct {
   text: string;
@@ -14,8 +14,8 @@ export interface SmartConstruct {
 export interface SmartTopModel {
   name: string;
   provider: string;
-  score: number;                              // avg benchmark score across focus theme metrics
-  constructScores: number[];                  // real per-construct benchmark avg, parallel to opts.constructs
+  score: number; // avg benchmark score across focus theme metrics
+  constructScores: number[]; // real per-construct benchmark avg, parallel to opts.constructs
   worstAreas: { name: string; score: number }[]; // lowest subareas from full taxonomy for this model
 }
 
@@ -26,24 +26,30 @@ export interface SmartNutritionOpts {
 }
 
 function fmtScore(s: number): string {
-  return (s >= 0 ? '+' : '') + s.toFixed(2);
+  return (s >= 0 ? "+" : "") + s.toFixed(2);
 }
 function scoreClass(s: number): string {
-  if (s > 0.55) return 'positive';
-  if (s < 0.45) return 'negative';
-  return 'neutral';
+  if (s > 0.55) return "positive";
+  if (s < 0.45) return "negative";
+  return "neutral";
 }
 function esc(s: string): string {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string)
+  return String(s).replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ] as string,
   );
 }
 function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'smart-nutrition';
+  return (
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "smart-nutrition"
+  );
 }
 
 let _overlay: HTMLDivElement | null = null;
@@ -57,7 +63,7 @@ function close(): void {
 
 function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
   const model = opts.topModels[activeIdx];
-  if (!model) return '';
+  if (!model) return "";
 
   const areaRows = opts.constructs
     .map((c, i) => {
@@ -67,7 +73,7 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
       return `
         <div class="smart-nl-area">
           <div class="smart-nl-area-top">
-            <span class="smart-nl-area-icon"><i class="fa-solid ${esc(c.icon || 'fa-bullseye')}"></i></span>
+            <span class="smart-nl-area-icon"><i class="fa-solid ${esc(c.icon || "fa-bullseye")}"></i></span>
             <span class="smart-nl-area-name">${esc(c.text)}</span>
             <span class="smart-nl-area-score ${cls}">${fmtScore(score)}</span>
           </div>
@@ -77,7 +83,7 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
         </div>
       `;
     })
-    .join('');
+    .join("");
 
   const warningsHtml = (model.worstAreas || [])
     .slice(0, 3)
@@ -87,12 +93,13 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
         <div class="smart-nl-warning">
           <div class="smart-nl-warning-head">
             <span class="smart-nl-warning-label">${esc(w.name)}</span>
-            <span class="smart-nl-warning-score ${cls}">${fmtScore(w.score)}</span>
           </div>
         </div>
       `;
     })
-    .join('');
+    .join("");
+
+  // <span class="smart-nl-warning-score ${cls}">${fmtScore(w.score)}</span>
 
   const overallCls = scoreClass(model.score);
   const overallPct = Math.max(0, Math.min(100, model.score * 100));
@@ -125,12 +132,12 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
 
     <div class="nutrition-thick-rule"></div>
 
-    <div class="smart-nl-section-title">Things to watch out <span class="smart-nl-section-sub">lowest scoring areas for this model</span></div>
+    <div class="smart-nl-section-title">Things to watch out <span class="smart-nl-section-sub">Areas where the model may fall short or exhibit harmful behaviors</span></div>
     <div class="smart-nl-warnings">${warningsHtml}</div>
 
     <div class="nutrition-thick-rule"></div>
     <div class="nutrition-footnote">
-      Generated from your Smart Explore context: &ldquo;${esc(opts.userText || '(no context provided)')}&rdquo;.
+      Generated from your Smart Explore context: &ldquo;${esc(opts.userText || "(no context provided)")}&rdquo;.
       Scores derive from scenario evaluations in this benchmark.
     </div>
   `;
@@ -139,7 +146,7 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
 function renderToggle(opts: SmartNutritionOpts, activeIdx: number): string {
   return opts.topModels
     .map((m, i) => {
-      const active = i === activeIdx ? ' active' : '';
+      const active = i === activeIdx ? " active" : "";
       return `
         <button type="button" class="smart-nl-toggle-btn${active}" data-idx="${i}">
           <span class="smart-nl-toggle-rank">#${i + 1}</span>
@@ -148,23 +155,30 @@ function renderToggle(opts: SmartNutritionOpts, activeIdx: number): string {
         </button>
       `;
     })
-    .join('');
+    .join("");
 }
 
-async function savePdf(fileSlug: string, btn: HTMLButtonElement | null): Promise<void> {
-  const card = document.getElementById('smart-nl-card');
+async function savePdf(
+  fileSlug: string,
+  btn: HTMLButtonElement | null,
+): Promise<void> {
+  const card = document.getElementById("smart-nl-card");
   if (!card) return;
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Saving...';
+    btn.textContent = "Saving...";
   }
   try {
     const canvas = await html2canvas(card as HTMLElement, {
       scale: 2,
-      backgroundColor: '#ffffff',
+      backgroundColor: "#ffffff",
       useCORS: true,
     });
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "letter",
+    });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 28;
@@ -175,7 +189,7 @@ async function savePdf(fileSlug: string, btn: HTMLButtonElement | null): Promise
     const h = canvas.height * ratio;
     const x = (pageWidth - w) / 2;
     const y = (pageHeight - h) / 2;
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, w, h);
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", x, y, w, h);
     pdf.save(`${fileSlug}.pdf`);
   } finally {
     if (btn) {
@@ -192,8 +206,8 @@ export function openSmartNutritionLabel(opts: SmartNutritionOpts): void {
 
   let activeIdx = 0;
 
-  const overlay = document.createElement('div');
-  overlay.className = 'nutrition-overlay';
+  const overlay = document.createElement("div");
+  overlay.className = "nutrition-overlay";
   overlay.innerHTML = `
     <div class="nutrition-modal smart-nl-modal" role="dialog" aria-modal="true" aria-label="Smart Explore nutrition label">
       <button class="nutrition-close-btn" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
@@ -210,21 +224,25 @@ export function openSmartNutritionLabel(opts: SmartNutritionOpts): void {
   document.body.appendChild(overlay);
   _overlay = overlay;
 
-  const closeBtn = overlay.querySelector<HTMLButtonElement>('.nutrition-close-btn');
-  if (closeBtn) closeBtn.addEventListener('click', close);
+  const closeBtn = overlay.querySelector<HTMLButtonElement>(
+    ".nutrition-close-btn",
+  );
+  if (closeBtn) closeBtn.addEventListener("click", close);
 
-  overlay.addEventListener('click', (e) => {
+  overlay.addEventListener("click", (e) => {
     if (e.target === overlay) close();
   });
 
-  const toggleEl = overlay.querySelector<HTMLDivElement>('#smart-nl-toggle');
-  const cardEl = overlay.querySelector<HTMLDivElement>('#smart-nl-card');
+  const toggleEl = overlay.querySelector<HTMLDivElement>("#smart-nl-toggle");
+  const cardEl = overlay.querySelector<HTMLDivElement>("#smart-nl-card");
 
   if (toggleEl) {
-    toggleEl.addEventListener('click', (e) => {
-      const target = (e.target as HTMLElement).closest<HTMLButtonElement>('.smart-nl-toggle-btn');
+    toggleEl.addEventListener("click", (e) => {
+      const target = (e.target as HTMLElement).closest<HTMLButtonElement>(
+        ".smart-nl-toggle-btn",
+      );
       if (!target) return;
-      const idx = parseInt(target.getAttribute('data-idx') || '-1', 10);
+      const idx = parseInt(target.getAttribute("data-idx") || "-1", 10);
       if (idx < 0 || idx === activeIdx) return;
       activeIdx = idx;
       toggleEl.innerHTML = renderToggle(opts, activeIdx);
@@ -232,11 +250,12 @@ export function openSmartNutritionLabel(opts: SmartNutritionOpts): void {
     });
   }
 
-  const saveBtn = overlay.querySelector<HTMLButtonElement>('#smart-nl-save-btn');
+  const saveBtn =
+    overlay.querySelector<HTMLButtonElement>("#smart-nl-save-btn");
   if (saveBtn) {
-    saveBtn.addEventListener('click', () => {
+    saveBtn.addEventListener("click", () => {
       const model = opts.topModels[activeIdx];
-      void savePdf(slugify(model ? model.name : 'smart-nutrition'), saveBtn);
+      void savePdf(slugify(model ? model.name : "smart-nutrition"), saveBtn);
     });
   }
 }
