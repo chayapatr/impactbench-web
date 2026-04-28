@@ -316,16 +316,29 @@ export function getWorstSubareasForModel(
   const scores = _benchmarkData[key];
   if (!scores || !_taxonomy) return [];
 
-  const subareaAvgs: { name: string; score: number }[] = [];
+  // Collect all metrics with scores, sort by score ascending, then pick greedily
+  // skipping any metric ID already selected — guarantees unique metrics in the result.
+  const allMetrics: { id: string; name: string; score: number }[] = [];
   for (const area of _taxonomy.areas) {
     for (const sub of area.subareas) {
-      const vals = sub.metrics.map((m) => scores[m.id] ?? null).filter((v) => v !== null) as number[];
-      if (!vals.length) continue;
-      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-      subareaAvgs.push({ name: sub.name, score: avg });
+      for (const m of sub.metrics) {
+        const s = scores[m.id] ?? null;
+        if (s !== null) allMetrics.push({ id: m.id, name: m.name, score: s });
+      }
     }
   }
-  return subareaAvgs.sort((a, b) => a.score - b.score).slice(0, count);
+
+  allMetrics.sort((a, b) => a.score - b.score);
+
+  const seen = new Set<string>();
+  const result: { name: string; score: number }[] = [];
+  for (const m of allMetrics) {
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    result.push({ name: m.name, score: m.score });
+    if (result.length >= count) break;
+  }
+  return result;
 }
 
 export function getConstructScoresForModel(
