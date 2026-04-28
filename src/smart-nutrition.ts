@@ -93,6 +93,7 @@ function renderLabel(opts: SmartNutritionOpts, activeIdx: number): string {
         <div class="smart-nl-warning">
           <div class="smart-nl-warning-head">
             <span class="smart-nl-warning-label">${esc(w.name)}</span>
+            <span class="smart-nl-warning-score ${cls}">${fmtScore(w.score)}</span>
           </div>
         </div>
       `;

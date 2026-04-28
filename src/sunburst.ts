@@ -18,32 +18,24 @@ function buildSubareaGradients(
     const scores = metrics.map((m) => m.score ?? 0);
     const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 
-    // Sort scores to find the "best" end (inner) and "worst" end (outer)
     const sorted = [...scores].sort((a, b) => b - a);
     const topHalf = sorted.slice(0, Math.ceil(sorted.length / 2));
     const bottomHalf = sorted.slice(Math.ceil(sorted.length / 2));
     const innerScore = topHalf.reduce((a, b) => a + b, 0) / topHalf.length;
     const outerScore = bottomHalf.reduce((a, b) => a + b, 0) / bottomHalf.length;
 
-    const x0 = (d as unknown as { x0: number }).x0;
-    const x1 = (d as unknown as { x1: number }).x1;
-    const midAngle = (x0 + x1) / 2;
-
-    // Radial gradient: inner radius point → outer radius point along arc midline
-    const ix = Math.sin(midAngle) * RING2_INNER;
-    const iy = -Math.cos(midAngle) * RING2_INNER;
-    const ox = Math.sin(midAngle) * RING2_OUTER;
-    const oy = -Math.cos(midAngle) * RING2_OUTER;
-
     const gradId = `subarea-grad-${d.data.id}`;
 
-    const grad = defs.append('linearGradient')
+    // True radialGradient centered at SVG origin — gradient radiates outward
+    // exactly following the arc curvature, no linear approximation needed.
+    const grad = defs.append('radialGradient')
       .attr('id', gradId)
       .attr('gradientUnits', 'userSpaceOnUse')
-      .attr('x1', ix).attr('y1', iy)
-      .attr('x2', ox).attr('y2', oy);
+      .attr('cx', 0).attr('cy', 0)
+      .attr('r', RING2_OUTER)
+      .attr('fr', RING2_INNER);
 
-    // Inner (good) → mid average → outer (concerning)
+    // fr=RING2_INNER means 0% offset starts at inner edge, 100% at outer edge
     grad.append('stop').attr('offset', '0%').attr('stop-color', scoreToColor(innerScore));
     grad.append('stop').attr('offset', '50%').attr('stop-color', scoreToColor(avgScore));
     grad.append('stop').attr('offset', '100%').attr('stop-color', scoreToColor(outerScore));
