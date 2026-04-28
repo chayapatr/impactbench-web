@@ -1418,7 +1418,7 @@ body.modal-open {
 
 .legend-end-label {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -1437,6 +1437,22 @@ body.modal-open {
   border-radius: 5px;
   border: none;
   position: relative;
+}
+
+.legend-gradient-bar--red {
+  background: linear-gradient(to right, #dc2626, #e5e7eb);
+}
+
+.legend-gradient-bar--green {
+  background: linear-gradient(to right, #e5e7eb, #16a34a);
+}
+
+.legend-center-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9ca3af;
+  flex-shrink: 0;
 }
 
 .legend-tick {

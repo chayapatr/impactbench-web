@@ -152,39 +152,42 @@
             <h2 class="gate-info-title">The Methodology</h2>
             <p class="gate-info-body">
               Scores reflect how consistently a model supports, or undermines,
-              human flourishing across 260+ realistic, multi-turn scenarios.
-              Each conversation is simulated with a demographically varied user
-              pursuing a latent goal, then graded by LLM-as-judge systems
-              validated against expert human raters.
+              human flourishing across realistic, multi-turn scenarios. Each
+              conversation is simulated with a demographically varied user
+              pursuing a latent adversarial goal, then graded by an
+              LLM-as-judge pipeline whose reliability is validated through
+              test-retest consistency and between-judge agreement checks.
             </p>
             <ul class="gate-info-points">
               <li>
-                <strong>+1</strong>, behavior reliably
-                <span style="color: #16a34a; font-weight: 700">promotes</span>
-                human flourishing
+                <span><strong>1</strong>, behavior reliably
+                <span style="color: #16a34a; font-weight: 700">supports</span>
+                human flourishing on the measured dimension</span>
               </li>
               <li>
-                <strong>0</strong>, behavior is
-                <span style="color: #6b7280; font-weight: 700">neutral</span> or
-                inconsistent
+                <span><strong>0</strong>, behavior reliably
+                <span style="color: #dc2626; font-weight: 700">undermines</span>
+                human flourishing on the measured dimension</span>
               </li>
               <li>
-                <strong>−1</strong>, behavior reliably
-                <span style="color: #dc2626; font-weight: 700">harms</span>
-                human flourishing
+                <span>Each metric is adversarially designed to elicit a specific
+                failure mode, with polarity assigned per metric so that a
+                "1" reflects the model resisting that failure and a "0"
+                reflects the model exhibiting it</span>
               </li>
               <li>
-                Every metric is tested across age groups, gender profiles, and
-                audience contexts to surface where harms concentrate
+                <span>Metrics are stratified across age and gender to surface where
+                harms concentrate</span>
               </li>
               <li>
-                Scenarios unfold over multiple turns to capture relational,
-                time-extended dynamics that single-prompt benchmarks miss
+                <span>Scenarios unfold over multiple turns to capture relational,
+                time-extended dynamics that single-prompt benchmarks miss</span>
               </li>
               <li>
-                Framework grounded in the Harvard Human Flourishing Program,
-                eudaimonic psychology, and 80+ expert workshops with clinicians,
-                ethicists, educators, and affected communities
+                <span>Framework grounded in eudaimonic psychology and VanderWeele's
+                multidimensional flourishing framework, with constructs
+                contributed through an open submission process by clinicians,
+                legal scholars, educators, and community advocates</span>
               </li>
             </ul>
           </div>
@@ -546,7 +549,9 @@
       <section class="gate-partners">
         <p class="gate-partners-title">Led by researchers at</p>
         <div class="gate-partners-row">
-          <img src="/images/MIT Logo.png" alt="MIT" class="gate-partner-logo" />
+          <a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" aria-label="MIT">
+            <img src="/images/MIT Logo.png" alt="MIT" class="gate-partner-logo" />
+          </a>
           <img
             src="/images/ML logo.png"
             alt="MIT Media Lab"
@@ -1446,12 +1451,14 @@
     <header class="control-bar" id="control-bar">
       <div class="control-bar-inner">
         <nav class="main-nav" id="main-nav">
-          <img
-            src="/mit.svg"
-            alt="MIT"
-            class="nav-mit-logo"
-            aria-hidden="true"
-          />
+          <a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" aria-label="MIT">
+            <img
+              src="/mit.svg"
+              alt="MIT"
+              class="nav-mit-logo"
+              aria-hidden="true"
+            />
+          </a>
           <button class="nav-tab" data-tab="home">
             <i class="fa-solid fa-house"></i> Home
           </button>
@@ -1588,15 +1595,15 @@
           <div class="legend-section">
             <div class="legend-bar-wrapper">
               <div class="legend-bar-row">
-                <span class="legend-end-label red">−1</span>
                 <span class="legend-end-label red"
-                  >Prohibit Human Flourishing</span
+                  >Prohibits human flourishing</span
                 >
-                <div class="legend-gradient-bar"></div>
+                <div class="legend-gradient-bar legend-gradient-bar--red"></div>
+                <span class="legend-center-dot" aria-hidden="true"></span>
+                <div class="legend-gradient-bar legend-gradient-bar--green"></div>
                 <span class="legend-end-label green"
-                  >Promote Human Flourishing</span
+                  >Promotes human flourishing</span
                 >
-                <span class="legend-end-label green">+1</span>
               </div>
             </div>
           </div>
@@ -2187,11 +2194,13 @@
             <section class="team-partners">
               <p class="team-partners-title">Led by researchers at</p>
               <div class="team-partners-row">
-                <img
-                  src="/images/MIT Logo.png"
-                  alt="MIT"
-                  class="team-partner-logo"
-                />
+                <a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" aria-label="MIT">
+                  <img
+                    src="/images/MIT Logo.png"
+                    alt="MIT"
+                    class="team-partner-logo"
+                  />
+                </a>
                 <img
                   src="/images/ML logo.png"
                   alt="MIT Media Lab"
