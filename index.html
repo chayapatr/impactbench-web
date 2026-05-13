@@ -115,36 +115,68 @@
           <div class="gate-info-card">
             <h2 class="gate-info-title">The Rationale</h2>
             <p class="gate-info-body">
-              Today's AI benchmarks measure what models can do, accuracy, speed,
+              Today's AI benchmarks measure what models can do: accuracy,
               reasoning, task completion. They tell us almost nothing about what
-              happens to the person on the other side of the screen. We're
-              building the first open standard that asks a different question:
-              across millions of real conversations, is AI actually making
-              people's lives better?
+              AI does to the people who use it. Two models with identical
+              capability scores can shape a user's autonomy, mental health, and
+              relationships in fundamentally different ways, and the field
+              currently has no shared, independent way to tell them apart. AI
+              Human Impact Bench is the first open standard built to answer a
+              different question: across realistic, multi-turn conversations,
+              does an AI system support or undermine human flourishing?
             </p>
             <ul class="gate-info-points">
               <li>
                 AI is being adopted faster than any technology in history, yet
-                there's no shared, independent way to measure its effect on
-                human well-being
+                trust in AI companies is declining and the evidence base that
+                would justify calibrated trust has not been built.
               </li>
               <li>
-                Models that ace conventional safety benchmarks have still
-                produced harmful outcomes in over 70% of high-risk scenarios in
-                controlled studies
+                Models that perform well on conventional safety benchmarks have
+                still produced harmful user outcomes in over 70% of high-risk
+                scenarios in controlled studies (Archiwaranguprok et al., 2025),
+                and sycophantic dynamics establish preconditions for
+                psychological dependency that single-turn evaluations cannot
+                detect.
               </li>
               <li>
-                No existing benchmark covers all three domains where impact
-                unfolds: Physical, Psychological, and Societal
+                Only 16% of reviewed AI benchmarks include any statistical
+                testing of their measurement properties (Bean et al., 2025), and
+                most operationalize contested constructs without precise
+                definitions. This methodological gap becomes structural when the
+                construct in question is human impact.
               </li>
               <li>
-                Developers, policymakers, clinicians, and everyday users need a
-                common signal they can trust, one not produced by the companies
-                being evaluated
+                Human-impact harms are relational and unfold over time. The
+                highest-profile real-world cases emerged not from isolated
+                prompts but from patterns developing across weeks of interaction,
+                exactly the dynamics single-turn benchmarks systematically
+                obscure.
               </li>
               <li>
-                Human flourishing, not task performance, is the right north star
-                for responsible AI
+                No existing benchmark spans the three domains where impact
+                actually unfolds: physical (health, legal, financial decisions),
+                psychological (emotional dependence, autonomy, character), and
+                societal (cognitive offloading, bias, epistemic independence).
+              </li>
+              <li>
+                Those best positioned to identify consequential harms, including
+                clinicians, educators, legal scholars, and affected communities,
+                often lack the technical expertise to build benchmarks, while
+                those with technical expertise lack the domain grounding to
+                identify the right constructs. The field needs infrastructure
+                that decouples construct identification from benchmark
+                construction.
+              </li>
+              <li>
+                Developers, policymakers, clinicians, parents, and everyday
+                users need a common signal they can trust, one produced openly
+                and contestably rather than by the companies being evaluated.
+              </li>
+              <li>
+                Human flourishing, grounded in eudaimonic psychology and
+                capability theory, is the right north star for responsible AI,
+                not task performance alone.
               </li>
             </ul>
           </div>
@@ -152,42 +184,83 @@
             <h2 class="gate-info-title">The Methodology</h2>
             <p class="gate-info-body">
               Scores reflect how consistently a model supports, or undermines,
-              human flourishing across realistic, multi-turn scenarios. Each
-              conversation is simulated with a demographically varied user
-              pursuing a latent adversarial goal, then graded by an
-              LLM-as-judge pipeline whose reliability is validated through
-              test-retest consistency and between-judge agreement checks.
+              human flourishing across realistic, multi-turn, adversarially
+              probed scenarios. Each conversation pairs a target model with a
+              demographically varied simulated user pursuing a latent adversarial
+              goal designed to elicit a specific failure mode. Conversations are
+              then graded by an LLM-as-judge whose reliability is validated
+              through test-retest consistency, between-judge ranking agreement,
+              generator-swap audits, and sampling-stability checks.
             </p>
             <ul class="gate-info-points">
               <li>
-                <span><strong>1</strong>, behavior reliably
-                <span style="color: #16a34a; font-weight: 700">supports</span>
-                human flourishing on the measured dimension</span>
+                <span><strong>Scoring.</strong> Each (scenario, metric) pair
+                receives a binary verdict: 1 if the model's behavior reliably
+                supports human flourishing on the measured dimension, 0 if it
+                reliably undermines it. Polarity is assigned per metric, so a
+                &ldquo;1&rdquo; always means the model resisted the targeted
+                failure mode and a &ldquo;0&rdquo; always means it exhibited it,
+                regardless of whether the underlying behavior is framed as
+                protective or harmful.</span>
               </li>
               <li>
-                <span><strong>0</strong>, behavior reliably
-                <span style="color: #dc2626; font-weight: 700">undermines</span>
-                human flourishing on the measured dimension</span>
+                <span><strong>Adversarial design.</strong> Every metric is
+                paired with scenarios containing a latent adversarial objective:
+                instructions guiding the simulated user to apply social pressure,
+                escalate emotionally, and probe for the target failure across six
+                turns. This mirrors how real harms accumulate organically rather
+                than appearing in a single prompt.</span>
               </li>
               <li>
-                <span>Each metric is adversarially designed to elicit a specific
-                failure mode, with polarity assigned per metric so that a
-                "1" reflects the model resisting that failure and a "0"
-                reflects the model exhibiting it</span>
+                <span><strong>Demographic stratification.</strong> Scenarios are
+                cross-stratified across age (child/teen 6 to 17, adult 18+) and
+                gender (female, male, non-binary), enabling intersectional
+                analysis and surfacing where harms concentrate. This pipeline has
+                already shown that 12 of 14 leading models exhibit more
+                emotional-dependence behaviors toward minors than adults, the
+                opposite of what protective design implies.</span>
               </li>
               <li>
-                <span>Metrics are stratified across age and gender to surface where
-                harms concentrate</span>
+                <span><strong>Multi-turn, dynamic format.</strong> Conversations
+                unfold over multiple turns with persistent user goals, capturing
+                relational, time-extended dynamics (habituation, escalation,
+                dependency formation) that single-prompt benchmarks miss
+                entirely.</span>
               </li>
               <li>
-                <span>Scenarios unfold over multiple turns to capture relational,
-                time-extended dynamics that single-prompt benchmarks miss</span>
+                <span><strong>Surface-form realism.</strong> A perfunctory mode
+                injects stochastic lower-casing, character transpositions, and
+                deletions to mimic the typos and auto-correct artifacts of
+                authentic conversational texting, so models are tested under
+                realistic input rather than sanitized prose.</span>
               </li>
               <li>
-                <span>Framework grounded in eudaimonic psychology and VanderWeele's
-                multidimensional flourishing framework, with constructs
-                contributed through an open submission process by clinicians,
-                legal scholars, educators, and community advocates</span>
+                <span><strong>Reliability as a first-class output.</strong> The
+                pipeline reports not just scores but their stability: test-retest
+                agreement (Fleiss&rsquo; &kappa; = 0.64 to 0.78), between-judge
+                ranking correlation (&rho; = 0.61 to 1.00 across qualified
+                judges), three-sample conversation agreement (78% unanimous,
+                mean pairwise agreement 0.93), and generator-swap audits that
+                confirm rankings are not artifacts of which model family wrote
+                the metrics.</span>
+              </li>
+              <li>
+                <span><strong>Open submission.</strong> Constructs are
+                contributed by clinicians, legal scholars, educators, and
+                community advocates through an open submission process,
+                decoupling who identifies what matters from who can implement a
+                benchmark. Each construct is auditable, contestable, and
+                revisable, making the framework learning infrastructure rather
+                than a fixed verdict.</span>
+              </li>
+              <li>
+                <span><strong>Theoretical grounding.</strong> The framework
+                operationalizes flourishing in the tradition of eudaimonic
+                psychology, Sen&rsquo;s capability approach, and
+                VanderWeele&rsquo;s multidimensional flourishing framework,
+                spanning physical, psychological, and societal domains within a
+                single nomological network so constructs can be compared rather
+                than evaluated in isolation.</span>
               </li>
             </ul>
           </div>
