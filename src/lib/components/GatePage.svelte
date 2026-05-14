@@ -26,15 +26,15 @@
 	let pwError = $state(false);
 
 	const ROTATOR_PHRASES = [
-		"as a therapist impact mental health",
-		"for emotional support shape loneliness",
-		"as a daily companion affect anxiety",
-		"in friendships change how teens connect",
-		"in dating apps reshape relationships",
-		"in family conversations affect trust",
+		'as a therapist impact mental health',
+		'for emotional support shape loneliness',
+		'as a daily companion affect anxiety',
+		'in friendships change how teens connect',
+		'in dating apps reshape relationships',
+		'in family conversations affect trust',
 		"in the classroom impact students' learning",
-		"in hiring affect equal opportunity",
-		"in journalism shape what we believe"
+		'in hiring affect equal opportunity',
+		'in journalism shape what we believe'
 	];
 
 	const TYPE_MS = 38;
@@ -88,7 +88,9 @@
 		}
 
 		loop();
-		return () => { cancelled = true; };
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	function tryUnlock() {
@@ -805,8 +807,14 @@
 		animation: caretBlink 1s steps(2) infinite;
 	}
 	@keyframes caretBlink {
-		0%, 49% { opacity: 1; }
-		50%, 100% { opacity: 0; }
+		0%,
+		49% {
+			opacity: 1;
+		}
+		50%,
+		100% {
+			opacity: 0;
+		}
 	}
 
 	/* Sunburst visual bubble */
@@ -834,7 +842,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transform: scale(1.18);
+		transform: scale(1.29);
 		transform-origin: center center;
 	}
 

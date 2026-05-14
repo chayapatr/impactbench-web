@@ -2,6 +2,7 @@
 	import { appState } from '$lib/store.svelte';
 	import { formatScore, scorePillStyle, scoreToClass, scoreColors } from '$lib/scores';
 	import { loadScenarioDetail } from '$lib/data';
+	import { marked } from 'marked';
 	import type { ScenarioMeta, ScenarioDetail } from '$lib/types';
 
 	interface Props {
@@ -100,7 +101,14 @@
 		if (selectedBenchmark) list = list.filter((m) => m.benchmarks.includes(selectedBenchmark!));
 		if (searchQuery.trim()) {
 			const q = searchQuery.trim().toLowerCase();
-			list = list.filter((m) => m.name.toLowerCase().includes(q) || m.subareaName.toLowerCase().includes(q));
+			if (listMode === 'scenarios') {
+				list = list.filter((m) =>
+					m.name.toLowerCase().includes(q) ||
+					getScenariosForMetric(m.id).some((sc) => sc.title.toLowerCase().includes(q))
+				);
+			} else {
+				list = list.filter((m) => m.name.toLowerCase().includes(q) || m.subareaName.toLowerCase().includes(q));
+			}
 		}
 		if (sortMode === 'score-desc') return [...list].sort((a, b) => b.avgScore - a.avgScore);
 		if (sortMode === 'score-asc') return [...list].sort((a, b) => a.avgScore - b.avgScore);
@@ -258,7 +266,7 @@
 				<i class="fa-solid fa-magnifying-glass absolute left-[8px] top-1/2 -translate-y-1/2 text-[10px] text-[#b0b8c4]"></i>
 				<input
 					type="text"
-					placeholder="Search metrics…"
+					placeholder={listMode === 'scenarios' ? 'Search scenarios…' : 'Search metrics…'}
 					bind:value={searchQuery}
 					class="w-full pl-[24px] pr-3 py-[5px] text-[12px] border-[1.5px] border-[#e5e7eb] rounded-[6px] bg-[#fafaf9] text-[#1a1a1a] outline-none transition-[border-color] duration-150 focus:border-[#00b3b0] focus:bg-white placeholder:text-[#b0b8c4]"
 				/>
@@ -307,7 +315,7 @@
 							>{m.harmful ? '×' : '+'}</span>
 							<div class="flex-1 min-w-0">
 								<div class="text-[12px] font-medium text-[#1a1a1a] truncate">{m.name}</div>
-								<div class="text-[10px] text-[#9ca3af] truncate mt-[1px]">{m.subareaName}</div>
+								<div class="text-[10px] text-[#9ca3af] truncate mt-[1px]">{m.subareaName}{m.benchmarks.length ? ' · ' + m.benchmarks.map(benchmarkLabel).join(', ') : ''}</div>
 							</div>
 							<span
 								class="inline-block px-[5px] py-[1px] rounded-[5px] text-[10px] font-semibold flex-shrink-0 min-w-[30px] text-center"
@@ -465,7 +473,7 @@
 					{#each turns as turn, i (i)}
 						<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
 							<div class="text-[9px] uppercase tracking-wide font-semibold mb-1 {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}">{turn.role === 'user' ? 'User' : 'AI'}</div>
-							<div class="inline-block text-[12px] px-3 py-2 rounded-xl max-w-[88%] text-left leading-relaxed {turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}">{turn.content}</div>
+							<div class="inline-block text-[12px] px-3 py-2 rounded-xl max-w-[88%] text-left prose prose-sm max-w-none {turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert' : 'bg-[#f3f4f6] text-[#374151]'}">{@html marked.parse(turn.content)}</div>
 						</div>
 					{/each}
 				{/if}

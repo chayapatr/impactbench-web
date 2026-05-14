@@ -91,29 +91,28 @@
 			</h2>
 			<span class="inline-block rounded bg-[#e5e7eb] px-1.5 py-0.5 text-[10px] leading-none font-semibold tracking-[0.5px] text-[#6b7280] uppercase">beta</span>
 		</div>
-		<p class="mt-[4px] text-[11px] leading-[1.4] text-[#9ca3af]">{subtitle()}</p>
+		<p class="mt-[4px] text-[11px] leading-[1.4] text-[#9ca3af] text-balance">{subtitle()}</p>
 	</div>
 
-	<!-- Age group -->
-	<div class="px-5 pb-[10px] flex flex-col gap-[5px]">
-		<div class="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Age Group</div>
-		<div class="flex gap-[6px]">
-			{#each AGE_OPTIONS as opt (opt.value)}
-				<button
-					class="flex-1 py-[4px] rounded-[6px] text-[11px] font-semibold border-[1.5px] transition-all duration-150 cursor-pointer
-						{appState.filters.age === opt.value
-							? 'bg-[#e0f7f7] border-[#00b3b0] text-[#00b3b0]'
-							: 'bg-white border-[#e5e7eb] text-[#6b7280] hover:border-[#9ca3af]'}"
-					onclick={() => setFilters({ ...appState.filters, age: opt.value })}
-				>{opt.label}</button>
-			{/each}
+	<!-- Controls: age group + area filter -->
+	<div class="px-5 pb-[10px] flex flex-col gap-[12px]">
+		<div class="flex flex-col gap-[5px]">
+			<div class="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Age Group</div>
+			<div class="flex gap-[6px]">
+				{#each AGE_OPTIONS as opt (opt.value)}
+					<button
+						class="flex-1 py-[3px] rounded-[12px] text-[11px] font-semibold border-[1.5px] transition-all duration-150 cursor-pointer
+							{appState.filters.age === opt.value
+								? 'bg-[#e0f7f7] border-[#80d8d7] text-[#00b3b0] font-semibold'
+								: 'bg-white border-[#e5e7eb] text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
+						onclick={() => setFilters({ ...appState.filters, age: opt.value })}
+					>{opt.label}</button>
+				{/each}
+			</div>
 		</div>
-	</div>
-
-	<!-- Area filter -->
-	<div class="px-5 pb-[8px] flex flex-col gap-[5px] border-t border-[#f3f4f6] pt-[8px]">
-		<div class="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Filter by Area</div>
-		<div class="flex flex-wrap gap-1">
+		<div class="flex flex-col gap-[5px]">
+			<div class="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Filter by Area</div>
+			<div class="flex flex-wrap gap-1">
 			<button
 				class="cursor-pointer rounded-[12px] border-[1.5px] px-[10px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
 					{leaderboardState.selectedAreaId === null
@@ -129,6 +128,7 @@
 					onclick={() => selectArea(area.id)}>{area.name}</button>
 			{/each}
 		</div>
+		</div>
 	</div>
 </div>
 
@@ -136,20 +136,20 @@
 {#if leaderboardState.selectedAreaId}
 	{@const area = appState.taxonomy?.areas.find((a) => a.id === leaderboardState.selectedAreaId)}
 	{#if area && area.subareas.length}
-		<div class="flex flex-wrap gap-1 border-b border-[#f3f4f6] bg-[#f0fafa] px-5 py-1.5">
+		<div class="flex flex-wrap gap-1 border-b border-[#f3f4f6] px-5 py-1.5">
 			<button
-				class="cursor-pointer rounded-[10px] border px-[9px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
+				class="cursor-pointer rounded-[12px] border-[1.5px] px-[10px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
 					{leaderboardState.selectedSubareaId === null
-					? 'border-[#00b3b0] bg-[#00b3b0] font-semibold text-white'
-					: 'border-[#80d8d7] bg-white text-[#00b3b0] hover:bg-[#e0f7f7]'}"
+					? 'border-[#80d8d7] bg-[#e0f7f7] font-semibold text-[#00b3b0]'
+					: 'border-[#e5e7eb] bg-white text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
 				onclick={() => selectSubarea(null)}>All</button
 			>
 			{#each area.subareas as sub (sub.id)}
 				<button
-					class="cursor-pointer rounded-[10px] border px-[9px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
+					class="cursor-pointer rounded-[12px] border-[1.5px] px-[10px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
 						{leaderboardState.selectedSubareaId === sub.id
-						? 'border-[#00b3b0] bg-[#00b3b0] font-semibold text-white'
-						: 'border-[#80d8d7] bg-white text-[#00b3b0] hover:bg-[#e0f7f7]'}"
+						? 'border-[#80d8d7] bg-[#e0f7f7] font-semibold text-[#00b3b0]'
+						: 'border-[#e5e7eb] bg-white text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
 					onclick={() => selectSubarea(sub.id)}>{sub.name}</button
 				>
 			{/each}
@@ -177,16 +177,16 @@
 				onclick={() => selectModel(entry.id)}
 			>
 				<span
-					class="w-5 flex-shrink-0 text-center text-[13px] font-bold {rank <= 3
+					class="w-5 flex-shrink-0 text-center text-[12px] font-bold {rank <= 3
 						? 'text-[#f59e0b]'
 						: 'text-[#9ca3af]'}">{rank}</span
 				>
 				<div class="min-w-0 flex-1">
-					<div class="truncate text-[13px] font-semibold text-[#1a1a1a]">{entry.name}</div>
-					<div class="text-[11px] text-[#9ca3af]">{entry.provider}</div>
+					<div class="truncate text-[12px] font-semibold text-[#1a1a1a]">{entry.name}</div>
+					<div class="text-[10px] text-[#9ca3af]">{entry.provider}</div>
 				</div>
 				<div class="flex w-[90px] flex-shrink-0 items-center gap-1">
-					<div class="h-2 flex-1 overflow-hidden rounded-full bg-[#f3f4f6]">
+					<div class="h-[5px] flex-1 overflow-hidden rounded-full bg-[#f3f4f6]">
 						<div
 							class="h-full rounded-full"
 							class:bg-green-500={cls === 'positive'}
@@ -195,7 +195,7 @@
 							style="width:{pct}%"
 						></div>
 					</div>
-					<span class="w-10 text-right text-[12px] font-bold text-[#6b7280]"
+					<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]"
 						>{entry.score.toFixed(2)}</span
 					>
 				</div>
@@ -207,24 +207,24 @@
 			{@const posPct = Math.round(split.pos * 100)}
 			{@const negPct = Math.round((1 - split.neg) * 100)}
 			<button
-				class="flex w-full cursor-pointer items-center gap-2 border-l-[3px] px-[14px] py-2 text-left transition-colors duration-150
+				class="flex w-full cursor-pointer items-center gap-[6px] border-l-[3px] px-[10px] py-2 text-left transition-colors duration-150
 					{appState.filters.model === model.id
 					? 'border-l-[#00b3b0] bg-[#e0f7f7]'
 					: 'border-l-transparent hover:bg-[#f3f4f6]'}"
 				onclick={() => selectModel(model.id)}
 			>
 				<span
-					class="w-5 flex-shrink-0 text-center text-[13px] font-bold {rank <= 3
+					class="w-5 flex-shrink-0 text-center text-[12px] font-bold {rank <= 3
 						? 'text-[#f59e0b]'
 						: 'text-[#9ca3af]'}">{rank}</span
 				>
 				<div class="min-w-0 flex-1 pr-2">
-					<div class="truncate text-[13px] font-semibold text-[#1a1a1a]">{model.name}</div>
-					<div class="text-[11px] text-[#9ca3af]">{model.provider}</div>
+					<div class="truncate text-[12px] font-semibold text-[#1a1a1a]">{model.name}</div>
+					<div class="text-[10px] text-[#9ca3af]">{model.provider}</div>
 				</div>
 				<!-- Split pos/neg bar -->
 				<div
-					class="flex h-2 w-[90px] flex-shrink-0 items-center overflow-hidden rounded-full bg-[#f3f4f6]"
+					class="flex h-[6px] w-[80px] flex-shrink-0 items-center overflow-hidden rounded-full bg-[#f3f4f6]"
 					title="Harm avoidance: {formatScore(split.neg)} | Promotes good: {formatScore(split.pos)}"
 				>
 					<!-- Negative half: fills from right toward center -->
@@ -248,7 +248,7 @@
 						></div>
 					</div>
 				</div>
-				<span class="w-10 text-right text-[12px] font-bold text-[#6b7280]"
+				<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]"
 					>{formatScore(split.avg)}</span
 				>
 			</button>

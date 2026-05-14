@@ -12,6 +12,7 @@
 	import { formatScore, scoreToClass, scoreInterpretation, scoreColors, scorePillStyle } from '$lib/scores';
 	import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
 	import { loadScenarioDetail } from '$lib/data';
+	import { marked } from 'marked';
 	import type { ScenarioMeta, ScenarioDetail } from '$lib/types';
 
 	// Expanded metric state for inline accordion
@@ -146,7 +147,7 @@
 					<div class="text-[16px] font-[800] text-[#1a1a1a] tracking-[-0.02em] leading-[1.2] truncate">{getCurrentModelName()}</div>
 				</div>
 				<span
-					class="inline-block px-[9px] py-[3px] rounded-[8px] text-[14px] font-[700] flex-shrink-0 text-center"
+					class="inline-block px-[7px] py-[2px] rounded-[7px] text-[12px] font-[700] flex-shrink-0 text-center"
 					style={scorePillStyle(overallScore())}
 				>{formatScore(overallScore())}</span>
 			</div>
@@ -165,7 +166,7 @@
 					{@const areaScore = computeAreaScore(area.id)}
 					{@const interp = scoreInterpretation(areaScore)}
 					<button
-						class="w-full text-left flex flex-col bg-white border-[1.5px] border-[#e5e7eb] rounded-[10px] px-4 py-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer transition-[border-color,transform] duration-150 hover:border-[#00b3b0] hover:translate-x-0.5"
+						class="w-full text-left flex flex-col bg-white border-[1.5px] border-[#e5e7eb] rounded-[10px] px-4 py-[10px] cursor-pointer transition-[border-color] duration-150 hover:border-[#00b3b0]"
 						onclick={() => sidebarPush({ type: 'area', areaId: area.id })}
 					>
 						<div class="flex items-center justify-between gap-2">
@@ -178,7 +179,7 @@
 								style={scorePillStyle(areaScore)}
 							>{formatScore(areaScore)}</span>
 						</div>
-						<div class="text-[11px] text-[#9ca3af] mt-[5px] leading-[1.35]">{interp}</div>
+						<div class="text-[11px] text-[#9ca3af] mt-[5px] leading-[1.35] text-balance">{interp}</div>
 					</button>
 				{/each}
 			</div>
@@ -212,17 +213,21 @@
 				{@const areaColors = scoreColors(areaScore)}
 
 				<!-- Sticky header -->
-				<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-					<div class="px-[14px] pt-[10px] pb-[8px]">
-						<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7] w-fit" onclick={sidebarBack}>
+				<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
+					<div class="px-[14px] pt-[10px] pb-[8px] flex items-center justify-between gap-2">
+						<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7]" onclick={sidebarBack}>
 							<i class="fa-solid fa-arrow-left text-[10px]"></i> All Areas
 						</button>
+						<div class="flex items-center gap-[5px] flex-shrink-0">
+							<span class="text-[11px] font-semibold text-[#6b7280] truncate max-w-[100px]">{getCurrentModelName()}</span>
+							<span class="text-[10px] font-medium text-[#6b7280] border border-[#d1d5db] rounded-[5px] px-[5px] py-[1px]">{appState.filters.age === 'adult' ? '18+' : '6–17'}</span>
+						</div>
 					</div>
 					<div style="border-left: 5px solid {areaColors.color}; background: {areaColors.light}; border-bottom: 1px solid {areaColors.border}; padding: 12px 16px;">
 						<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[4px]">Well-being Area</div>
 						<div class="flex items-center gap-2">
 							<i class="fa-solid {area.icon} text-[15px] flex-shrink-0"></i>
-							<span class="text-[17px] font-[800] text-[#1a1a1a] tracking-[-0.025em] leading-[1.2] flex-1 min-w-0">{area.name}</span>
+							<span class="text-[15px] font-[800] text-[#1a1a1a] tracking-[-0.02em] leading-[1.2] flex-1 min-w-0">{area.name}</span>
 							<span
 								class="inline-block px-[6px] py-[1px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 min-w-[30px] text-center"
 								style={scorePillStyle(areaScore)}
@@ -233,7 +238,7 @@
 
 				{#if areaDesc}
 					<div class="px-[14px] pt-3 pb-2">
-						<p class="text-[13px] text-[#6b7280] leading-[1.6]">{areaDesc}</p>
+						<p class="text-[12px] text-[#6b7280] leading-[1.6] text-balance">{areaDesc}</p>
 					</div>
 				{/if}
 
@@ -245,7 +250,7 @@
 						{@const subScore = computeSubareaScore(sub.id)}
 						{@const subDesc = SUBAREA_DESCRIPTIONS[sub.id] ?? ''}
 						<button
-							class="w-full text-left flex flex-col bg-white border-[1.5px] border-[#e5e7eb] rounded-[10px] px-4 py-[10px] shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer transition-[border-color,transform] duration-150 hover:border-[#00b3b0] hover:translate-x-0.5"
+							class="w-full text-left flex flex-col bg-white border-[1.5px] border-[#e5e7eb] rounded-[10px] px-4 py-[10px] cursor-pointer transition-[border-color] duration-150 hover:border-[#00b3b0]"
 							onclick={() => sidebarPush({ type: 'subarea', subareaId: sub.id })}
 						>
 							<div class="flex items-center justify-between gap-2">
@@ -259,7 +264,7 @@
 								>{formatScore(subScore)}</span>
 							</div>
 							{#if subDesc}
-								<div class="text-[11px] text-[#9ca3af] mt-[5px] leading-[1.35]">{subDesc}</div>
+								<div class="text-[11px] text-[#9ca3af] mt-[5px] leading-[1.35] text-balance">{subDesc}</div>
 							{/if}
 						</button>
 					{/each}
@@ -297,17 +302,21 @@
 				{@const subColors = scoreColors(subareaScore)}
 
 				<!-- Sticky header -->
-				<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-					<div class="px-[14px] pt-[10px] pb-[8px]">
-						<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7] w-fit" onclick={sidebarBack}>
+				<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
+					<div class="px-[14px] pt-[10px] pb-[8px] flex items-center justify-between gap-2">
+						<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7]" onclick={sidebarBack}>
 							<i class="fa-solid fa-arrow-left text-[10px]"></i> {area.name}
 						</button>
+						<div class="flex items-center gap-[5px] flex-shrink-0">
+							<span class="text-[11px] font-semibold text-[#6b7280] truncate max-w-[100px]">{getCurrentModelName()}</span>
+							<span class="text-[10px] font-medium text-[#6b7280] border border-[#d1d5db] rounded-[5px] px-[5px] py-[1px]">{appState.filters.age === 'adult' ? '18+' : '6–17'}</span>
+						</div>
 					</div>
 					<div style="border-left: 5px solid {subColors.color}; background: {subColors.light}; border-bottom: 1px solid {subColors.border}; padding: 12px 16px;">
 						<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[4px]">{area.name} ›</div>
 						<div class="flex items-center gap-2">
 							<i class="fa-solid {sub.icon} text-[15px] flex-shrink-0"></i>
-							<span class="text-[17px] font-[700] text-[#1a1a1a] tracking-[-0.02em] leading-[1.2] flex-1 min-w-0">{sub.name}</span>
+							<span class="text-[15px] font-[700] text-[#1a1a1a] tracking-[-0.02em] leading-[1.2] flex-1 min-w-0">{sub.name}</span>
 							<span
 								class="inline-block px-[6px] py-[1px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 min-w-[30px] text-center"
 								style={scorePillStyle(subareaScore)}
@@ -318,7 +327,7 @@
 
 				{#if subDesc}
 					<div class="px-[14px] pt-3 pb-2">
-						<p class="text-[13px] text-[#6b7280] leading-[1.6]">{subDesc}</p>
+						<p class="text-[12px] text-[#6b7280] leading-[1.6] text-balance">{subDesc}</p>
 					</div>
 				{/if}
 
@@ -333,7 +342,7 @@
 								<span class="inline-flex items-center justify-center w-[16px] h-[16px] rounded-full text-[10px] font-[800]" style="border:1.5px solid #93c5fd;color:#60a5fa">+</span>
 								Promoting good behavior <span class="text-[#9ca3af] font-normal">· {posMetrics.length} metrics</span>
 							</span>
-							<span class="text-[13px] font-bold" style="color:#60a5fa">{posAvg.toFixed(2)}</span>
+							<span class="text-[12px] font-bold" style="color:#60a5fa">{posAvg.toFixed(2)}</span>
 						</div>
 						<div class="w-full h-[8px] bg-[#f3f4f6] rounded-[4px] overflow-hidden">
 							<div class="h-full bg-[#93c5fd] rounded-[4px] transition-[width] duration-300" style="width:{Math.round(posAvg * 100)}%"></div>
@@ -346,7 +355,7 @@
 									<span class="inline-flex items-center justify-center w-[16px] h-[16px] rounded-full text-[10px] font-[800]" style="border:1.5px solid #fdba74;color:#f97316">×</span>
 									Avoiding bad behavior <span class="text-[#9ca3af] font-normal">· {negMetrics.length} metrics</span>
 								</span>
-								<span class="text-[13px] font-bold" style="color:#f97316">{(1 - negAvg).toFixed(2)}</span>
+								<span class="text-[12px] font-bold" style="color:#f97316">{(1 - negAvg).toFixed(2)}</span>
 							</div>
 							<div class="w-full h-[8px] bg-[#f3f4f6] rounded-[4px] overflow-hidden">
 								<div class="h-full bg-[#fdba74] rounded-[4px] transition-[width] duration-300" style="width:{Math.round((1 - negAvg) * 100)}%"></div>
@@ -461,11 +470,12 @@
 			})()}
 
 			<!-- Sticky header -->
-			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-				<div class="px-[14px] pt-[10px] pb-[8px]">
-					<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7] w-fit" onclick={sidebarBack}>
+			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
+				<div class="px-[14px] pt-[10px] pb-[8px] flex items-center justify-between gap-2">
+					<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7]" onclick={sidebarBack}>
 						<i class="fa-solid fa-arrow-left text-[10px]"></i> {ancestors.length > 0 ? ancestors[ancestors.length - 1].name : 'Back'}
 					</button>
+					<span class="text-[11px] font-semibold text-[#9ca3af] truncate">{getCurrentModelName()}</span>
 				</div>
 				<div style="border-left: 5px solid {metricColors.color}; background: {metricColors.light}; border-bottom: 1px solid {metricColors.border}; padding: 12px 16px;">
 					{#if ancestors.length > 0}
@@ -520,11 +530,12 @@
 			})()}
 
 			<!-- Sticky header -->
-			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-				<div class="px-[14px] pt-[10px] pb-[8px]">
-					<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7] w-fit" onclick={sidebarBack}>
+			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
+				<div class="px-[14px] pt-[10px] pb-[8px] flex items-center justify-between gap-2">
+					<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7]" onclick={sidebarBack}>
 						<i class="fa-solid fa-arrow-left text-[10px]"></i> {ancestors.length > 0 ? ancestors[ancestors.length - 1].name : 'Back'}
 					</button>
+					<span class="text-[11px] font-semibold text-[#9ca3af] truncate">{getCurrentModelName()}</span>
 				</div>
 				<div style="border-left: 5px solid #6b7280; background: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 12px 16px;">
 					{#if ancestors.length > 0}
@@ -559,7 +570,7 @@
 					{#each turns as turn, i (i)}
 						<div class="mb-2 {turn.role === 'user' ? 'text-right' : 'text-left'}">
 							<div class="text-[9px] uppercase tracking-wide font-semibold mb-0.5 {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}">{turn.role === 'user' ? 'User' : 'AI'}</div>
-							<div class="inline-block text-[12px] px-3 py-2 rounded-xl max-w-[90%] text-left leading-relaxed {turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}">{turn.content}</div>
+							<div class="inline-block text-[12px] px-3 py-2 rounded-xl max-w-[90%] text-left prose prose-sm max-w-none {turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert' : 'bg-[#f3f4f6] text-[#374151]'}">{@html marked.parse(turn.content)}</div>
 						</div>
 					{/each}
 				{/if}
@@ -574,7 +585,7 @@
 			{@const themeColors = scoreColors(avgScore)}
 
 			<!-- Sticky header -->
-			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
 				<div class="px-[14px] pt-[10px] pb-[8px]">
 					<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7] w-fit" onclick={sidebarBack}>
 						<i class="fa-solid fa-arrow-left text-[10px]"></i> Back
