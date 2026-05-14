@@ -3719,6 +3719,8 @@ body.gate-mode #smart-explore-overlay {
   width: min(1440px, calc(100vw - 48px));
   margin-left: 50%;
   transform: translateX(-50%);
+  position: relative;
+  z-index: 20;
 }
 
 .pipeline-diagram img {
