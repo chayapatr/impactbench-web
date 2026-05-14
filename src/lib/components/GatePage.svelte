@@ -7,9 +7,10 @@
 	interface Props {
 		onEnter: () => void;
 		onTabChange?: (tab: string) => void;
+		isAuthenticated?: boolean;
 	}
 
-	let { onEnter, onTabChange }: Props = $props();
+	let { onEnter, onTabChange, isAuthenticated = false }: Props = $props();
 
 	const hierarchyData = $derived(
 		appState.taxonomy && !appState.loading
@@ -143,10 +144,29 @@
 		activeTab = tab;
 		const el = document.getElementById('gate-tabs-section');
 		if (el) el.scrollIntoView({ behavior: 'smooth' });
+		// Remove hash so navigating back tabs doesn't re-trigger scroll
+		if (window.location.hash) history.replaceState(null, '', window.location.pathname);
 	}
+
+	const HASH_TAB_MAP: Record<string, 'request' | 'support' | 'feedback'> = {
+		'#access': 'request',
+		'#support': 'support',
+		'#feedback': 'feedback'
+	};
 
 	$effect(() => {
 		(window as unknown as Record<string, unknown>).openGateTab = openTab;
+
+		// Open the right tab if URL has a hash
+		const hash = window.location.hash;
+		if (hash && HASH_TAB_MAP[hash]) openTab(HASH_TAB_MAP[hash]);
+
+		function onHashChange() {
+			const h = window.location.hash;
+			if (h && HASH_TAB_MAP[h]) openTab(HASH_TAB_MAP[h]);
+		}
+		window.addEventListener('hashchange', onHashChange);
+		return () => window.removeEventListener('hashchange', onHashChange);
 	});
 
 	const STATS = [
@@ -195,6 +215,7 @@
 	<!-- Same nav bar as the explore page -->
 	<ControlBar
 		activeTab="home"
+		{isAuthenticated}
 		onTabChange={(tab) => {
 			if (tab === 'home') return;
 			onTabChange?.(tab);
@@ -842,7 +863,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transform: scale(1.29);
+		transform: scale(1.23);
 		transform-origin: center center;
 	}
 

@@ -207,24 +207,24 @@
 			{@const posPct = Math.round(split.pos * 100)}
 			{@const negPct = Math.round((1 - split.neg) * 100)}
 			<button
-				class="flex w-full cursor-pointer items-center gap-[6px] border-l-[3px] px-[10px] py-2 text-left transition-colors duration-150
+				class="flex w-full cursor-pointer items-center gap-[5px] border-l-[3px] px-[12px] py-[9px] text-left transition-colors duration-150
 					{appState.filters.model === model.id
 					? 'border-l-[#00b3b0] bg-[#e0f7f7]'
 					: 'border-l-transparent hover:bg-[#f3f4f6]'}"
 				onclick={() => selectModel(model.id)}
 			>
 				<span
-					class="w-5 flex-shrink-0 text-center text-[12px] font-bold {rank <= 3
+					class="w-[18px] mr-[4px] flex-shrink-0 text-center text-[11px] font-bold {rank <= 3
 						? 'text-[#f59e0b]'
 						: 'text-[#9ca3af]'}">{rank}</span
 				>
-				<div class="min-w-0 flex-1 pr-2">
+				<div class="min-w-0 flex-1">
 					<div class="truncate text-[12px] font-semibold text-[#1a1a1a]">{model.name}</div>
 					<div class="text-[10px] text-[#9ca3af]">{model.provider}</div>
 				</div>
 				<!-- Split pos/neg bar -->
 				<div
-					class="flex h-[6px] w-[80px] flex-shrink-0 items-center overflow-hidden rounded-full bg-[#f3f4f6]"
+					class="flex h-[6px] w-[72px] flex-shrink-0 items-center overflow-hidden rounded-full bg-[#f3f4f6]"
 					title="Harm avoidance: {formatScore(split.neg)} | Promotes good: {formatScore(split.pos)}"
 				>
 					<!-- Negative half: fills from right toward center -->

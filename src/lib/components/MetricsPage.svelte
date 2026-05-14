@@ -2,8 +2,8 @@
 	import { appState } from '$lib/store.svelte';
 	import { formatScore, scorePillStyle, scoreToClass, scoreColors } from '$lib/scores';
 	import { loadScenarioDetail } from '$lib/data';
-	import { marked } from 'marked';
 	import type { ScenarioMeta, ScenarioDetail } from '$lib/types';
+	import ConversationViewer from './ConversationViewer.svelte';
 
 	interface Props {
 		onTabChange: (tab: string) => void;
@@ -400,82 +400,33 @@
 					<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[3px]">
 						{selectedMetricForScenario.subareaName}
 					</div>
-					<div class="flex items-start gap-3 mb-[10px]">
-						<div class="flex-1 min-w-0">
-							<div class="text-[14px] font-[700] text-[#1a1a1a] tracking-[-0.01em] leading-[1.3]">
-								{#if conversationDetail}
-									{conversationDetail.scenario.title}
-								{:else}
-									…
-								{/if}
-							</div>
-							<div class="text-[11px] text-[#9ca3af] mt-[3px] truncate">{selectedMetricForScenario.name}</div>
-						</div>
+					<div class="text-[14px] font-[700] text-[#1a1a1a] tracking-[-0.01em] leading-[1.3] mb-[3px]">
+						{#if conversationDetail}
+							{conversationDetail.scenario.title}
+						{:else}
+							…
+						{/if}
 					</div>
-					<!-- Model switcher -->
-					<div class="flex flex-wrap gap-[5px]">
-						{#each appState.models as model (model.id)}
-							{@const modelScore = (appState.benchmarkData[`${model.id}|${appState.filters.age}`] ?? {})[selectedMetricForScenario.id]}
-							{@const isHarmful = selectedMetricForScenario.harmful}
-							{@const verdict = appState.scenarioIndex?.[selectedMetricForScenario.id]?.find(sc => sc.scenario_id === selectedScenarioId)?.verdicts?.[model.id]}
-							{@const pass = verdict === undefined ? null : isHarmful ? verdict === 'no' : verdict === 'yes'}
-							<button
-								class="inline-flex items-center gap-[5px] px-[8px] py-[3px] rounded-[6px] border-[1.5px] text-[11px] font-medium transition-all duration-150 cursor-pointer
-									{viewingModelId === model.id ? 'border-[#00b3b0] bg-[#e0f7f7] text-[#00b3b0] font-semibold' : 'border-[#e5e7eb] text-[#6b7280] hover:border-[#9ca3af]'}"
-								onclick={() => switchModel(model.id)}
-							>
-								{#if pass !== null}
-									<span
-										class="inline-flex items-center justify-center w-[12px] h-[12px] rounded-full text-[7px] font-[800] flex-shrink-0"
-										style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-									>{pass ? '✓' : '✗'}</span>
-								{/if}
-								{model.name}
-							</button>
-						{/each}
-					</div>
+					<div class="text-[11px] text-[#9ca3af]">{selectedMetricForScenario.name}</div>
 				{/if}
 			</div>
 
 			<!-- Conversation body -->
 			<div class="flex-1 overflow-y-auto px-6 py-4">
-				{#if conversationLoading}
-					<div class="flex items-center gap-2 text-[#9ca3af] mt-4">
-						<div class="w-4 h-4 rounded-full border-2 border-[#e5e7eb] border-t-[#00b3b0] animate-spin"></div>
-						<span class="text-[13px]">Loading conversation…</span>
-					</div>
-				{:else if conversationError}
-					<p class="text-[13px] text-[#dc2626] mt-4">Failed to load conversation.</p>
-				{:else if conversationDetail}
-					{@const verdict = conversationDetail.verdict ?? {}}
-					{@const rawResult = verdict.result}
-					{@const isHarmful = selectedMetricForScenario?.harmful ?? false}
-					{@const pass = rawResult == null ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
-					{@const turns = conversationDetail.samples?.[0] ?? []}
-
-					<!-- Verdict -->
-					<div class="flex items-center gap-2 mb-4">
-						{#if pass !== null}
-							<span
-								class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-								style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-							>{pass ? 'Pass' : 'Fail'}</span>
-						{/if}
-						{#if verdict.justification}
-							<p class="text-[12px] text-[#6b7280] italic leading-relaxed">{verdict.justification}</p>
-						{/if}
-					</div>
-
-					<!-- Divider -->
-					<div class="text-[10px] font-[700] uppercase tracking-[0.08em] text-[#9ca3af] mb-3">Conversation</div>
-
-					<!-- Chat bubbles -->
-					{#each turns as turn, i (i)}
-						<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
-							<div class="text-[9px] uppercase tracking-wide font-semibold mb-1 {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}">{turn.role === 'user' ? 'User' : 'AI'}</div>
-							<div class="inline-block text-[12px] px-3 py-2 rounded-xl max-w-[88%] text-left prose prose-sm max-w-none {turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert' : 'bg-[#f3f4f6] text-[#374151]'}">{@html marked.parse(turn.content)}</div>
-						</div>
-					{/each}
+				{#if selectedMetricForScenario}
+					<ConversationViewer
+						metricId={selectedMetricForScenario.id}
+						metricName={selectedMetricForScenario.name}
+						subareaName={selectedMetricForScenario.subareaName}
+						isHarmful={selectedMetricForScenario.harmful}
+						scenarioDetail={conversationDetail}
+						loading={conversationLoading}
+						error={conversationError}
+						showModelSwitcher={true}
+						{viewingModelId}
+						scenarioId={selectedScenarioId ?? ''}
+						onSwitchModel={switchModel}
+					/>
 				{/if}
 			</div>
 		{/if}

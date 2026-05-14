@@ -3,15 +3,16 @@
 		onSmartExplore: () => void;
 		onTabChange: (tab: string) => void;
 		activeTab: string;
+		isAuthenticated: boolean;
 	}
 
-	let { onSmartExplore, onTabChange, activeTab }: Props = $props();
+	let { onSmartExplore, onTabChange, activeTab, isAuthenticated }: Props = $props();
 
 	const TABS = [
-		{ id: 'home', label: 'Home', icon: 'fa-house' },
-		{ id: 'explore', label: 'Explore', icon: 'fa-chart-pie' },
-		{ id: 'metrics', label: 'Metrics', icon: 'fa-list-check' },
-		{ id: 'about', label: 'About', icon: 'fa-seedling' }
+		{ id: 'home', label: 'Home', icon: 'fa-house', locked: false },
+		{ id: 'explore', label: 'Explore', icon: 'fa-chart-pie', locked: true },
+		{ id: 'metrics', label: 'Metrics', icon: 'fa-list-check', locked: true },
+		{ id: 'about', label: 'About', icon: 'fa-seedling', locked: false }
 	];
 </script>
 
@@ -30,19 +31,21 @@
 				/>
 			</a>
 			{#each TABS as tab (tab.id)}
+				{@const locked = tab.locked && !isAuthenticated}
 				<button
-					class="inline-flex items-center gap-1.5 px-[14px] py-[7px] rounded-[6px] text-[14px] font-medium transition-[background,color] duration-150 whitespace-nowrap cursor-pointer border-none
+					disabled={locked}
+					class="inline-flex items-center gap-1.5 px-[14px] py-[7px] rounded-[6px] text-[14px] font-medium transition-[background,color] duration-150 whitespace-nowrap border-none
 						{activeTab === tab.id
-						? 'bg-[#e0f7f7] text-[#00b3b0] font-semibold'
-						: 'bg-transparent text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
+						? 'bg-[#e0f7f7] text-[#00b3b0] font-semibold cursor-pointer'
+						: locked
+						? 'bg-transparent text-[#c4c9d4] cursor-not-allowed'
+						: 'bg-transparent text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a] cursor-pointer'}"
 					onclick={() => onTabChange(tab.id)}
 				>
 					<i class="fa-solid {tab.icon} text-[13px]"></i>
 					{tab.label}
-					{#if tab.beta}
-						<span class="inline-block px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.5px] text-[#6b7280] bg-[#e5e7eb] rounded leading-none">
-							Beta
-						</span>
+					{#if locked}
+						<i class="fa-solid fa-lock text-[10px] opacity-60"></i>
 					{/if}
 				</button>
 			{/each}

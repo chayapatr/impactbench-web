@@ -8,6 +8,7 @@ export const appState = $state({
 	models: [] as AIModel[],
 	benchmarkData: {} as BenchmarkData,
 	scenarioIndex: null as ScenarioIndex | null,
+	metricCriteria: {} as Record<string, string>,
 	filters: { model: 'claude-haiku-4-5', age: 'adult' } as FilterState,
 	loading: true,
 	error: null as string | null,
@@ -27,6 +28,10 @@ export function setFilters(filters: FilterState) {
 
 export function setScenarioIndex(idx: ScenarioIndex) {
 	appState.scenarioIndex = idx;
+}
+
+export function setMetricCriteria(criteria: Record<string, string>) {
+	appState.metricCriteria = criteria;
 }
 
 export function getCurrentScores(): Record<string, number> {

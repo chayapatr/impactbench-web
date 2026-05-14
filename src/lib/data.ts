@@ -36,6 +36,12 @@ export async function loadScenarioIndex(): Promise<ScenarioIndex> {
 	return res.json();
 }
 
+export async function loadMetricCriteria(): Promise<Record<string, string>> {
+	const res = await fetch('/data/metric-criteria.json');
+	if (!res.ok) return {};
+	return res.json();
+}
+
 export async function loadScenarioDetail(
 	benchmark: string,
 	modelId: string,

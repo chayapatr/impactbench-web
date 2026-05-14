@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { loadTaxonomy, loadModels, loadBenchmarkData, loadScenarioIndex, buildHierarchy, getScoresForFilter, buildSubareaDetail } from '$lib/data';
+	import { loadTaxonomy, loadModels, loadBenchmarkData, loadScenarioIndex, loadMetricCriteria, buildHierarchy, getScoresForFilter, buildSubareaDetail } from '$lib/data';
 	import {
 		appState,
 		setData,
 		setFilters,
 		setScenarioIndex,
+		setMetricCriteria,
 		sidebarState,
 		sidebarNavigateToArea,
 		sidebarNavigateToSubarea,
@@ -28,7 +29,8 @@
 	import MetricsPage from '$lib/components/MetricsPage.svelte';
 
 	let showGate = $state(true);
-	let activeTab = $state('explore');
+	let isAuthenticated = $state(false);
+	let activeTab = $state('home');
 	let smartExploreOpen = $state(false);
 	let smartExploreLoading = $state(false);
 
@@ -56,7 +58,9 @@
 	onMount(async () => {
 		// Check gate
 		if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('aib-auth') === '1') {
+			isAuthenticated = true;
 			showGate = false;
+			activeTab = 'explore';
 		}
 
 		try {
@@ -67,8 +71,9 @@
 			]);
 			setData(taxonomy, models, benchmarkData);
 
-			// Load scenario index in background
+			// Load scenario index and metric criteria in background
 			loadScenarioIndex().then(setScenarioIndex).catch(() => {});
+			loadMetricCriteria().then(setMetricCriteria).catch(() => {});
 
 			// Wire up global window callbacks for the smart-explore inline script (backwards compat)
 			const w = window as unknown as Record<string, unknown>;
@@ -192,8 +197,12 @@
 		});
 	}
 
+	const LOCKED_TABS = new Set(['explore', 'metrics']);
+
 	function handleTabChange(tab: string) {
 		if (tab === 'home') {
+			showGate = true;
+		} else if (LOCKED_TABS.has(tab) && !isAuthenticated) {
 			showGate = true;
 		} else {
 			activeTab = tab;
@@ -219,13 +228,15 @@
 
 {#if showGate}
 	<GatePage
-		onEnter={() => { showGate = false; activeTab = 'explore'; }}
-		onTabChange={(tab) => { showGate = false; activeTab = tab; }}
+		{isAuthenticated}
+		onEnter={() => { isAuthenticated = true; showGate = false; activeTab = 'explore'; }}
+		onTabChange={(tab) => handleTabChange(tab)}
 	/>
 {:else}
 	<div class="h-screen overflow-hidden flex flex-col bg-[#fafaf9]" style="font-family:'Inter',system-ui,-apple-system,sans-serif">
 		<ControlBar
 			{activeTab}
+			{isAuthenticated}
 			onTabChange={handleTabChange}
 			onSmartExplore={() => (smartExploreOpen = true)}
 		/>

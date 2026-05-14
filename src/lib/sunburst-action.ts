@@ -13,7 +13,7 @@ const RING2_OUTER = 335;
 const RING3_INNER = 340;
 const RING3_OUTER = 455;
 const TRANSITION_DURATION = 500;
-const VIEWBOX_R = (RING2_OUTER + 40) / 0.92;
+const VIEWBOX_R = (RING2_OUTER + 40) / 0.96;
 
 type ArcDatum = d3.HierarchyRectangularNode<SunburstNodeData>;
 interface BehaviorArcDatum {

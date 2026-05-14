@@ -12,7 +12,7 @@
 	import { formatScore, scoreToClass, scoreInterpretation, scoreColors, scorePillStyle } from '$lib/scores';
 	import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
 	import { loadScenarioDetail } from '$lib/data';
-	import { marked } from 'marked';
+	import ConversationViewer from './ConversationViewer.svelte';
 	import type { ScenarioMeta, ScenarioDetail } from '$lib/types';
 
 	// Expanded metric state for inline accordion
@@ -492,6 +492,9 @@
 			</div>
 
 			<div class="px-6 py-4">
+				{#if appState.metricCriteria?.[top.metricId]}
+					<div class="mb-4 text-[11px] text-[#6b7280] leading-[1.5] whitespace-pre-line border-l-[2px] border-[#e5e7eb] pl-[8px]">{appState.metricCriteria[top.metricId]}</div>
+				{/if}
 				{#if scenarios.length === 0}
 					<p class="text-[13px] text-[#6b7280] leading-[1.6]">No scenarios available for this metric.</p>
 				{:else}
@@ -546,34 +549,14 @@
 			</div>
 
 			<div class="px-6 py-4">
-				{#if scenarioLoading}
-					<p class="text-[13px] text-[#9ca3af]">Loading conversation…</p>
-				{:else if scenarioError}
-					<p class="text-[13px] text-[#dc2626]">Failed to load conversation.</p>
-				{:else if scenarioDetail}
-					{@const verdict = scenarioDetail.verdict ?? {}}
-					{@const rawResult = verdict.result}
-					{@const pass = rawResult == null ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
-					{@const turns = scenarioDetail.samples?.[0] ?? []}
-					<div class="flex items-center gap-2 mb-3">
-						{#if pass !== null}
-							<span
-								class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-								style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-							>{pass ? 'Pass' : 'Fail'}</span>
-						{/if}
-					</div>
-					{#if verdict.justification}
-						<p class="text-[12px] text-[#6b7280] italic mb-4 leading-relaxed">{verdict.justification}</p>
-					{/if}
-					<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] mb-3">Conversation</div>
-					{#each turns as turn, i (i)}
-						<div class="mb-2 {turn.role === 'user' ? 'text-right' : 'text-left'}">
-							<div class="text-[9px] uppercase tracking-wide font-semibold mb-0.5 {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}">{turn.role === 'user' ? 'User' : 'AI'}</div>
-							<div class="inline-block text-[12px] px-3 py-2 rounded-xl max-w-[90%] text-left prose prose-sm max-w-none {turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert' : 'bg-[#f3f4f6] text-[#374151]'}">{@html marked.parse(turn.content)}</div>
-						</div>
-					{/each}
-				{/if}
+				<ConversationViewer
+					metricId={top.metricId}
+					metricName={top.scenarioMeta.title}
+					{isHarmful}
+					scenarioDetail={scenarioDetail}
+					loading={scenarioLoading}
+					error={scenarioError}
+				/>
 			</div>
 
 		{:else if top.type === 'theme-metrics'}
