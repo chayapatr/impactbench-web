@@ -29,6 +29,9 @@
 		if (top.type === 'area') {
 			return { mode: 'area' as const, areaId: top.areaId };
 		}
+		if (top.type === 'smart-focus' || top.type === 'theme-metrics') {
+			return { mode: 'overview' as const };
+		}
 		return { mode: 'overview' as const };
 	});
 
@@ -77,9 +80,14 @@
 			.sort((a, b) => b.split.avg - a.split.avg);
 	});
 
-	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
+	const isSmartMode = $derived(() => {
+		if (leaderboardState.smartRanked.length === 0) return false;
+		const top = sidebarState.navStack[sidebarState.navStack.length - 1];
+		return top.type === 'smart-focus' || top.type === 'theme-metrics';
+	});
 
 	const subtitle = $derived(() => {
+		if (isSmartMode()) return 'Rankings reflect your focus areas from Smart Explore.';
 		const ctx = navContext();
 		if (ctx.mode === 'scenario') {
 			const sc = ctx.scenarioMeta;
@@ -189,40 +197,40 @@
 
 <!-- Rankings list -->
 <div class="flex-1 overflow-y-auto py-[6px] pb-0">
-	{#if isSmartMode}
-		<div
-			class="mx-3 my-2.5 rounded-[8px] bg-[#e0f7f7] px-[10px] py-2 text-center text-[11px] font-semibold tracking-[0.06em] text-[#00b3b0] uppercase"
-		>
-			<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Smart Rankings — Your Focus Areas
+	{#if isSmartMode()}
+		<div class="mx-3 my-2.5 rounded-[8px] bg-[#e0f7f7] px-[10px] py-[6px] text-[11px] font-semibold tracking-[0.06em] text-[#00b3b0] uppercase">
+			<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Smart Rankings
 		</div>
 		{#each leaderboardState.smartRanked as entry, idx (entry.id)}
 			{@const rank = idx + 1}
-			{@const pct = Math.round(entry.score * 100)}
-			{@const cls = entry.score > 0.55 ? 'positive' : entry.score < 0.45 ? 'negative' : 'neutral'}
+			{@const split = computeSplitScore(entry.id, null, null, null)}
+			{@const posPct = Math.round(split.pos * 100)}
+			{@const negPct = Math.round((1 - split.neg) * 100)}
 			<button
-				class="flex w-full cursor-pointer items-center gap-[8px] border-l-[3px] px-[14px] py-[8px] text-left transition-colors duration-150
+				class="flex w-full cursor-pointer items-center gap-[5px] border-l-[3px] px-[12px] py-[9px] text-left transition-colors duration-150
 					{appState.filters.model === entry.id
 					? 'border-l-[#00b3b0] bg-[#e0f7f7]'
 					: 'border-l-transparent hover:bg-[#f3f4f6]'}"
 				onclick={() => selectModel(entry.id)}
 			>
-				<span class="w-5 flex-shrink-0 text-center text-[12px] font-bold {rank <= 3 ? 'text-[#f59e0b]' : 'text-[#9ca3af]'}">{rank}</span>
+				<span class="w-[18px] mr-[4px] flex-shrink-0 text-center text-[11px] font-bold {rank <= 3 ? 'text-[#f59e0b]' : 'text-[#9ca3af]'}">{rank}</span>
 				<div class="min-w-0 flex-1">
 					<div class="truncate text-[12px] font-semibold text-[#1a1a1a]">{entry.name}</div>
 					<div class="text-[10px] text-[#9ca3af]">{entry.provider}</div>
 				</div>
-				<div class="flex w-[90px] flex-shrink-0 items-center gap-1">
-					<div class="h-[5px] flex-1 overflow-hidden rounded-full bg-[#f3f4f6]">
-						<div
-							class="h-full rounded-full"
-							class:bg-green-500={cls === 'positive'}
-							class:bg-red-500={cls === 'negative'}
-							class:bg-gray-400={cls === 'neutral'}
-							style="width:{pct}%"
-						></div>
+				<div
+					class="flex h-[6px] w-[72px] flex-shrink-0 items-center overflow-hidden rounded-full bg-[#f3f4f6]"
+					title="Harm avoidance: {formatScore(split.neg)} | Promotes good: {formatScore(split.pos)}"
+				>
+					<div class="flex h-full flex-1 items-center justify-end overflow-hidden rounded-l-full bg-[#fee2e2]">
+						<div class="h-full rounded-l-full bg-gradient-to-l from-[#f87171] to-[#dc2626]" style="width:{negPct}%"></div>
 					</div>
-					<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]">{entry.score.toFixed(2)}</span>
+					<div class="h-full w-[2px] flex-shrink-0 bg-white"></div>
+					<div class="flex h-full flex-1 items-center justify-start overflow-hidden rounded-r-full bg-[#dcfce7]">
+						<div class="h-full rounded-r-full bg-gradient-to-r from-[#4ade80] to-[#16a34a]" style="width:{posPct}%"></div>
+					</div>
 				</div>
+				<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]">{formatScore(split.avg)}</span>
 			</button>
 		{/each}
 	{:else}

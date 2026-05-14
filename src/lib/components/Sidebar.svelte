@@ -4,9 +4,12 @@
 		sidebarState,
 		sidebarPush,
 		sidebarBack,
+		sidebarNavigateToIndex,
 		nutritionLabelState,
+		leaderboardState,
 		type NavLevel,
-		type ThemeMetricItem
+		type ThemeMetricItem,
+		type SmartTheme
 	} from '$lib/store.svelte';
 	import {
 		formatScore,
@@ -155,7 +158,15 @@
 	});
 
 	const top = $derived(sidebarState.navStack[sidebarState.navStack.length - 1]);
-	const isFocused = $derived(top.type !== 'overview');
+	const isFocused = $derived(top.type !== 'overview' && top.type !== 'smart-focus');
+
+	function goToSmartFocus() {
+		const node = leaderboardState.smartFocusNode;
+		console.log('goToSmartFocus called', node, sidebarState.navStack);
+		if (node) {
+			sidebarState.navStack = [{ type: 'overview' }, node];
+		}
+	}
 	const ancestors = $derived(getAncestors());
 
 	const overallScore = $derived(() => {
@@ -167,6 +178,29 @@
 </script>
 
 <div class="flex h-full flex-col overflow-hidden bg-[#fafaf9]">
+	<!-- Smart focus banner — persistent when smart mode is active, always on top -->
+	{#if leaderboardState.smartRanked.length > 0}
+		{@const smartFocusNode = leaderboardState.smartFocusNode}
+		{@const isOnSmartFocus = top.type === 'smart-focus'}
+		<div class="flex-shrink-0 px-[10px] py-[8px]">
+			<button
+				class="flex w-full items-center gap-[8px] rounded-[8px] bg-[#e0f7f7] px-[12px] py-[8px] text-left transition-colors duration-150
+					{isOnSmartFocus ? 'opacity-50 cursor-default' : 'hover:bg-[#ccf2f1] cursor-pointer'}"
+				disabled={isOnSmartFocus}
+				onclick={goToSmartFocus}
+			>
+				<i class="fa-solid fa-wand-magic-sparkles text-[11px] flex-shrink-0 text-[#00b3b0]"></i>
+				<div class="min-w-0 flex-1">
+					<div class="text-[10px] font-[700] uppercase tracking-[0.06em] text-[#00b3b0] leading-none mb-[2px]">Smart Focus</div>
+					<div class="text-[11px] font-semibold text-[#0e7490] truncate leading-none">Go to Your Focus Areas</div>
+				</div>
+				{#if !isOnSmartFocus}
+					<i class="fa-solid fa-arrow-up text-[9px] text-[#00b3b0] flex-shrink-0"></i>
+				{/if}
+			</button>
+		</div>
+	{/if}
+
 	<!-- Header (hidden in focus/drill-down mode) -->
 	<div class="flex-shrink-0 border-b border-[#f3f4f6] {isFocused ? 'hidden' : ''}" id="sb-header">
 		<div class="px-[14px] pt-[20px] pb-[14px]">
@@ -738,82 +772,165 @@
 					error={scenarioError}
 				/>
 			</div>
+		{:else if top.type === 'smart-focus'}
+			{@const scores = getCurrentScores()}
+			<!-- Same layout as overview: section label + area-style cards, no back button -->
+			<div
+				class="mt-4 flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+			>
+				<span><i class="fa-solid fa-wand-magic-sparkles mr-1 text-[9px]"></i> Your Focus Areas</span>
+			</div>
+			{#if top.userText}
+				<p class="px-[14px] pb-2 text-[11px] leading-[1.4] text-[#9ca3af] italic truncate">"{top.userText}"</p>
+			{/if}
+			<div class="flex flex-col gap-[6px] px-[14px] pb-4">
+				{#each top.themes as theme (theme.name)}
+					{@const themeMetrics: ThemeMetricItem[] = theme.metrics}
+					{@const withScores = themeMetrics.filter((m) => scores[m.id] !== undefined)}
+					{@const avgScore = withScores.length
+						? withScores.reduce((s, m) => s + (scores[m.id] ?? 0), 0) / withScores.length
+						: theme.avg_score}
+					{@const interp = scoreInterpretation(avgScore)}
+					<button
+						class="flex w-full cursor-pointer flex-col rounded-[10px] border-[1.5px] border-[#e5e7eb] bg-white px-4 py-[10px] text-left transition-[border-color] duration-150 hover:border-[#00b3b0]"
+						onclick={() => sidebarPush({ type: 'theme-metrics', themeName: theme.name, themeDesc: theme.description, metrics: themeMetrics })}
+					>
+						<div class="flex items-center justify-between gap-2">
+							<div class="flex min-w-0 flex-1 items-center gap-2">
+								<i class="fa-solid {theme.icon} flex-shrink-0 text-[15px]"></i>
+								<span class="text-[13px] font-semibold text-[#1a1a1a]">{theme.name}</span>
+							</div>
+							<span
+								class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+								style={scorePillStyle(avgScore)}>{formatScore(avgScore)}</span
+							>
+						</div>
+						<div class="mt-[5px] text-[11px] leading-[1.35] text-balance text-[#9ca3af]">
+							{interp}
+						</div>
+					</button>
+				{/each}
+			</div>
+
 		{:else if top.type === 'theme-metrics'}
 			{@const scores = getCurrentScores()}
 			{@const withScores = top.metrics.filter((m) => scores[m.id] !== undefined)}
 			{@const avgScore = withScores.length
 				? withScores.reduce((s, m) => s + (scores[m.id] ?? 0), 0) / withScores.length
 				: 0}
-			{@const sorted = [...top.metrics].sort((a, b) => (scores[b.id] ?? -1) - (scores[a.id] ?? -1))}
-			{@const cls = scoreToClass(avgScore)}
+			{@const metricsWithScore = top.metrics.map((m) => ({ ...m, score: scores[m.id] ?? 0, harmful: false }))}
+			{@const sorted = [...metricsWithScore].sort((a, b) => b.score - a.score)}
 			{@const themeColors = scoreColors(avgScore)}
 
-			<!-- Sticky header -->
+			<!-- Sticky header — same as subarea -->
 			<div class="sticky top-0 z-10 border-b border-[#f3f4f6] bg-white">
-				<div class="px-[14px] pt-[10px] pb-[8px]">
+				<div class="flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-[8px]">
 					<button
-						class="flex w-fit cursor-pointer items-center gap-[5px] rounded-[6px] border-[1.5px] border-[#e5e7eb] px-[10px] py-[4px] text-[12px] font-semibold text-[#6b7280] transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:bg-[#e0f7f7] hover:text-[#00b3b0]"
+						class="flex cursor-pointer items-center gap-[5px] rounded-[6px] border-[1.5px] border-[#e5e7eb] px-[10px] py-[4px] text-[12px] font-semibold text-[#6b7280] transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:bg-[#e0f7f7] hover:text-[#00b3b0]"
 						onclick={sidebarBack}
 					>
-						<i class="fa-solid fa-arrow-left text-[10px]"></i> Back
+						<i class="fa-solid fa-arrow-left text-[10px]"></i>
+						Your Focus Areas
 					</button>
+					<div class="flex flex-shrink-0 items-center gap-[5px]">
+						<span class="max-w-[100px] truncate text-[11px] font-semibold text-[#6b7280]"
+							>{getCurrentModelName()}</span
+						>
+						<span
+							class="rounded-[5px] border border-[#d1d5db] px-[5px] py-[1px] text-[10px] font-medium text-[#6b7280]"
+							>{appState.filters.age === 'adult' ? '18+' : '6–17'}</span
+						>
+					</div>
 				</div>
 				<div
-					style="border-left: 5px solid {themeColors.color}; background: {themeColors.light}; border-bottom: 1px solid {themeColors.border}; padding: 14px 16px 14px;"
+					style="border-left: 5px solid {themeColors.color}; background: {themeColors.light}; border-bottom: 1px solid {themeColors.border}; padding: 12px 16px;"
 				>
-					<div
-						class="mb-[5px] text-[9px] font-[800] tracking-[0.1em] text-[#374151] uppercase opacity-70"
-					>
-						Focus Area
+					<div class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">
+						Your Focus Areas ›
 					</div>
 					<div class="flex items-center gap-2">
 						<span
-							class="flex-1 text-[17px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]"
+							class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]"
 							>{top.themeName}</span
 						>
 						<span
-							class="ml-auto inline-block min-w-[34px] flex-shrink-0 rounded-[12px] px-[9px] py-0.5 text-center text-[12px] font-semibold"
-							class:bg-[#dcfce7]={cls === 'positive'}
-							class:text-[#16a34a]={cls === 'positive'}
-							class:bg-[#fee2e2]={cls === 'negative'}
-							class:text-[#dc2626]={cls === 'negative'}
-							class:bg-[#f3f4f6]={cls === 'neutral'}
-							class:text-[#6b7280]={cls === 'neutral'}>{formatScore(avgScore)}</span
+							class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+							style={scorePillStyle(avgScore)}>{formatScore(avgScore)}</span
 						>
 					</div>
 				</div>
 			</div>
 
-			<div class="px-6 py-4">
-				{#if top.themeDesc}
-					<p class="mb-3 text-[13px] leading-[1.6] text-[#6b7280]">{top.themeDesc}</p>
-				{/if}
-				<div class="mb-3 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
-					Metrics ({top.metrics.length})
+			{#if top.themeDesc}
+				<div class="px-[14px] pt-3 pb-2">
+					<p class="text-[12px] leading-[1.6] text-balance text-[#6b7280]">{top.themeDesc}</p>
 				</div>
-				<div class="flex flex-col gap-0.5">
-					{#each sorted as m (m.id)}
-						{@const sc = scores[m.id]}
-						{@const mCls = sc !== undefined ? scoreToClass(sc) : 'neutral'}
+			{/if}
+
+			<!-- Metric accordion rows — same as subarea -->
+			<div
+				class="mt-3 flex items-baseline gap-1.5 px-[14px] pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+			>
+				Behaviors
+			</div>
+			<div class="flex flex-col pb-4">
+				{#each sorted as m (m.id)}
+					<div>
 						<button
-							class="flex w-full cursor-pointer items-center gap-[7px] rounded-[6px] border border-transparent px-2 py-1.5 text-left transition-colors duration-150 hover:border-[#e5e7eb] hover:bg-[#fafaf9]"
-							onclick={() => sidebarPush({ type: 'metric', metricId: m.id, metricName: m.name })}
+							class="flex w-full items-center gap-[8px] border-l-[3px] px-[14px] py-[7px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]
+								{expandedMetricId === m.id ? 'border-l-[#00b3b0] bg-[#f3f4f6]' : 'border-l-transparent'}"
+							onclick={() => toggleMetric(m.id)}
 						>
-							<span class="flex-1 text-[12px] text-[#1a1a1a]">{m.name}</span>
-							{#if sc !== undefined}
-								<span
-									class="flex-shrink-0 text-[12px] font-semibold"
-									class:text-[#16a34a]={mCls === 'positive'}
-									class:text-[#dc2626]={mCls === 'negative'}
-									class:text-[#6b7280]={mCls === 'neutral'}>{formatScore(sc)}</span
-								>
-							{:else}
-								<span class="flex-shrink-0 text-[12px] text-[#d1d5db]">N/A</span>
-							{/if}
-							<span class="flex-shrink-0 text-[#9ca3af]">›</span>
+							<span
+								class="min-w-0 flex-1 overflow-hidden text-[12px] text-ellipsis whitespace-nowrap text-[#374151]"
+								>{m.name}</span
+							>
+							<span
+								class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+								style={scorePillStyle(m.score)}>{formatScore(m.score)}</span
+							>
+							<i
+								class="fa-solid {expandedMetricId === m.id
+									? 'fa-chevron-up'
+									: 'fa-chevron-down'} flex-shrink-0 text-[9px] text-[#9ca3af]"
+							></i>
 						</button>
-					{/each}
-				</div>
+						{#if expandedMetricId === m.id}
+							{@const currentAge = appState.filters.age}
+							{@const scenarios = (appState.scenarioIndex?.[m.id] ?? []).filter((sc) => sc.age === currentAge)}
+							<div class="bg-[#f9fafb] pb-1">
+								{#if scenarios.length === 0}
+									<p class="px-[28px] py-2 text-[11px] text-[#9ca3af]">No scenarios available.</p>
+								{:else}
+									{#each scenarios as sc (sc.scenario_id)}
+										{@const rawResult = sc.verdicts?.[appState.filters.model]}
+										{@const pass = rawResult === undefined ? null : rawResult === 'yes'}
+										<button
+											class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]"
+											onclick={() => sidebarPush({ type: 'scenario', metricId: m.id, scenarioMeta: sc })}
+										>
+											{#if pass !== null}
+												<span
+													class="inline-flex h-[16px] w-[16px] flex-shrink-0 items-center justify-center rounded-full text-[9px] leading-none font-[800]"
+													style={pass
+														? 'background:#dcfce7;color:#16a34a'
+														: 'background:#fee2e2;color:#dc2626'}>{pass ? '✓' : '✗'}</span
+												>
+											{:else}
+												<span class="h-[16px] w-[16px] flex-shrink-0 rounded-full bg-[#f3f4f6]"></span>
+											{/if}
+											<span
+												class="min-w-0 flex-1 overflow-hidden text-[12px] text-ellipsis whitespace-nowrap text-[#374151]"
+												>{sc.title}</span
+											>
+											<i class="fa-solid fa-chevron-right flex-shrink-0 text-[9px] text-[#9ca3af]"></i>
+										</button>
+									{/each}
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{/each}
 			</div>
 		{/if}
 	</div>

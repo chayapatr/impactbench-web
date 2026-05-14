@@ -12,6 +12,7 @@
 		sidebarNavigateToSubarea,
 		sidebarNavigateToMetric,
 		sidebarNavigateToThemeMetrics,
+		sidebarNavigateToSmartFocus,
 		leaderboardState,
 		smartNutritionState,
 		type ThemeMetricItem
@@ -24,6 +25,7 @@
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import NutritionLabel from '$lib/components/NutritionLabel.svelte';
 	import SmartExplore from '$lib/components/SmartExplore.svelte';
+	import SmartNutritionLabel from '$lib/components/SmartNutritionLabel.svelte';
 	import GatePage from '$lib/components/GatePage.svelte';
 	import AboutPage from '$lib/components/AboutPage.svelte';
 	import MetricsPage from '$lib/components/MetricsPage.svelte';
@@ -33,13 +35,22 @@
 	let activeTab = $state('home');
 	let smartExploreOpen = $state(false);
 	let smartExploreLoading = $state(false);
+	let smartNutritionOpen = $state(false);
+	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
 
 	let sunburstRef: Sunburst | undefined = $state();
+
+	function handleClearFocus() {
+		leaderboardState.smartRanked = [];
+		leaderboardState.smartFocusNode = null;
+		smartNutritionState.opts = null;
+		sidebarState.navStack = [{ type: 'overview' }];
+	}
 
 	// Sync sunburst focus with sidebar nav stack
 	$effect(() => {
 		const top = sidebarState.navStack[sidebarState.navStack.length - 1];
-		if (top.type === 'overview') {
+		if (top.type === 'overview' || top.type === 'smart-focus' || top.type === 'theme-metrics') {
 			sunburstRef?.clearFocus();
 		} else if (top.type === 'area') {
 			sunburstRef?.focusNode(top.areaId, 'area');
@@ -75,7 +86,7 @@
 			loadScenarioIndex().then(setScenarioIndex).catch(() => {});
 			loadMetricCriteria().then(setMetricCriteria).catch(() => {});
 
-			// Wire up global window callbacks for the smart-explore inline script (backwards compat)
+			// Wire up global window callbacks for backwards compat
 			const w = window as unknown as Record<string, unknown>;
 			w.__openSubarea = handleSubareaClick;
 			w.__openMetric = (id: string) => {
@@ -123,16 +134,109 @@
 		setFilters({ ...appState.filters, model: modelId });
 	}
 
-	function handleSmartExploreSubmit(text: string) {
-		// The smart-explore module (inline script from old app) expects a window function.
-		// In this Svelte port we emit the query to the global handler if present,
-		// or show a fallback. The inline script from the old index.html is the AI-calling layer.
-		const w = window as unknown as Record<string, unknown>;
-		if (typeof w.__runSmartExplore === 'function') {
-			smartExploreLoading = true;
-			(w.__runSmartExplore as (t: string) => void)(text);
-			// loading cleared when __openSmartNutritionLabel is called
-			setTimeout(() => { smartExploreLoading = false; }, 8000);
+	const CASPER_API = 'https://casper-production-7f8e.up.railway.app';
+
+	const BENCHMARK_ICONS: Record<string, string> = {
+		'humanebench': 'fa-heart-pulse',
+		'humanagency-bench': 'fa-graduation-cap',
+		'spillunder-effect': 'fa-compass',
+		'emotional-dependency': 'fa-heart',
+		'modulated-cognitive-autonomy-benchmark-mcab': 'fa-brain',
+		'cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses': 'fa-seedling'
+	};
+
+	function subareaNameToId(name: string): string {
+		return name.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-').replace(/[()]/g, '');
+	}
+
+	async function handleSmartExploreSubmit(text: string) {
+		smartExploreOpen = false; // close modal immediately
+		smartExploreLoading = true;
+		try {
+			const resp = await fetch(CASPER_API + '/query', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ prompt: text, query: text, top_n: 15, per_benchmark_cap: 3 })
+			});
+			if (!resp.ok) throw new Error('Casper API error: ' + resp.status);
+			const data = await resp.json();
+
+			interface ParsedMetric { id: string; name: string; benchmark: string; icon: string; subareas: string[]; score: number; summary: string }
+			interface ParsedConstruct { text: string; description: string; avg_score: number; metrics: ParsedMetric[]; subareas: string[]; primarySubarea: string; icon: string; id: string | null }
+
+			// Parse themes into constructs
+			const constructs: ParsedConstruct[] = (data.themes ?? []).map((theme: Record<string, unknown>) => {
+				const metrics = ((theme.metrics as Record<string, unknown>[]) ?? []).map((m: Record<string, unknown>) => {
+					const subareaIds = ((m.subareas as string[]) ?? []).map(subareaNameToId);
+					return {
+						id: m.id as string,
+						name: m.name as string,
+						benchmark: m.benchmark as string,
+						icon: BENCHMARK_ICONS[m.benchmark as string] ?? 'fa-bullseye',
+						subareas: subareaIds.length ? subareaIds : ['autonomy-preservation'],
+						score: (m.score as number) ?? 0,
+						summary: (m.description as string) ?? ''
+					};
+				});
+				const allSubareas = [...new Set(metrics.flatMap((m): string[] => m.subareas))];
+				return {
+					text: theme.name as string,
+					description: (theme.description as string) ?? '',
+					avg_score: (theme.avg_score as number) ?? 0,
+					metrics,
+					subareas: allSubareas.length ? allSubareas : ['autonomy-preservation'],
+					primarySubarea: allSubareas[0] ?? 'autonomy-preservation',
+					icon: metrics[0]?.icon ?? 'fa-bullseye',
+					id: metrics[0]?.id ?? null
+				};
+			});
+
+			// Collect all focus metric IDs and rank models
+			const focusMetricIds = [...new Set(constructs.flatMap((c) => c.metrics.map((m) => m.id)))];
+			renderSmartRankings(focusMetricIds);
+
+			// Build nutrition label opts and open
+			const smartRanked = leaderboardState.smartRanked;
+			const topModels = smartRanked.slice(0, 3).map((m) => {
+				const themeMetricIds = constructs.map((c) => c.metrics.map((met) => met.id));
+				return {
+					name: m.name,
+					provider: m.provider,
+					score: m.score,
+					constructScores: getConstructScoresForModel(m.id, themeMetricIds),
+					worstAreas: getWorstSubareasForModel(m.id, 3)
+				};
+			});
+
+			smartNutritionState.opts = {
+				userText: text,
+				constructs: constructs.map((c) => ({
+					text: c.text,
+					benchmark: c.metrics[0]?.benchmark ?? 'benchmark',
+					score: c.avg_score,
+					icon: c.icon,
+					summary: c.description
+				})),
+				topModels
+			};
+			smartNutritionState.activeModelIdx = 0;
+
+			// Navigate sidebar to smart focus view with all themes as cards
+			const smartThemes = constructs.map((c) => ({
+				name: c.text,
+				description: c.description,
+				icon: c.icon ?? 'fa-bullseye',
+				avg_score: c.avg_score,
+				metrics: c.metrics.map((m) => ({ id: m.id, name: m.name, score: m.score ?? 0 }))
+			}));
+			sidebarNavigateToSmartFocus(text, smartThemes);
+
+			// Close the input modal
+			smartExploreOpen = false;
+		} catch (err) {
+			console.error('Smart Explore error:', err);
+		} finally {
+			smartExploreLoading = false;
 		}
 	}
 
@@ -237,8 +341,12 @@
 		<ControlBar
 			{activeTab}
 			{isAuthenticated}
+			{isSmartMode}
+			{smartExploreLoading}
 			onTabChange={handleTabChange}
 			onSmartExplore={() => (smartExploreOpen = true)}
+			onOpenNutritionLabel={() => { smartNutritionOpen = true; }}
+			onClearFocus={handleClearFocus}
 		/>
 
 		<!-- Beta banner (below navbar) -->
@@ -325,7 +433,11 @@
 <NutritionLabel />
 <SmartExplore
 	open={smartExploreOpen}
-	onClose={() => { smartExploreOpen = false; smartNutritionState.opts = null; }}
+	onClose={() => { smartExploreOpen = false; }}
 	onSubmit={handleSmartExploreSubmit}
 	loading={smartExploreLoading}
+/>
+<SmartNutritionLabel
+	open={smartNutritionOpen}
+	onClose={() => { smartNutritionOpen = false; }}
 />

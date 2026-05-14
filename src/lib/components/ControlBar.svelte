@@ -4,9 +4,13 @@
 		onTabChange: (tab: string) => void;
 		activeTab: string;
 		isAuthenticated: boolean;
+		isSmartMode?: boolean;
+		smartExploreLoading?: boolean;
+		onOpenNutritionLabel?: () => void;
+		onClearFocus?: () => void;
 	}
 
-	let { onSmartExplore, onTabChange, activeTab, isAuthenticated }: Props = $props();
+	let { onSmartExplore, onTabChange, activeTab, isAuthenticated, isSmartMode = false, smartExploreLoading = false, onOpenNutritionLabel, onClearFocus }: Props = $props();
 
 	const TABS = [
 		{ id: 'home', label: 'Home', icon: 'fa-house', locked: false },
@@ -53,18 +57,40 @@
 
 		<!-- Right side -->
 		<div class="flex items-center gap-2 ml-auto">
-			<button
-				class="inline-flex items-center gap-2 px-4 py-2 rounded-[6px] text-white text-[13px] font-semibold cursor-pointer border-none
-					shadow-[0_1px_2px_rgba(3,141,143,0.25)]
-					transition-[transform,box-shadow,filter] duration-[150ms]
-					hover:brightness-[1.06] hover:shadow-[0_3px_10px_rgba(3,141,143,0.35)] hover:-translate-y-px
-					active:translate-y-0"
-				style="background:linear-gradient(135deg,#00b3b0,#038d8f)"
-				onclick={onSmartExplore}
-			>
-				<i class="fa-solid fa-wand-magic-sparkles text-[13px]"></i>
-				Smart Explore
-			</button>
+			{#if isSmartMode}
+				<button
+					class="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-[6px] text-[13px] font-semibold cursor-pointer border-[1.5px] border-[#00b3b0] text-[#00b3b0] bg-[#e0f7f7] transition-[background,color] duration-150 hover:bg-[#ccf2f1]"
+					onclick={onOpenNutritionLabel}
+				>
+					<i class="fa-solid fa-flask text-[12px]"></i>
+					Nutrition Label
+				</button>
+				<button
+					class="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-[6px] text-[13px] font-semibold cursor-pointer border-[1.5px] border-[#e5e7eb] text-[#6b7280] bg-white transition-[background,color,border-color] duration-150 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-[#fee2e2]"
+					onclick={onClearFocus}
+				>
+					<i class="fa-solid fa-xmark text-[12px]"></i>
+					Clear Focus
+				</button>
+			{:else}
+				<button
+					disabled={smartExploreLoading}
+					class="inline-flex items-center gap-2 px-4 py-2 rounded-[6px] text-white text-[13px] font-semibold border-none
+						shadow-[0_1px_2px_rgba(3,141,143,0.25)]
+						transition-[transform,box-shadow,filter,opacity] duration-[150ms]
+						{smartExploreLoading ? 'opacity-70 cursor-wait' : 'cursor-pointer hover:brightness-[1.06] hover:shadow-[0_3px_10px_rgba(3,141,143,0.35)] hover:-translate-y-px active:translate-y-0'}"
+					style="background:linear-gradient(135deg,#00b3b0,#038d8f)"
+					onclick={onSmartExplore}
+				>
+					{#if smartExploreLoading}
+						<i class="fa-solid fa-spinner fa-spin text-[13px]"></i>
+						Analyzing…
+					{:else}
+						<i class="fa-solid fa-wand-magic-sparkles text-[13px]"></i>
+						Smart Explore
+					{/if}
+				</button>
+			{/if}
 		</div>
 	</div>
 </header>

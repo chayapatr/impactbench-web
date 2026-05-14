@@ -65,12 +65,21 @@ export const tooltipState = $state({
 
 export type ThemeMetricItem = { id: string; name: string; score: number };
 
+export interface SmartTheme {
+	name: string;
+	description: string;
+	icon: string;
+	avg_score: number;
+	metrics: ThemeMetricItem[];
+}
+
 export type NavLevel =
 	| { type: 'overview' }
 	| { type: 'area'; areaId: string }
 	| { type: 'subarea'; subareaId: string }
 	| { type: 'metric'; metricId: string; metricName: string }
 	| { type: 'scenario'; metricId: string; scenarioMeta: import('./types').ScenarioMeta }
+	| { type: 'smart-focus'; userText: string; themes: SmartTheme[] }
 	| {
 			type: 'theme-metrics';
 			themeName: string;
@@ -126,6 +135,12 @@ export function sidebarNavigateToMetric(metricId: string, taxonomy: Taxonomy) {
 	}
 }
 
+export function sidebarNavigateToSmartFocus(userText: string, themes: SmartTheme[]) {
+	const node = { type: 'smart-focus' as const, userText, themes };
+	leaderboardState.smartFocusNode = node;
+	sidebarState.navStack = [{ type: 'overview' }, node];
+}
+
 export function sidebarNavigateToThemeMetrics(
 	themeName: string,
 	themeDesc: string,
@@ -142,7 +157,8 @@ export function sidebarNavigateToThemeMetrics(
 export const leaderboardState = $state({
 	selectedAreaId: null as string | null,
 	selectedSubareaId: null as string | null,
-	smartRanked: [] as { id: string; name: string; provider: string; score: number }[]
+	smartRanked: [] as { id: string; name: string; provider: string; score: number }[],
+	smartFocusNode: null as { type: 'smart-focus'; userText: string; themes: SmartTheme[] } | null
 });
 
 // ===== Smart Nutrition State =====
