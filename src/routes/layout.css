@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@layer base {
+  *, *::before, *::after {
+    line-height: 1.35;
+  }
+}
+
+html {
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #fafaf9;
+  color: #1a1a1a;
+  line-height: 1.35;
+}
+
+/* Custom thin scrollbar to match original */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}

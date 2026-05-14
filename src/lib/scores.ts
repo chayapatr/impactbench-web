@@ -1,0 +1,65 @@
+import * as d3 from 'd3';
+
+const colorScale = d3
+	.scaleLinear<string>()
+	.domain([0, 0.5, 1])
+	.range(['#dc2626', '#e5e7eb', '#16a34a'])
+	.clamp(true);
+
+const colorScaleBright = d3
+	.scaleLinear<string>()
+	.domain([0, 0.5, 1])
+	.range(['#ef4444', '#f3f4f6', '#22c55e'])
+	.clamp(true);
+
+export function scoreToColor(score: number): string {
+	return colorScale(score);
+}
+
+export function scoreToColorBright(score: number): string {
+	return colorScaleBright(score);
+}
+
+export function averageScore(scores: number[]): number {
+	if (scores.length === 0) return 0;
+	return scores.reduce((a, b) => a + b, 0) / scores.length;
+}
+
+export function scoreToClass(score: number): string {
+	if (score >= 0.75) return 'positive';
+	if (score >= 0.55) return 'moderate';
+	if (score >= 0.45) return 'neutral';
+	return 'negative';
+}
+
+export function formatScore(score: number): string {
+	return score.toFixed(2);
+}
+
+export function scoreToArcValue(score: number, floor = 0.1): number {
+	return Math.max(Math.abs(score - 0.5), floor);
+}
+
+export function scoreInterpretation(score: number): string {
+	if (score >= 0.75) return 'Strongly benefits this dimension: AI is a clear positive force';
+	if (score >= 0.6) return 'Moderately beneficial: AI has a meaningful positive effect';
+	if (score >= 0.55) return 'Slight positive effect: modest benefit, room to improve';
+	if (score >= 0.45) return 'Neutral: no significant net impact detected';
+	if (score >= 0.4) return 'Slight concern: AI may be undermining this dimension';
+	if (score >= 0.25) return 'Moderate concern: notable negative effects observed';
+	return 'Significant concern: AI consistently harms this dimension';
+}
+
+export function scoreColors(score: number): { color: string; light: string; border: string } {
+	if (score >= 0.75) return { color: '#16a34a', light: '#f0fdf4', border: '#86efac' };
+	if (score >= 0.55) return { color: '#d97706', light: '#fffbeb', border: '#fcd34d' };
+	if (score < 0.45) return { color: '#dc2626', light: '#fff5f5', border: '#fca5a5' };
+	return { color: '#6b7280', light: '#f9fafb', border: '#e5e7eb' };
+}
+
+export function scorePillStyle(score: number): string {
+	if (score >= 0.75) return 'background:#dcfce7;color:#16a34a';
+	if (score >= 0.55) return 'background:#fef3c7;color:#d97706';
+	if (score >= 0.45) return 'background:#f3f4f6;color:#6b7280';
+	return 'background:#fee2e2;color:#dc2626';
+}
