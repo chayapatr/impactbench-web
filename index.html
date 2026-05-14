@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Human-AI Impact Bench</title>
+    <title>ImpactBench</title>
     <link
       rel="icon"
       href="/images/MIT_Social-Media-Logo_Light-Green.png"
@@ -115,68 +115,36 @@
           <div class="gate-info-card">
             <h2 class="gate-info-title">The Rationale</h2>
             <p class="gate-info-body">
-              Today's AI benchmarks measure what models can do: accuracy,
+              Today's AI benchmarks measure what models can do, accuracy, speed,
               reasoning, task completion. They tell us almost nothing about what
-              AI does to the people who use it. Two models with identical
-              capability scores can shape a user's autonomy, mental health, and
-              relationships in fundamentally different ways, and the field
-              currently has no shared, independent way to tell them apart. AI
-              Human Impact Bench is the first open standard built to answer a
-              different question: across realistic, multi-turn conversations,
-              does an AI system support or undermine human flourishing?
+              happens to the person on the other side of the screen. We're
+              building the first open standard that asks a different question:
+              across millions of real conversations, is AI actually making
+              people's lives better?
             </p>
             <ul class="gate-info-points">
               <li>
                 AI is being adopted faster than any technology in history, yet
-                trust in AI companies is declining and the evidence base that
-                would justify calibrated trust has not been built.
+                there's no shared, independent way to measure its effect on
+                human well-being
               </li>
               <li>
-                Models that perform well on conventional safety benchmarks have
-                still produced harmful user outcomes in over 70% of high-risk
-                scenarios in controlled studies (Archiwaranguprok et al., 2025),
-                and sycophantic dynamics establish preconditions for
-                psychological dependency that single-turn evaluations cannot
-                detect.
+                Models that ace conventional safety benchmarks have still
+                produced harmful outcomes in over 70% of high-risk scenarios in
+                controlled studies
               </li>
               <li>
-                Only 16% of reviewed AI benchmarks include any statistical
-                testing of their measurement properties (Bean et al., 2025), and
-                most operationalize contested constructs without precise
-                definitions. This methodological gap becomes structural when the
-                construct in question is human impact.
+                No existing benchmark covers all three domains where impact
+                unfolds: Physical, Psychological, and Societal
               </li>
               <li>
-                Human-impact harms are relational and unfold over time. The
-                highest-profile real-world cases emerged not from isolated
-                prompts but from patterns developing across weeks of interaction,
-                exactly the dynamics single-turn benchmarks systematically
-                obscure.
+                Developers, policymakers, clinicians, and everyday users need a
+                common signal they can trust, one not produced by the companies
+                being evaluated
               </li>
               <li>
-                No existing benchmark spans the three domains where impact
-                actually unfolds: physical (health, legal, financial decisions),
-                psychological (emotional dependence, autonomy, character), and
-                societal (cognitive offloading, bias, epistemic independence).
-              </li>
-              <li>
-                Those best positioned to identify consequential harms, including
-                clinicians, educators, legal scholars, and affected communities,
-                often lack the technical expertise to build benchmarks, while
-                those with technical expertise lack the domain grounding to
-                identify the right constructs. The field needs infrastructure
-                that decouples construct identification from benchmark
-                construction.
-              </li>
-              <li>
-                Developers, policymakers, clinicians, parents, and everyday
-                users need a common signal they can trust, one produced openly
-                and contestably rather than by the companies being evaluated.
-              </li>
-              <li>
-                Human flourishing, grounded in eudaimonic psychology and
-                capability theory, is the right north star for responsible AI,
-                not task performance alone.
+                Human flourishing, not task performance, is the right north star
+                for responsible AI
               </li>
             </ul>
           </div>
@@ -184,85 +152,42 @@
             <h2 class="gate-info-title">The Methodology</h2>
             <p class="gate-info-body">
               Scores reflect how consistently a model supports, or undermines,
-              human flourishing across realistic, multi-turn, adversarially
-              probed scenarios. Each conversation pairs a target model with a
-              demographically varied simulated user pursuing a latent adversarial
-              goal designed to elicit a specific failure mode. Conversations are
-              then graded by an LLM-as-judge whose reliability is validated
-              through test-retest consistency, between-judge ranking agreement,
-              generator-swap audits, and sampling-stability checks.
+              human flourishing across realistic, multi-turn scenarios. Each
+              conversation is simulated with a demographically varied user
+              pursuing a latent adversarial goal, then graded by an
+              LLM-as-judge pipeline whose reliability is validated through
+              test-retest consistency and between-judge agreement checks.
             </p>
             <ul class="gate-info-points">
               <li>
-                <span><strong>Scoring.</strong> Each (scenario, metric) pair
-                receives a binary verdict: 1 if the model's behavior reliably
+                <span><strong>1</strong>, behavior reliably
                 <span style="color: #16a34a; font-weight: 700">supports</span>
-                human flourishing on the measured dimension, 0 if it
-                reliably <span style="color: #dc2626; font-weight: 700">undermines</span>
-                it. Polarity is assigned per metric, so a
-                &ldquo;1&rdquo; always means the model resisted the targeted
-                failure mode and a &ldquo;0&rdquo; always means it exhibited it,
-                regardless of whether the underlying behavior is framed as
-                protective or harmful.</span>
+                human flourishing on the measured dimension</span>
               </li>
               <li>
-                <span><strong>Adversarial design.</strong> Every metric is
-                paired with scenarios containing a latent adversarial objective:
-                instructions guiding the simulated user to apply social pressure,
-                escalate emotionally, and probe for the target failure across six
-                turns. This mirrors how real harms accumulate organically rather
-                than appearing in a single prompt.</span>
+                <span><strong>0</strong>, behavior reliably
+                <span style="color: #dc2626; font-weight: 700">undermines</span>
+                human flourishing on the measured dimension</span>
               </li>
               <li>
-                <span><strong>Demographic stratification.</strong> Scenarios are
-                cross-stratified across age (child/teen 6 to 17, adult 18+) and
-                gender (female, male, non-binary), enabling intersectional
-                analysis and surfacing where harms concentrate. This pipeline has
-                already shown that 12 of 14 leading models exhibit more
-                emotional-dependence behaviors toward minors than adults, the
-                opposite of what protective design implies.</span>
+                <span>Each metric is adversarially designed to elicit a specific
+                failure mode, with polarity assigned per metric so that a
+                "1" reflects the model resisting that failure and a "0"
+                reflects the model exhibiting it</span>
               </li>
               <li>
-                <span><strong>Multi-turn, dynamic format.</strong> Conversations
-                unfold over multiple turns with persistent user goals, capturing
-                relational, time-extended dynamics (habituation, escalation,
-                dependency formation) that single-prompt benchmarks miss
-                entirely.</span>
+                <span>Metrics are stratified across age and gender to surface where
+                harms concentrate</span>
               </li>
               <li>
-                <span><strong>Surface-form realism.</strong> A perfunctory mode
-                injects stochastic lower-casing, character transpositions, and
-                deletions to mimic the typos and auto-correct artifacts of
-                authentic conversational texting, so models are tested under
-                realistic input rather than sanitized prose.</span>
+                <span>Scenarios unfold over multiple turns to capture relational,
+                time-extended dynamics that single-prompt benchmarks miss</span>
               </li>
               <li>
-                <span><strong>Reliability as a first-class output.</strong> The
-                pipeline reports not just scores but their stability: test-retest
-                agreement (Fleiss&rsquo; &kappa; = 0.64 to 0.78), between-judge
-                ranking correlation (&rho; = 0.61 to 1.00 across qualified
-                judges), three-sample conversation agreement (78% unanimous,
-                mean pairwise agreement 0.93), and generator-swap audits that
-                confirm rankings are not artifacts of which model family wrote
-                the metrics.</span>
-              </li>
-              <li>
-                <span><strong>Open submission.</strong> Constructs are
-                contributed by clinicians, legal scholars, educators, and
-                community advocates through an open submission process,
-                decoupling who identifies what matters from who can implement a
-                benchmark. Each construct is auditable, contestable, and
-                revisable, making the framework learning infrastructure rather
-                than a fixed verdict.</span>
-              </li>
-              <li>
-                <span><strong>Theoretical grounding.</strong> The framework
-                operationalizes flourishing in the tradition of eudaimonic
-                psychology, Sen&rsquo;s capability approach, and
-                VanderWeele&rsquo;s multidimensional flourishing framework,
-                spanning physical, psychological, and societal domains within a
-                single nomological network so constructs can be compared rather
-                than evaluated in isolation.</span>
+                <span>Framework grounded in eudaimonic psychology and VanderWeele's
+                multidimensional flourishing framework, with constructs
+                contributed through an open submission process by clinicians,
+                legal scholars, educators, and community advocates</span>
               </li>
             </ul>
           </div>
@@ -407,7 +332,8 @@
           >
             <h2 class="gate-section-title">Support Benchmarking Efforts</h2>
             <p class="gate-section-desc">
-              Help us build an open, independent standard for understanding AI models impacts on human flourishing.
+              Help us build an open, independent standard for measuring AI's
+              impact on human flourishing.
             </p>
             <p class="gate-section-link">
               For more information on how to submit your own benchmark,
@@ -434,11 +360,11 @@
               <div class="gate-support-card">
                 <i class="fa-solid fa-circle-dollar-to-slot"></i
                 ><strong>Financial Support</strong
-                ><span>Philanthropic funding keeps our benchmarks open</span>
+                ><span>Philanthropic funding keeps the benchmark open</span>
               </div>
               <div class="gate-support-card">
                 <i class="fa-solid fa-puzzle-piece"></i><strong>Other</strong
-                ><span>All ideas for support and collaboration are welcome</span>
+                ><span>Media, policy, infrastructure, all forms welcome</span>
               </div>
             </div>
             <div class="form-card gate-form-card" id="gate-support-card">
@@ -482,7 +408,7 @@
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="gsp-how"
-                    >How would you like to support our work?
+                    >How would you like to support?
                     <span class="form-required">*</span></label
                   >
                   <textarea
@@ -560,7 +486,7 @@
           >
             <h2 class="gate-section-title">Feedback</h2>
             <p class="gate-section-desc">
-              Help us improve our benchmarking project.
+              Help us improve the benchmark, no access code required.
             </p>
             <div class="form-card gate-form-card" id="gate-feedback-card">
               <form class="bench-form" id="gate-feedback-form" novalidate>
@@ -649,7 +575,7 @@
       <footer class="gate-footer">
         <span>© 2026 MIT Media Lab · AHA Research Program</span>
         <span>·</span>
-        <span>Human-AI Impact Bench</span>
+        <span>ImpactBench</span>
       </footer>
     </div>
 
@@ -1555,12 +1481,6 @@
       </div>
     </header>
 
-    <!-- Beta warning banner -->
-    <div class="beta-banner">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      The current data and benchmarks are subject to change and still under validation and review.
-    </div>
-
     <!-- Smart Explore Modal -->
     <div class="modal-overlay" id="smart-explore-overlay" hidden>
       <div
@@ -1766,77 +1686,60 @@
     <!-- ===== ABOUT PAGE (with sidebar sub-nav) ===== -->
     <div id="about-page" class="about-page" hidden>
       <aside class="about-sidebar" id="about-sidebar">
-        <button class="about-subtab active" data-subtab="about">
-          <i class="fa-solid fa-seedling"></i> About
-        </button>
-        <button class="about-subtab" data-subtab="methodology">
-          <i class="fa-solid fa-flask"></i> Methodology
-        </button>
-        <button class="about-subtab" data-subtab="team">
-          <i class="fa-solid fa-people-group"></i> Team
-        </button>
+        <button class="about-subtab active" data-subtab="about">Pipeline</button>
+        <button class="about-subtab" data-subtab="methodology">Methodology</button>
+        <button class="about-subtab" data-subtab="team">Team</button>
       </aside>
       <div class="about-content">
         <!-- ===== ABOUT SECTION ===== -->
-        <div id="section-about" class="tab-section" hidden>
+        <div id="section-about" class="tab-section">
           <div class="tab-section-inner">
             <section class="whitepaper-banner">
               <div class="whitepaper-banner-text">
-                <h1 class="whitepaper-title">The Human–AI Impact Bench</h1>
+                <h1 class="whitepaper-title">Introducing ImpactBench</h1>
                 <p class="whitepaper-subtitle">
-                  Benchmarking AI models for human flourishing
+                  Benchmarking human flourishing across multi-turn conversations.
                 </p>
-                <div
-                  class="whitepaper-cta"
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <div class="whitepaper-cta" aria-disabled="true">
                   White paper coming soon
                 </div>
               </div>
-              <a
-                class="whitepaper-thumb"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="White paper"
-              >
-                <img
-                  src="/images/Screenshot%202026-04-26%20at%2010.56.40%E2%80%AFPM.png"
-                  alt="White paper preview"
-                />
-              </a>
             </section>
 
-            <div class="section-hero">
-              <h1 class="section-hero-title">AI Human Impact Bench</h1>
-              <p class="section-hero-subtitle">
-                A multi-turn benchmark suite measuring how AI systems affect
-                users across physical, psychological, and societal dimensions.
-              </p>
-            </div>
-
-            <h2 class="section-heading" hidden>The Problem</h2>
-            <h1 class="section-hero-title">Why now?</h1>
-            <div class="problem-pillars">
-              <div class="problem-pillar">
-                <div class="problem-pillar-bar" style="background: #a8d5b5;"></div>
-                <h3 class="problem-pillar-heading">Benchmarks focus on model capability, not human impact.</h3>
-                <p class="problem-pillar-body">Strong benchmark performance doesn't guarantee positive effects on human flourishing.</p>
-              </div>
-              <div class="problem-pillar">
-                <div class="problem-pillar-bar" style="background: #e8adb8;"></div>
-                <h3 class="problem-pillar-heading">Benchmark methods need scientific rigor and domain expertise.</h3>
-                <p class="problem-pillar-body">Only 16.0% of reviewed benchmarks include any statistical testing*</p>
-              </div>
-              <div class="problem-pillar">
-                <div class="problem-pillar-bar" style="background: #b87878;"></div>
-                <h3 class="problem-pillar-heading">Benchmarks serve the technical community.</h3>
-                <p class="problem-pillar-body">Public-facing tools are needed to translate findings for parents, teachers, policymakers, and the public.</p>
-              </div>
-            </div>
-            <p class="problem-pillar-footnote">*Bean, Andrew M., et al. &ldquo;Measuring what matters: Construct validity in large language model benchmarks.&rdquo; <em>arXiv preprint arXiv:2511.04703</em> (2025).</p>
+            <p class="section-body">
+              Generative AI is being rapidly adopted into systems people rely
+              on to make decisions about their health, finances, relationships,
+              and sense of self. If developed and deployed thoughtfully, these
+              systems have the potential to expand human access and agency. But
+              the psychological risks are relational, context-dependent, and
+              unfold over time. A model can pass conventional safety benchmarks
+              and still erode a user's autonomy, scaffold emotional dependency,
+              or quietly degrade the skills it was meant to support.
+            </p>
+            <p class="section-body" style="margin-top: 12px">
+              Existing evaluations rarely capture these dynamics: most are
+              single-turn, static, and validated against narrow definitions of
+              harm that no single discipline would have written alone.
+            </p>
+            <p class="section-body" style="margin-top: 12px">
+              Today, we're introducing ImpactBench: a benchmark suite designed
+              to measure how AI systems affect human flourishing across
+              extended, realistic interactions. Built through an open
+              submission process with researchers, clinicians, legal scholars,
+              and community advocates, the suite spans 18 expert-submitted
+              benchmarks covering emotional dependence, cognitive autonomy,
+              health, legal and financial advice, child safety, and more. Each
+              benchmark is evaluated through multi-turn adversarial simulation
+              with demographically stratified user personas, so that risks are
+              surfaced the way they appear in real conversations rather than in
+              isolated prompts.
+            </p>
+            <p class="section-body" style="margin-top: 12px">
+              ImpactBench is a first-of-its-kind collaboration between the MIT
+              Media Lab, the Psychology of Technology Institute, the USC Neely
+              Center, and UC Berkeley, launched at the AHA Flourishing Workshop
+              at MIT in October 2025 with support from the Omidyar Network.
+            </p>
 
             <div class="section-divider"></div>
 
@@ -1999,7 +1902,7 @@
         </div>
 
         <!-- ===== METHODOLOGY SECTION ===== -->
-        <div id="section-methodology" class="tab-section" hidden>
+        <div id="section-methodology" class="tab-section">
           <div class="tab-section-inner">
             <div class="section-hero">
               <h1 class="section-hero-title">How We Measure</h1>
@@ -2270,7 +2173,7 @@
         </div>
 
         <!-- ===== TEAM SECTION ===== -->
-        <div id="section-team" class="tab-section" hidden>
+        <div id="section-team" class="tab-section">
           <div class="tab-section-inner">
             <div class="section-hero">
               <h1 class="section-hero-title">Team &amp; Collaborators</h1>
@@ -2922,9 +2825,17 @@
         ];
 
         function showAboutSubsection(name) {
+          var scrollSubtabs = ["about", "methodology", "team"];
+          var isScrollSubtab = scrollSubtabs.indexOf(name) !== -1;
           aboutSubsections.forEach(function (s) {
             var el = document.getElementById("section-" + s);
-            if (el) el.hidden = s !== name;
+            if (!el) return;
+            if (scrollSubtabs.indexOf(s) !== -1) {
+              // Scroll-mode sections always visible when on a scroll subtab
+              el.hidden = !isScrollSubtab;
+            } else {
+              el.hidden = s !== name;
+            }
           });
           document.querySelectorAll(".about-subtab").forEach(function (b) {
             b.classList.toggle(
@@ -2932,6 +2843,10 @@
               b.getAttribute("data-subtab") === name,
             );
           });
+          if (isScrollSubtab) {
+            var target = document.getElementById("section-" + name);
+            if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
         }
 
         navTabs.forEach(function (tab) {
