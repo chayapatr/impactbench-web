@@ -4,12 +4,17 @@
 		sidebarState,
 		sidebarPush,
 		sidebarBack,
-
 		nutritionLabelState,
 		type NavLevel,
 		type ThemeMetricItem
 	} from '$lib/store.svelte';
-	import { formatScore, scoreToClass, scoreInterpretation, scoreColors, scorePillStyle } from '$lib/scores';
+	import {
+		formatScore,
+		scoreToClass,
+		scoreInterpretation,
+		scoreColors,
+		scorePillStyle
+	} from '$lib/scores';
 	import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
 	import { loadScenarioDetail } from '$lib/data';
 	import ConversationViewer from './ConversationViewer.svelte';
@@ -26,7 +31,9 @@
 		} else {
 			expandedMetricId = metricId;
 			const currentAge = appState.filters.age;
-			expandedScenarios = (appState.scenarioIndex?.[metricId] ?? []).filter((sc) => sc.age === currentAge);
+			expandedScenarios = (appState.scenarioIndex?.[metricId] ?? []).filter(
+				(sc) => sc.age === currentAge
+			);
 		}
 	}
 
@@ -58,7 +65,9 @@
 	}
 
 	function getCurrentModelName(): string {
-		return appState.models.find((m) => m.id === appState.filters.model)?.name ?? appState.filters.model;
+		return (
+			appState.models.find((m) => m.id === appState.filters.model)?.name ?? appState.filters.model
+		);
 	}
 
 	function getCurrentModelProvider(): string {
@@ -85,17 +94,32 @@
 			if (level.type === 'area' && appState.taxonomy) {
 				const area = appState.taxonomy.areas.find((a) => a.id === level.areaId);
 				if (area)
-					result.push({ name: area.name, icon: area.icon, score: computeAreaScore(level.areaId), navIdx: idx });
+					result.push({
+						name: area.name,
+						icon: area.icon,
+						score: computeAreaScore(level.areaId),
+						navIdx: idx
+					});
 			} else if (level.type === 'subarea' && appState.taxonomy) {
 				for (const area of appState.taxonomy.areas) {
 					const sub = area.subareas.find((s) => s.id === level.subareaId);
 					if (sub) {
-						result.push({ name: sub.name, icon: sub.icon, score: computeSubareaScore(level.subareaId), navIdx: idx });
+						result.push({
+							name: sub.name,
+							icon: sub.icon,
+							score: computeSubareaScore(level.subareaId),
+							navIdx: idx
+						});
 						break;
 					}
 				}
 			} else if (level.type === 'metric') {
-				result.push({ name: level.metricName, icon: null, score: getCurrentScores()[level.metricId] ?? null, navIdx: idx });
+				result.push({
+					name: level.metricName,
+					icon: null,
+					score: getCurrentScores()[level.metricId] ?? null,
+					navIdx: idx
+				});
 			}
 		});
 		return result;
@@ -114,8 +138,14 @@
 			scenarioLoading = true;
 			scenarioError = false;
 			loadScenarioDetail(scenarioMeta.benchmark, appState.filters.model, scenarioMeta.scenario_id)
-				.then((d) => { scenarioDetail = d; scenarioLoading = false; })
-				.catch(() => { scenarioLoading = false; scenarioError = true; });
+				.then((d) => {
+					scenarioDetail = d;
+					scenarioLoading = false;
+				})
+				.catch(() => {
+					scenarioLoading = false;
+					scenarioError = true;
+				});
 		}
 		// Reset accordion when leaving subarea
 		if (top.type !== 'subarea') {
@@ -134,22 +164,29 @@
 	});
 
 	const overallCls = $derived(() => scoreToClass(overallScore()));
-
 </script>
 
-<div class="flex flex-col h-full overflow-hidden bg-[#fafaf9]">
+<div class="flex h-full flex-col overflow-hidden bg-[#fafaf9]">
 	<!-- Header (hidden in focus/drill-down mode) -->
 	<div class="flex-shrink-0 border-b border-[#f3f4f6] {isFocused ? 'hidden' : ''}" id="sb-header">
 		<div class="px-[14px] pt-[20px] pb-[14px]">
 			<div class="flex items-center gap-3">
-				<div class="flex-1 min-w-0">
-					<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] mb-[3px]">{getCurrentModelProvider()}</div>
-					<div class="text-[16px] font-[800] text-[#1a1a1a] tracking-[-0.02em] leading-[1.2] truncate">{getCurrentModelName()}</div>
+				<div class="min-w-0 flex-1">
+					<div
+						class="mb-[3px] text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+					>
+						{getCurrentModelProvider()}
+					</div>
+					<div
+						class="truncate text-[16px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]"
+					>
+						{getCurrentModelName()}
+					</div>
 				</div>
 				<span
-					class="inline-block px-[7px] py-[2px] rounded-[7px] text-[12px] font-[700] flex-shrink-0 text-center"
-					style={scorePillStyle(overallScore())}
-				>{formatScore(overallScore())}</span>
+					class="inline-block flex-shrink-0 rounded-[7px] px-[7px] py-[2px] text-center text-[12px] font-[700]"
+					style={scorePillStyle(overallScore())}>{formatScore(overallScore())}</span
+				>
 			</div>
 		</div>
 	</div>
@@ -158,52 +195,57 @@
 	<div class="flex-1 overflow-y-auto text-[14px]" id="summary-panel">
 		{#if top.type === 'overview'}
 			<!-- Overview -->
-			<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] px-[14px] pt-[10px] pb-2 mt-4 flex items-center justify-between gap-2">
+			<div
+				class="mt-4 flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+			>
 				Well-being Areas
 			</div>
-			<div class="px-[14px] pb-1 flex flex-col gap-[6px]">
+			<div class="flex flex-col gap-[6px] px-[14px] pb-1">
 				{#each appState.taxonomy?.areas ?? [] as area (area.id)}
 					{@const areaScore = computeAreaScore(area.id)}
 					{@const interp = scoreInterpretation(areaScore)}
 					<button
-						class="w-full text-left flex flex-col bg-white border-[1.5px] border-[#e5e7eb] rounded-[10px] px-4 py-[10px] cursor-pointer transition-[border-color] duration-150 hover:border-[#00b3b0]"
+						class="flex w-full cursor-pointer flex-col rounded-[10px] border-[1.5px] border-[#e5e7eb] bg-white px-4 py-[10px] text-left transition-[border-color] duration-150 hover:border-[#00b3b0]"
 						onclick={() => sidebarPush({ type: 'area', areaId: area.id })}
 					>
 						<div class="flex items-center justify-between gap-2">
-							<div class="flex items-center gap-2 flex-1 min-w-0">
-								<i class="fa-solid {area.icon} text-[15px] flex-shrink-0"></i>
+							<div class="flex min-w-0 flex-1 items-center gap-2">
+								<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
 								<span class="text-[13px] font-semibold text-[#1a1a1a]">{area.name}</span>
 							</div>
 							<span
-								class="inline-block px-[6px] py-[1px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 min-w-[30px] text-center"
-								style={scorePillStyle(areaScore)}
-							>{formatScore(areaScore)}</span>
+								class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+								style={scorePillStyle(areaScore)}>{formatScore(areaScore)}</span
+							>
 						</div>
-						<div class="text-[11px] text-[#9ca3af] mt-[5px] leading-[1.35] text-balance">{interp}</div>
+						<div class="mt-[5px] text-[11px] leading-[1.35] text-balance text-[#9ca3af]">
+							{interp}
+						</div>
 					</button>
 				{/each}
 			</div>
 
-			<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] px-[14px] pt-[10px] pb-2 mt-4 flex items-center justify-between gap-2">
+			<div
+				class="mt-4 flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+			>
 				Score Scale
 			</div>
-			<div class="px-[14px] pb-4 flex flex-col gap-[6px]">
+			<div class="flex flex-col gap-[6px] px-[14px] pb-4">
 				{#each [{ pill: '−1', label: 'AI consistently harms this dimension', cls: 'negative' }, { pill: '0', label: 'No net effect on well-being', cls: 'neutral' }, { pill: '+1', label: 'AI consistently benefits this dimension', cls: 'positive' }] as row (row.cls)}
 					<div class="flex items-center gap-2">
 						<span
-							class="inline-block px-[9px] py-0.5 rounded-[12px] text-[12px] font-semibold flex-shrink-0 min-w-[34px] text-center"
+							class="inline-block min-w-[34px] flex-shrink-0 rounded-[12px] px-[9px] py-0.5 text-center text-[12px] font-semibold"
 							class:bg-[#dcfce7]={row.cls === 'positive'}
 							class:text-[#16a34a]={row.cls === 'positive'}
 							class:bg-[#fee2e2]={row.cls === 'negative'}
 							class:text-[#dc2626]={row.cls === 'negative'}
 							class:bg-[#f3f4f6]={row.cls === 'neutral'}
-							class:text-[#6b7280]={row.cls === 'neutral'}
-						>{row.pill}</span>
-						<span class="text-[12px] text-[#6b7280] leading-[1.4]">{row.label}</span>
+							class:text-[#6b7280]={row.cls === 'neutral'}>{row.pill}</span
+						>
+						<span class="text-[12px] leading-[1.4] text-[#6b7280]">{row.label}</span>
 					</div>
 				{/each}
 			</div>
-
 		{:else if top.type === 'area' && appState.taxonomy}
 			{@const area = appState.taxonomy.areas.find((a) => a.id === top.areaId)}
 			{#if area}
@@ -213,64 +255,84 @@
 				{@const areaColors = scoreColors(areaScore)}
 
 				<!-- Sticky header -->
-				<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
-					<div class="px-[14px] pt-[10px] pb-[8px] flex items-center justify-between gap-2">
-						<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7]" onclick={sidebarBack}>
+				<div class="sticky top-0 z-10 border-b border-[#f3f4f6] bg-white">
+					<div class="flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-[8px]">
+						<button
+							class="flex cursor-pointer items-center gap-[5px] rounded-[6px] border-[1.5px] border-[#e5e7eb] px-[10px] py-[4px] text-[12px] font-semibold text-[#6b7280] transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:bg-[#e0f7f7] hover:text-[#00b3b0]"
+							onclick={sidebarBack}
+						>
 							<i class="fa-solid fa-arrow-left text-[10px]"></i> All Areas
 						</button>
-						<div class="flex items-center gap-[5px] flex-shrink-0">
-							<span class="text-[11px] font-semibold text-[#6b7280] truncate max-w-[100px]">{getCurrentModelName()}</span>
-							<span class="text-[10px] font-medium text-[#6b7280] border border-[#d1d5db] rounded-[5px] px-[5px] py-[1px]">{appState.filters.age === 'adult' ? '18+' : '6–17'}</span>
+						<div class="flex flex-shrink-0 items-center gap-[5px]">
+							<span class="max-w-[100px] truncate text-[11px] font-semibold text-[#6b7280]"
+								>{getCurrentModelName()}</span
+							>
+							<span
+								class="rounded-[5px] border border-[#d1d5db] px-[5px] py-[1px] text-[10px] font-medium text-[#6b7280]"
+								>{appState.filters.age === 'adult' ? '18+' : '6–17'}</span
+							>
 						</div>
 					</div>
-					<div style="border-left: 5px solid {areaColors.color}; background: {areaColors.light}; border-bottom: 1px solid {areaColors.border}; padding: 12px 16px;">
-						<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[4px]">Well-being Area</div>
+					<div
+						style="border-left: 5px solid {areaColors.color}; background: {areaColors.light}; border-bottom: 1px solid {areaColors.border}; padding: 12px 16px;"
+					>
+						<div
+							class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase"
+						>
+							Well-being Area
+						</div>
 						<div class="flex items-center gap-2">
-							<i class="fa-solid {area.icon} text-[15px] flex-shrink-0"></i>
-							<span class="text-[15px] font-[800] text-[#1a1a1a] tracking-[-0.02em] leading-[1.2] flex-1 min-w-0">{area.name}</span>
+							<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
 							<span
-								class="inline-block px-[6px] py-[1px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 min-w-[30px] text-center"
-								style={scorePillStyle(areaScore)}
-							>{formatScore(areaScore)}</span>
+								class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]"
+								>{area.name}</span
+							>
+							<span
+								class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+								style={scorePillStyle(areaScore)}>{formatScore(areaScore)}</span
+							>
 						</div>
 					</div>
 				</div>
 
 				{#if areaDesc}
 					<div class="px-[14px] pt-3 pb-2">
-						<p class="text-[12px] text-[#6b7280] leading-[1.6] text-balance">{areaDesc}</p>
+						<p class="text-[12px] leading-[1.6] text-balance text-[#6b7280]">{areaDesc}</p>
 					</div>
 				{/if}
 
-				<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] px-[14px] pt-[10px] pb-2 mt-4 flex items-center justify-between gap-2">
+				<div
+					class="mt-4 flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+				>
 					Subareas
 				</div>
-				<div class="px-[14px] pb-4 flex flex-col gap-[6px]">
+				<div class="flex flex-col gap-[6px] px-[14px] pb-4">
 					{#each area.subareas as sub (sub.id)}
 						{@const subScore = computeSubareaScore(sub.id)}
 						{@const subDesc = SUBAREA_DESCRIPTIONS[sub.id] ?? ''}
 						<button
-							class="w-full text-left flex flex-col bg-white border-[1.5px] border-[#e5e7eb] rounded-[10px] px-4 py-[10px] cursor-pointer transition-[border-color] duration-150 hover:border-[#00b3b0]"
+							class="flex w-full cursor-pointer flex-col rounded-[10px] border-[1.5px] border-[#e5e7eb] bg-white px-4 py-[10px] text-left transition-[border-color] duration-150 hover:border-[#00b3b0]"
 							onclick={() => sidebarPush({ type: 'subarea', subareaId: sub.id })}
 						>
 							<div class="flex items-center justify-between gap-2">
-								<div class="flex items-center gap-2 flex-1 min-w-0">
-									<i class="fa-solid {sub.icon} text-[15px] flex-shrink-0"></i>
-									<span class="text-[13px] font-semibold text-[#1a1a1a] truncate">{sub.name}</span>
+								<div class="flex min-w-0 flex-1 items-center gap-2">
+									<i class="fa-solid {sub.icon} flex-shrink-0 text-[15px]"></i>
+									<span class="truncate text-[13px] font-semibold text-[#1a1a1a]">{sub.name}</span>
 								</div>
 								<span
-									class="inline-block px-[6px] py-[1px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 min-w-[30px] text-center"
-									style={scorePillStyle(subScore)}
-								>{formatScore(subScore)}</span>
+									class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+									style={scorePillStyle(subScore)}>{formatScore(subScore)}</span
+								>
 							</div>
 							{#if subDesc}
-								<div class="text-[11px] text-[#9ca3af] mt-[5px] leading-[1.35] text-balance">{subDesc}</div>
+								<div class="mt-[5px] text-[11px] leading-[1.35] text-balance text-[#9ca3af]">
+									{subDesc}
+								</div>
 							{/if}
 						</button>
 					{/each}
 				</div>
 			{/if}
-
 		{:else if top.type === 'subarea' && appState.taxonomy}
 			{@const scores = getCurrentScores()}
 			{@const subareaScore = computeSubareaScore(top.subareaId)}
@@ -296,117 +358,181 @@
 								: metrics}
 				{@const posMetrics = metrics.filter((m) => !m.harmful)}
 				{@const negMetrics = metrics.filter((m) => m.harmful)}
-				{@const posAvg = posMetrics.length ? posMetrics.reduce((s, m) => s + m.score, 0) / posMetrics.length : 0}
-				{@const negAvg = negMetrics.length ? negMetrics.reduce((s, m) => s + m.score, 0) / negMetrics.length : 0}
+				{@const posAvg = posMetrics.length
+					? posMetrics.reduce((s, m) => s + m.score, 0) / posMetrics.length
+					: 0}
+				{@const negAvg = negMetrics.length
+					? negMetrics.reduce((s, m) => s + m.score, 0) / negMetrics.length
+					: 0}
 				{@const cls = scoreToClass(subareaScore)}
 				{@const subColors = scoreColors(subareaScore)}
 
 				<!-- Sticky header -->
-				<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
-					<div class="px-[14px] pt-[10px] pb-[8px] flex items-center justify-between gap-2">
-						<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7]" onclick={sidebarBack}>
-							<i class="fa-solid fa-arrow-left text-[10px]"></i> {area.name}
+				<div class="sticky top-0 z-10 border-b border-[#f3f4f6] bg-white">
+					<div class="flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-[8px]">
+						<button
+							class="flex cursor-pointer items-center gap-[5px] rounded-[6px] border-[1.5px] border-[#e5e7eb] px-[10px] py-[4px] text-[12px] font-semibold text-[#6b7280] transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:bg-[#e0f7f7] hover:text-[#00b3b0]"
+							onclick={sidebarBack}
+						>
+							<i class="fa-solid fa-arrow-left text-[10px]"></i>
+							{area.name}
 						</button>
-						<div class="flex items-center gap-[5px] flex-shrink-0">
-							<span class="text-[11px] font-semibold text-[#6b7280] truncate max-w-[100px]">{getCurrentModelName()}</span>
-							<span class="text-[10px] font-medium text-[#6b7280] border border-[#d1d5db] rounded-[5px] px-[5px] py-[1px]">{appState.filters.age === 'adult' ? '18+' : '6–17'}</span>
+						<div class="flex flex-shrink-0 items-center gap-[5px]">
+							<span class="max-w-[100px] truncate text-[11px] font-semibold text-[#6b7280]"
+								>{getCurrentModelName()}</span
+							>
+							<span
+								class="rounded-[5px] border border-[#d1d5db] px-[5px] py-[1px] text-[10px] font-medium text-[#6b7280]"
+								>{appState.filters.age === 'adult' ? '18+' : '6–17'}</span
+							>
 						</div>
 					</div>
-					<div style="border-left: 5px solid {subColors.color}; background: {subColors.light}; border-bottom: 1px solid {subColors.border}; padding: 12px 16px;">
-						<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[4px]">{area.name} ›</div>
+					<div
+						style="border-left: 5px solid {subColors.color}; background: {subColors.light}; border-bottom: 1px solid {subColors.border}; padding: 12px 16px;"
+					>
+						<div
+							class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase"
+						>
+							{area.name} ›
+						</div>
 						<div class="flex items-center gap-2">
-							<i class="fa-solid {sub.icon} text-[15px] flex-shrink-0"></i>
-							<span class="text-[15px] font-[700] text-[#1a1a1a] tracking-[-0.02em] leading-[1.2] flex-1 min-w-0">{sub.name}</span>
+							<i class="fa-solid {sub.icon} flex-shrink-0 text-[15px]"></i>
 							<span
-								class="inline-block px-[6px] py-[1px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 min-w-[30px] text-center"
-								style={scorePillStyle(subareaScore)}
-							>{formatScore(subareaScore)}</span>
+								class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]"
+								>{sub.name}</span
+							>
+							<span
+								class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+								style={scorePillStyle(subareaScore)}>{formatScore(subareaScore)}</span
+							>
 						</div>
 					</div>
 				</div>
 
 				{#if subDesc}
 					<div class="px-[14px] pt-3 pb-2">
-						<p class="text-[12px] text-[#6b7280] leading-[1.6] text-balance">{subDesc}</p>
+						<p class="text-[12px] leading-[1.6] text-balance text-[#6b7280]">{subDesc}</p>
 					</div>
 				{/if}
 
 				<!-- Score breakdown bars -->
-				<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] px-[14px] pt-[10px] pb-2 mt-4 flex items-baseline gap-1.5">
-					Score Breakdown <span class="text-[10px] normal-case font-normal tracking-normal text-[#b0b8c1]">(higher is better)</span>
+				<div
+					class="mt-4 flex items-baseline gap-1.5 px-[14px] pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+				>
+					Score Breakdown <span class="font-normal tracking-normal text-[#9ca3af] normal-case"
+						>(higher is better)</span
+					>
 				</div>
-				<div class="px-[14px] pb-3 flex flex-col gap-3">
+				<div class="flex flex-col gap-3 px-[14px] pb-3">
 					<div>
-						<div class="flex items-center justify-between mb-1.5">
-							<span class="text-[12px] font-semibold text-[#374151] flex items-center gap-1.5">
-								<span class="inline-flex items-center justify-center w-[16px] h-[16px] rounded-full text-[10px] font-[800]" style="border:1.5px solid #93c5fd;color:#60a5fa">+</span>
-								Promoting good behavior <span class="text-[#9ca3af] font-normal">· {posMetrics.length} metrics</span>
+						<div class="mb-1.5 flex items-center justify-between">
+							<span class="flex items-center gap-1.5 text-[12px] font-semibold text-[#374151]">
+								<span
+									class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px] font-[800]"
+									style="border:1.5px solid #16a34a;color:#16a34a">+</span
+								>
+								Promoting good behavior
+								<span class="font-normal text-[#9ca3af]">· {posMetrics.length} metrics</span>
 							</span>
-							<span class="text-[12px] font-bold" style="color:#60a5fa">{posAvg.toFixed(2)}</span>
+							<span class="text-[12px] font-bold" style="color:#16a34a">{posAvg.toFixed(2)}</span>
 						</div>
-						<div class="w-full h-[8px] bg-[#f3f4f6] rounded-[4px] overflow-hidden">
-							<div class="h-full bg-[#93c5fd] rounded-[4px] transition-[width] duration-300" style="width:{Math.round(posAvg * 100)}%"></div>
+						<div class="h-[8px] w-full overflow-hidden rounded-[4px] bg-[#f3f4f6]">
+							<div
+								class="h-full rounded-[4px] bg-[#16a34a] transition-[width] duration-300"
+								style="width:{Math.round(posAvg * 100)}%"
+							></div>
 						</div>
 					</div>
 					{#if negMetrics.length > 0}
 						<div>
-							<div class="flex items-center justify-between mb-1.5">
-								<span class="text-[12px] font-semibold text-[#374151] flex items-center gap-1.5">
-									<span class="inline-flex items-center justify-center w-[16px] h-[16px] rounded-full text-[10px] font-[800]" style="border:1.5px solid #fdba74;color:#f97316">×</span>
-									Avoiding bad behavior <span class="text-[#9ca3af] font-normal">· {negMetrics.length} metrics</span>
+							<div class="mb-1.5 flex items-center justify-between">
+								<span class="flex items-center gap-1.5 text-[12px] font-semibold text-[#374151]">
+									<span
+										class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px] font-[800]"
+										style="border:1.5px solid #dc2626;color:#dc2626">×</span
+									>
+									Avoiding bad behavior
+									<span class="font-normal text-[#9ca3af]">· {negMetrics.length} metrics</span>
 								</span>
-								<span class="text-[12px] font-bold" style="color:#f97316">{(1 - negAvg).toFixed(2)}</span>
+								<span class="text-[12px] font-bold" style="color:#dc2626"
+									>{(1 - negAvg).toFixed(2)}</span
+								>
 							</div>
-							<div class="w-full h-[8px] bg-[#f3f4f6] rounded-[4px] overflow-hidden">
-								<div class="h-full bg-[#fdba74] rounded-[4px] transition-[width] duration-300" style="width:{Math.round((1 - negAvg) * 100)}%"></div>
+							<div class="h-[8px] w-full overflow-hidden rounded-[4px] bg-[#f3f4f6]">
+								<div
+									class="h-full rounded-[4px] bg-[#dc2626] transition-[width] duration-300"
+									style="width:{Math.round((1 - negAvg) * 100)}%"
+								></div>
 							</div>
 						</div>
 					{/if}
 				</div>
 
-				{@const metricById = Object.fromEntries(metrics.map(m => [m.id, m]))}
+				{@const metricById = Object.fromEntries(metrics.map((m) => [m.id, m]))}
 				{@const hasGroups = sub.groups && sub.groups.length > 0}
 
-				{#snippet metricRow(m: typeof metrics[0])}
+				{#snippet metricRow(m: (typeof metrics)[0])}
 					<div>
 						<button
-							class="w-full text-left flex items-center gap-[8px] border-l-[3px] px-[14px] py-[7px] transition-colors duration-150 hover:bg-[#f3f4f6]
-								{expandedMetricId === m.id ? 'bg-[#f3f4f6] border-l-[#00b3b0]' : 'border-l-transparent'}"
+							class="flex w-full items-center gap-[8px] border-l-[3px] px-[14px] py-[7px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]
+								{expandedMetricId === m.id ? 'border-l-[#00b3b0] bg-[#f3f4f6]' : 'border-l-transparent'}"
 							onclick={() => toggleMetric(m.id)}
 						>
 							<span
-								class="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[11px] font-[800] flex-shrink-0 leading-none"
-								style={m.harmful ? 'border:1.5px solid #fdba74;color:#f97316' : 'border:1.5px solid #93c5fd;color:#60a5fa'}
-							>{m.harmful ? '×' : '+'}</span>
-							<span class="flex-1 text-[12px] text-[#374151] min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{m.name}</span>
+								class="inline-flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[11px] leading-none font-[800]"
+								style={m.harmful
+									? 'border:1.5px solid #dc2626;color:#dc2626'
+									: 'border:1.5px solid #16a34a;color:#16a34a'}>{m.harmful ? '×' : '+'}</span
+							>
 							<span
-								class="inline-block px-[6px] py-[1px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 min-w-[30px] text-center"
-								style={scorePillStyle(m.score)}
-							>{formatScore(m.score)}</span>
-							<i class="fa-solid {expandedMetricId === m.id ? 'fa-chevron-up' : 'fa-chevron-down'} text-[9px] text-[#9ca3af] flex-shrink-0"></i>
+								class="min-w-0 flex-1 overflow-hidden text-[12px] text-ellipsis whitespace-nowrap text-[#374151]"
+								>{m.name}</span
+							>
+							<span
+								class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+								style={scorePillStyle(m.score)}>{formatScore(m.score)}</span
+							>
+							<i
+								class="fa-solid {expandedMetricId === m.id
+									? 'fa-chevron-up'
+									: 'fa-chevron-down'} flex-shrink-0 text-[9px] text-[#9ca3af]"
+							></i>
 						</button>
 						{#if expandedMetricId === m.id}
 							<div class="bg-[#f9fafb] pb-1">
 								{#if expandedScenarios.length === 0}
-									<p class="text-[11px] text-[#9ca3af] px-[28px] py-2">No scenarios available.</p>
+									<p class="px-[28px] py-2 text-[11px] text-[#9ca3af]">No scenarios available.</p>
 								{:else}
 									{#each expandedScenarios as sc (sc.scenario_id)}
 										{@const rawResult = sc.verdicts?.[appState.filters.model]}
-										{@const pass = rawResult === undefined ? null : m.harmful ? rawResult === 'no' : rawResult === 'yes'}
+										{@const pass =
+											rawResult === undefined
+												? null
+												: m.harmful
+													? rawResult === 'no'
+													: rawResult === 'yes'}
 										<button
-											class="w-full text-left flex items-center gap-[8px] px-[28px] py-[9px] transition-colors duration-150 hover:bg-[#f3f4f6]"
-											onclick={() => sidebarPush({ type: 'scenario', metricId: m.id, scenarioMeta: sc })}
+											class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]"
+											onclick={() =>
+												sidebarPush({ type: 'scenario', metricId: m.id, scenarioMeta: sc })}
 										>
 											{#if pass !== null}
 												<span
-													class="inline-flex items-center justify-center w-[16px] h-[16px] rounded-full text-[9px] font-[800] flex-shrink-0 leading-none"
-													style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-												>{pass ? '✓' : '✗'}</span>
+													class="inline-flex h-[16px] w-[16px] flex-shrink-0 items-center justify-center rounded-full text-[9px] leading-none font-[800]"
+													style={pass
+														? 'background:#dcfce7;color:#16a34a'
+														: 'background:#fee2e2;color:#dc2626'}>{pass ? '✓' : '✗'}</span
+												>
 											{:else}
-												<span class="w-[16px] h-[16px] rounded-full bg-[#f3f4f6] flex-shrink-0"></span>
+												<span class="h-[16px] w-[16px] flex-shrink-0 rounded-full bg-[#f3f4f6]"
+												></span>
 											{/if}
-											<span class="flex-1 text-[12px] text-[#374151] min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{sc.title}</span>
-											<i class="fa-solid fa-chevron-right text-[9px] text-[#9ca3af] flex-shrink-0"></i>
+											<span
+												class="min-w-0 flex-1 overflow-hidden text-[12px] text-ellipsis whitespace-nowrap text-[#374151]"
+												>{sc.title}</span
+											>
+											<i class="fa-solid fa-chevron-right flex-shrink-0 text-[9px] text-[#9ca3af]"
+											></i>
 										</button>
 									{/each}
 								{/if}
@@ -417,12 +543,16 @@
 
 				{#if hasGroups}
 					<!-- Grouped view with section headers -->
-					<div class="pb-4 flex flex-col gap-5 mt-3">
+					<div class="mt-3 flex flex-col gap-5 pb-4">
 						{#each sub.groups as group (group.name)}
-							{@const groupMetrics = group.metric_ids.map(id => metricById[id]).filter(Boolean)}
+							{@const groupMetrics = group.metric_ids.map((id) => metricById[id]).filter(Boolean)}
 							{#if groupMetrics.length > 0}
 								<div>
-									<div class="text-[10px] font-[700] uppercase tracking-[0.08em] text-[#9ca3af] px-[14px] pb-1.5 mb-0.5 border-b border-[#f3f4f6]">{group.name}</div>
+									<div
+										class="mb-0.5 border-b border-[#f3f4f6] px-[14px] pb-1.5 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+									>
+										{group.name}
+									</div>
 									{#each groupMetrics as m (m.id)}
 										{@render metricRow(m)}
 									{/each}
@@ -432,119 +562,169 @@
 					</div>
 				{:else}
 					<!-- Flat view -->
-					<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] px-6 pt-[10px] pb-2 mt-2 flex items-center justify-between gap-2">
+					<div
+						class="mt-2 flex items-center justify-between gap-2 px-6 pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+					>
 						<span>All Behaviors</span>
 						<div class="flex gap-[5px]">
-							{#each [['score-desc','Score ↓'],['score-asc','Score ↑'],['name-asc','A–Z']] as [mode, label] (mode)}
+							{#each [['score-desc', 'Score ↓'], ['score-asc', 'Score ↑'], ['name-asc', 'A–Z']] as [mode, label] (mode)}
 								<button
-									class="text-[11px] font-medium px-[10px] py-[3px] rounded-[12px] border-[1.5px] cursor-pointer transition-all duration-150
+									class="cursor-pointer rounded-[12px] border-[1.5px] px-[10px] py-[3px] text-[11px] font-medium transition-all duration-150
 										{sidebarState.behaviorSort === mode
-											? 'bg-[#e0f7f7] border-[#80d8d7] text-[#00b3b0] font-semibold'
-											: 'bg-[#fafaf9] border-[#e5e7eb] text-[#6b7280] hover:border-[#00b3b0] hover:text-[#00b3b0]'}"
-									onclick={() => (sidebarState.behaviorSort = mode as typeof sidebarState.behaviorSort)}
-								>{label}</button>
+										? 'border-[#80d8d7] bg-[#e0f7f7] font-semibold text-[#00b3b0]'
+										: 'border-[#e5e7eb] bg-[#fafaf9] text-[#6b7280] hover:border-[#00b3b0] hover:text-[#00b3b0]'}"
+									onclick={() =>
+										(sidebarState.behaviorSort = mode as typeof sidebarState.behaviorSort)}
+									>{label}</button
+								>
 							{/each}
 						</div>
 					</div>
-					<div class="pb-4 flex flex-col">
+					<div class="flex flex-col pb-4">
 						{#each sorted as m (m.id)}
 							{@render metricRow(m)}
 						{/each}
 					</div>
 				{/if}
 			{/if}
-
 		{:else if top.type === 'metric'}
 			{@const scores = getCurrentScores()}
 			{@const score = scores[top.metricId] ?? 0}
 			{@const currentAge = appState.filters.age}
-			{@const scenarios = (appState.scenarioIndex?.[top.metricId] ?? []).filter((sc) => sc.age === currentAge)}
+			{@const scenarios = (appState.scenarioIndex?.[top.metricId] ?? []).filter(
+				(sc) => sc.age === currentAge
+			)}
 			{@const cls = scoreToClass(score)}
 			{@const metricColors = scoreColors(score)}
 			{@const isHarmful = (() => {
 				for (const area of appState.taxonomy?.areas ?? [])
 					for (const sub of area.subareas)
-						for (const m of sub.metrics)
-							if (m.id === top.metricId) return m.harmful;
+						for (const m of sub.metrics) if (m.id === top.metricId) return m.harmful;
 				return false;
 			})()}
 
 			<!-- Sticky header -->
-			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
-				<div class="px-[14px] pt-[10px] pb-[8px] flex items-center justify-between gap-2">
-					<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7]" onclick={sidebarBack}>
-						<i class="fa-solid fa-arrow-left text-[10px]"></i> {ancestors.length > 0 ? ancestors[ancestors.length - 1].name : 'Back'}
+			<div class="sticky top-0 z-10 border-b border-[#f3f4f6] bg-white">
+				<div class="flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-[8px]">
+					<button
+						class="flex cursor-pointer items-center gap-[5px] rounded-[6px] border-[1.5px] border-[#e5e7eb] px-[10px] py-[4px] text-[12px] font-semibold text-[#6b7280] transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:bg-[#e0f7f7] hover:text-[#00b3b0]"
+						onclick={sidebarBack}
+					>
+						<i class="fa-solid fa-arrow-left text-[10px]"></i>
+						{ancestors.length > 0 ? ancestors[ancestors.length - 1].name : 'Back'}
 					</button>
-					<span class="text-[11px] font-semibold text-[#9ca3af] truncate">{getCurrentModelName()}</span>
+					<span class="truncate text-[11px] font-semibold text-[#9ca3af]"
+						>{getCurrentModelName()}</span
+					>
 				</div>
-				<div style="border-left: 5px solid {metricColors.color}; background: {metricColors.light}; border-bottom: 1px solid {metricColors.border}; padding: 12px 16px;">
+				<div
+					style="border-left: 5px solid {metricColors.color}; background: {metricColors.light}; border-bottom: 1px solid {metricColors.border}; padding: 12px 16px;"
+				>
 					{#if ancestors.length > 0}
-						<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[4px]">{ancestors[ancestors.length - 1].name} ›</div>
+						<div
+							class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase"
+						>
+							{ancestors[ancestors.length - 1].name} ›
+						</div>
 					{/if}
 					<div class="flex items-start justify-between gap-2">
-						<span class="text-[15px] font-[700] text-[#1a1a1a] tracking-[-0.01em] leading-[1.2] flex-1">{top.metricName}</span>
 						<span
-							class="inline-block px-[6px] py-[1px] rounded-[6px] text-[11px] font-semibold flex-shrink-0 min-w-[30px] text-center"
-							style={scorePillStyle(score)}
-						>{formatScore(score)}</span>
+							class="flex-1 text-[15px] leading-[1.2] font-[700] tracking-[-0.01em] text-[#1a1a1a]"
+							>{top.metricName}</span
+						>
+						<span
+							class="inline-block min-w-[30px] flex-shrink-0 rounded-[6px] px-[6px] py-[1px] text-center text-[11px] font-semibold"
+							style={scorePillStyle(score)}>{formatScore(score)}</span
+						>
 					</div>
 				</div>
 			</div>
 
 			<div class="px-6 py-4">
 				{#if appState.metricCriteria?.[top.metricId]}
-					<div class="mb-4 text-[11px] text-[#6b7280] leading-[1.5] whitespace-pre-line border-l-[2px] border-[#e5e7eb] pl-[8px]">{appState.metricCriteria[top.metricId]}</div>
+					<div
+						class="mb-4 border-l-[2px] border-[#e5e7eb] pl-[8px] text-[11px] leading-[1.5] whitespace-pre-line text-[#6b7280]"
+					>
+						{appState.metricCriteria[top.metricId]}
+					</div>
 				{/if}
 				{#if scenarios.length === 0}
-					<p class="text-[13px] text-[#6b7280] leading-[1.6]">No scenarios available for this metric.</p>
+					<p class="text-[13px] leading-[1.6] text-[#6b7280]">
+						No scenarios available for this metric.
+					</p>
 				{:else}
-					<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] mb-3">Scenarios</div>
+					<div class="mb-3 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
+						Scenarios
+					</div>
 					<div class="flex flex-col">
 						{#each scenarios as sc (sc.scenario_id)}
 							{@const rawResult = sc.verdicts?.[appState.filters.model]}
-							{@const pass = rawResult === undefined ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
+							{@const pass =
+								rawResult === undefined
+									? null
+									: isHarmful
+										? rawResult === 'no'
+										: rawResult === 'yes'}
 							<button
-								class="w-full text-left flex items-center gap-[8px] border-l-[3px] border-l-transparent px-[14px] py-[7px] transition-colors duration-150 hover:bg-[#f3f4f6] hover:border-l-[#00b3b0]"
-								onclick={() => sidebarPush({ type: 'scenario', metricId: top.metricId, scenarioMeta: sc })}
+								class="flex w-full items-center gap-[8px] border-l-[3px] border-l-transparent px-[14px] py-[7px] text-left transition-colors duration-150 hover:border-l-[#00b3b0] hover:bg-[#f3f4f6]"
+								onclick={() =>
+									sidebarPush({ type: 'scenario', metricId: top.metricId, scenarioMeta: sc })}
 							>
 								{#if pass !== null}
 									<span
-										class="inline-flex items-center justify-center w-[16px] h-[16px] rounded-full text-[9px] font-[800] flex-shrink-0 leading-none"
-										style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-									>{pass ? '✓' : '✗'}</span>
+										class="inline-flex h-[16px] w-[16px] flex-shrink-0 items-center justify-center rounded-full text-[9px] leading-none font-[800]"
+										style={pass
+											? 'background:#dcfce7;color:#16a34a'
+											: 'background:#fee2e2;color:#dc2626'}>{pass ? '✓' : '✗'}</span
+									>
 								{:else}
-									<span class="w-[16px] h-[16px] rounded-full bg-[#f3f4f6] flex-shrink-0"></span>
+									<span class="h-[16px] w-[16px] flex-shrink-0 rounded-full bg-[#f3f4f6]"></span>
 								{/if}
-								<span class="flex-1 text-[12px] text-[#374151] min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{sc.title}</span>
-								<i class="fa-solid fa-chevron-right text-[9px] text-[#9ca3af] flex-shrink-0"></i>
+								<span
+									class="min-w-0 flex-1 overflow-hidden text-[12px] text-ellipsis whitespace-nowrap text-[#374151]"
+									>{sc.title}</span
+								>
+								<i class="fa-solid fa-chevron-right flex-shrink-0 text-[9px] text-[#9ca3af]"></i>
 							</button>
 						{/each}
 					</div>
 				{/if}
 			</div>
-
 		{:else if top.type === 'scenario'}
 			{@const isHarmful = (() => {
 				for (const area of appState.taxonomy?.areas ?? [])
 					for (const sub of area.subareas)
-						for (const m of sub.metrics)
-							if (m.id === top.metricId) return m.harmful;
+						for (const m of sub.metrics) if (m.id === top.metricId) return m.harmful;
 				return false;
 			})()}
 
 			<!-- Sticky header -->
-			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
-				<div class="px-[14px] pt-[10px] pb-[8px] flex items-center justify-between gap-2">
-					<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7]" onclick={sidebarBack}>
-						<i class="fa-solid fa-arrow-left text-[10px]"></i> {ancestors.length > 0 ? ancestors[ancestors.length - 1].name : 'Back'}
+			<div class="sticky top-0 z-10 border-b border-[#f3f4f6] bg-white">
+				<div class="flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-[8px]">
+					<button
+						class="flex cursor-pointer items-center gap-[5px] rounded-[6px] border-[1.5px] border-[#e5e7eb] px-[10px] py-[4px] text-[12px] font-semibold text-[#6b7280] transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:bg-[#e0f7f7] hover:text-[#00b3b0]"
+						onclick={sidebarBack}
+					>
+						<i class="fa-solid fa-arrow-left text-[10px]"></i>
+						{ancestors.length > 0 ? ancestors[ancestors.length - 1].name : 'Back'}
 					</button>
-					<span class="text-[11px] font-semibold text-[#9ca3af] truncate">{getCurrentModelName()}</span>
+					<span class="truncate text-[11px] font-semibold text-[#9ca3af]"
+						>{getCurrentModelName()}</span
+					>
 				</div>
-				<div style="border-left: 5px solid #6b7280; background: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 12px 16px;">
+				<div
+					style="border-left: 5px solid #6b7280; background: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 12px 16px;"
+				>
 					{#if ancestors.length > 0}
-						<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[4px]">{ancestors[ancestors.length - 1].name} ›</div>
+						<div
+							class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase"
+						>
+							{ancestors[ancestors.length - 1].name} ›
+						</div>
 					{/if}
-					<span class="text-[14px] font-[600] text-[#1a1a1a] leading-[1.2]">{top.scenarioMeta.title}</span>
+					<span class="text-[14px] leading-[1.2] font-[600] text-[#1a1a1a]"
+						>{top.scenarioMeta.title}</span
+					>
 				</div>
 			</div>
 
@@ -553,51 +733,62 @@
 					metricId={top.metricId}
 					metricName={top.scenarioMeta.title}
 					{isHarmful}
-					scenarioDetail={scenarioDetail}
+					{scenarioDetail}
 					loading={scenarioLoading}
 					error={scenarioError}
 				/>
 			</div>
-
 		{:else if top.type === 'theme-metrics'}
 			{@const scores = getCurrentScores()}
 			{@const withScores = top.metrics.filter((m) => scores[m.id] !== undefined)}
-			{@const avgScore = withScores.length ? withScores.reduce((s, m) => s + (scores[m.id] ?? 0), 0) / withScores.length : 0}
+			{@const avgScore = withScores.length
+				? withScores.reduce((s, m) => s + (scores[m.id] ?? 0), 0) / withScores.length
+				: 0}
 			{@const sorted = [...top.metrics].sort((a, b) => (scores[b.id] ?? -1) - (scores[a.id] ?? -1))}
 			{@const cls = scoreToClass(avgScore)}
 			{@const themeColors = scoreColors(avgScore)}
 
 			<!-- Sticky header -->
-			<div class="sticky top-0 z-10 bg-white border-b border-[#f3f4f6] ">
+			<div class="sticky top-0 z-10 border-b border-[#f3f4f6] bg-white">
 				<div class="px-[14px] pt-[10px] pb-[8px]">
-					<button class="flex items-center gap-[5px] px-[10px] py-[4px] rounded-[6px] border-[1.5px] border-[#e5e7eb] text-[12px] font-semibold text-[#6b7280] cursor-pointer transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0] hover:bg-[#e0f7f7] w-fit" onclick={sidebarBack}>
+					<button
+						class="flex w-fit cursor-pointer items-center gap-[5px] rounded-[6px] border-[1.5px] border-[#e5e7eb] px-[10px] py-[4px] text-[12px] font-semibold text-[#6b7280] transition-[border-color,color,background] duration-150 hover:border-[#00b3b0] hover:bg-[#e0f7f7] hover:text-[#00b3b0]"
+						onclick={sidebarBack}
+					>
 						<i class="fa-solid fa-arrow-left text-[10px]"></i> Back
 					</button>
 				</div>
 				<div
 					style="border-left: 5px solid {themeColors.color}; background: {themeColors.light}; border-bottom: 1px solid {themeColors.border}; padding: 14px 16px 14px;"
 				>
-					<div class="text-[9px] font-[800] uppercase tracking-[0.1em] text-[#374151] opacity-70 mb-[5px]">Focus Area</div>
+					<div
+						class="mb-[5px] text-[9px] font-[800] tracking-[0.1em] text-[#374151] uppercase opacity-70"
+					>
+						Focus Area
+					</div>
 					<div class="flex items-center gap-2">
-						<span class="text-[17px] font-[700] text-[#1a1a1a] tracking-[-0.02em] leading-[1.2] flex-1">{top.themeName}</span>
 						<span
-							class="inline-block px-[9px] py-0.5 rounded-[12px] text-[12px] font-semibold flex-shrink-0 min-w-[34px] text-center ml-auto"
+							class="flex-1 text-[17px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]"
+							>{top.themeName}</span
+						>
+						<span
+							class="ml-auto inline-block min-w-[34px] flex-shrink-0 rounded-[12px] px-[9px] py-0.5 text-center text-[12px] font-semibold"
 							class:bg-[#dcfce7]={cls === 'positive'}
 							class:text-[#16a34a]={cls === 'positive'}
 							class:bg-[#fee2e2]={cls === 'negative'}
 							class:text-[#dc2626]={cls === 'negative'}
 							class:bg-[#f3f4f6]={cls === 'neutral'}
-							class:text-[#6b7280]={cls === 'neutral'}
-						>{formatScore(avgScore)}</span>
+							class:text-[#6b7280]={cls === 'neutral'}>{formatScore(avgScore)}</span
+						>
 					</div>
 				</div>
 			</div>
 
 			<div class="px-6 py-4">
 				{#if top.themeDesc}
-					<p class="text-[13px] text-[#6b7280] leading-[1.6] mb-3">{top.themeDesc}</p>
+					<p class="mb-3 text-[13px] leading-[1.6] text-[#6b7280]">{top.themeDesc}</p>
 				{/if}
-				<div class="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] mb-3">
+				<div class="mb-3 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
 					Metrics ({top.metrics.length})
 				</div>
 				<div class="flex flex-col gap-0.5">
@@ -605,21 +796,21 @@
 						{@const sc = scores[m.id]}
 						{@const mCls = sc !== undefined ? scoreToClass(sc) : 'neutral'}
 						<button
-							class="w-full text-left flex items-center gap-[7px] py-1.5 px-2 rounded-[6px] cursor-pointer transition-colors duration-150 border border-transparent hover:bg-[#fafaf9] hover:border-[#e5e7eb]"
+							class="flex w-full cursor-pointer items-center gap-[7px] rounded-[6px] border border-transparent px-2 py-1.5 text-left transition-colors duration-150 hover:border-[#e5e7eb] hover:bg-[#fafaf9]"
 							onclick={() => sidebarPush({ type: 'metric', metricId: m.id, metricName: m.name })}
 						>
 							<span class="flex-1 text-[12px] text-[#1a1a1a]">{m.name}</span>
 							{#if sc !== undefined}
 								<span
-									class="text-[12px] font-semibold flex-shrink-0"
+									class="flex-shrink-0 text-[12px] font-semibold"
 									class:text-[#16a34a]={mCls === 'positive'}
 									class:text-[#dc2626]={mCls === 'negative'}
-									class:text-[#6b7280]={mCls === 'neutral'}
-								>{formatScore(sc)}</span>
+									class:text-[#6b7280]={mCls === 'neutral'}>{formatScore(sc)}</span
+								>
 							{:else}
-								<span class="text-[12px] text-[#d1d5db] flex-shrink-0">N/A</span>
+								<span class="flex-shrink-0 text-[12px] text-[#d1d5db]">N/A</span>
 							{/if}
-							<span class="text-[#9ca3af] flex-shrink-0">›</span>
+							<span class="flex-shrink-0 text-[#9ca3af]">›</span>
 						</button>
 					{/each}
 				</div>
@@ -628,8 +819,16 @@
 	</div>
 
 	<!-- Site footer -->
-	<div class="flex-shrink-0 px-4 py-3 border-t border-[#f3f4f6] flex flex-col gap-1.5">
-		<p class="text-[11px] leading-[1.5] text-[#9ca3af]">MIT Media Lab · 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307 USA ⋅ <a href="https://accessibility.mit.edu/" target="_blank" rel="noopener" class="text-[#9ca3af] underline underline-offset-2 hover:text-[#6b7280]">Accessibility [↗]</a></p>
+	<div class="flex flex-shrink-0 flex-col gap-1.5 border-t border-[#f3f4f6] px-4 py-3">
+		<p class="text-[11px] leading-[1.5] text-[#9ca3af]">
+			MIT Media Lab · 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307 USA ⋅ <a
+				href="https://accessibility.mit.edu/"
+				target="_blank"
+				rel="noopener"
+				class="text-[#9ca3af] underline underline-offset-2 hover:text-[#6b7280]"
+				>Accessibility [↗]</a
+			>
+		</p>
 	</div>
 </div>
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appState, leaderboardState, setFilters } from '$lib/store.svelte';
+	import { appState, leaderboardState, sidebarState, setFilters } from '$lib/store.svelte';
 	import { makeBenchmarkKey } from '$lib/data';
 	import { formatScore } from '$lib/scores';
 
@@ -14,7 +14,25 @@
 
 	let { onModelSelect }: Props = $props();
 
-	function computeSplitScore(modelId: string, areaId: string | null, subareaId: string | null) {
+	// Derive context from sidebar nav stack
+	const navContext = $derived(() => {
+		const top = sidebarState.navStack[sidebarState.navStack.length - 1];
+		if (top.type === 'scenario') {
+			return { mode: 'scenario' as const, metricId: top.metricId, scenarioMeta: top.scenarioMeta };
+		}
+		if (top.type === 'metric') {
+			return { mode: 'metric' as const, metricId: top.metricId };
+		}
+		if (top.type === 'subarea') {
+			return { mode: 'subarea' as const, subareaId: top.subareaId };
+		}
+		if (top.type === 'area') {
+			return { mode: 'area' as const, areaId: top.areaId };
+		}
+		return { mode: 'overview' as const };
+	});
+
+	function computeSplitScore(modelId: string, areaId: string | null, subareaId: string | null, metricId: string | null) {
 		const key = makeBenchmarkKey(modelId, appState.filters.age);
 		const scores = appState.benchmarkData[key];
 		if (!scores) return { avg: 0.5, pos: 0.5, neg: 0.5 };
@@ -27,6 +45,7 @@
 			for (const sub of area.subareas) {
 				if (subareaId && sub.id !== subareaId) continue;
 				for (const m of sub.metrics) {
+					if (metricId && m.id !== metricId) continue;
 					if (m.harmful) negIds.push(m.id);
 					else posIds.push(m.id);
 				}
@@ -44,40 +63,53 @@
 		return { avg, pos, neg };
 	}
 
-	const ranked = $derived(
-		appState.models
+	const ranked = $derived(() => {
+		const ctx = navContext();
+		const areaId = ctx.mode === 'area' ? ctx.areaId : null;
+		const subareaId = ctx.mode === 'subarea' ? ctx.subareaId : null;
+		const metricId = (ctx.mode === 'metric' || ctx.mode === 'scenario') ? ctx.metricId : null;
+
+		return appState.models
 			.map((m) => ({
 				model: m,
-				split: computeSplitScore(
-					m.id,
-					leaderboardState.selectedAreaId,
-					leaderboardState.selectedSubareaId
-				)
+				split: computeSplitScore(m.id, areaId, subareaId, metricId)
 			}))
-			.sort((a, b) => b.split.avg - a.split.avg)
-	);
+			.sort((a, b) => b.split.avg - a.split.avg);
+	});
 
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
+
+	const subtitle = $derived(() => {
+		const ctx = navContext();
+		if (ctx.mode === 'scenario') {
+			const sc = ctx.scenarioMeta;
+			return `Pass/fail for scenario: ${sc.title}`;
+		}
+		if (ctx.mode === 'metric') {
+			const metricName = (() => {
+				for (const area of appState.taxonomy?.areas ?? [])
+					for (const sub of area.subareas)
+						for (const m of sub.metrics)
+							if (m.id === ctx.metricId) return m.name;
+				return ctx.metricId;
+			})();
+			return `Rankings filtered to metric: ${metricName}`;
+		}
+		if (ctx.mode === 'subarea') {
+			for (const area of appState.taxonomy?.areas ?? [])
+				for (const sub of area.subareas)
+					if (sub.id === ctx.subareaId) return `Rankings filtered to ${sub.name}.`;
+		}
+		if (ctx.mode === 'area') {
+			const area = appState.taxonomy?.areas.find((a) => a.id === ctx.areaId);
+			return `Rankings filtered to the ${area?.name} area.`;
+		}
+		return 'Rankings reflect average impact across all 260 behavioral indicators.';
+	});
 
 	function selectModel(modelId: string) {
 		onModelSelect(modelId);
 	}
-	function selectArea(areaId: string | null) {
-		leaderboardState.selectedAreaId = areaId;
-		leaderboardState.selectedSubareaId = null;
-	}
-	function selectSubarea(subareaId: string | null) {
-		leaderboardState.selectedSubareaId = subareaId;
-	}
-
-	const subtitle = $derived(() => {
-		if (!leaderboardState.selectedAreaId)
-			return 'Rankings reflect average impact across all 260 behavioral indicators.';
-		const area = appState.taxonomy?.areas.find((a) => a.id === leaderboardState.selectedAreaId);
-		if (!leaderboardState.selectedSubareaId) return `Rankings filtered to the ${area?.name} area.`;
-		const sub = area?.subareas.find((s) => s.id === leaderboardState.selectedSubareaId);
-		return `Rankings filtered to ${sub?.name} (${area?.name}).`;
-	});
 </script>
 
 <!-- Leaderboard header (sticky) -->
@@ -94,67 +126,65 @@
 		<p class="mt-[4px] text-[11px] leading-[1.4] text-[#9ca3af] text-balance">{subtitle()}</p>
 	</div>
 
-	<!-- Controls: age group + area filter -->
-	<div class="px-5 pb-[10px] flex flex-col gap-[12px]">
-		<div class="flex flex-col gap-[5px]">
-			<div class="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Age Group</div>
-			<div class="flex gap-[6px]">
-				{#each AGE_OPTIONS as opt (opt.value)}
-					<button
-						class="flex-1 py-[3px] rounded-[12px] text-[11px] font-semibold border-[1.5px] transition-all duration-150 cursor-pointer
-							{appState.filters.age === opt.value
-								? 'bg-[#e0f7f7] border-[#80d8d7] text-[#00b3b0] font-semibold'
-								: 'bg-white border-[#e5e7eb] text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
-						onclick={() => setFilters({ ...appState.filters, age: opt.value })}
-					>{opt.label}</button>
-				{/each}
-			</div>
-		</div>
-		<div class="flex flex-col gap-[5px]">
-			<div class="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Filter by Area</div>
-			<div class="flex flex-wrap gap-1">
-			<button
-				class="cursor-pointer rounded-[12px] border-[1.5px] px-[10px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
-					{leaderboardState.selectedAreaId === null
-					? 'border-[#80d8d7] bg-[#e0f7f7] font-semibold text-[#00b3b0]'
-					: 'border-[#e5e7eb] bg-white text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
-				onclick={() => selectArea(null)}>All</button>
-			{#each appState.taxonomy?.areas ?? [] as area (area.id)}
+	<!-- Age group filter -->
+	<div class="px-5 pb-[10px]">
+		<div class="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] mb-[5px]">Age Group</div>
+		<div class="flex gap-[6px]">
+			{#each AGE_OPTIONS as opt (opt.value)}
 				<button
-					class="cursor-pointer rounded-[12px] border-[1.5px] px-[10px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
-						{leaderboardState.selectedAreaId === area.id
-						? 'border-[#80d8d7] bg-[#e0f7f7] font-semibold text-[#00b3b0]'
-						: 'border-[#e5e7eb] bg-white text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
-					onclick={() => selectArea(area.id)}>{area.name}</button>
+					class="flex-1 py-[3px] rounded-[12px] text-[11px] font-semibold border-[1.5px] transition-all duration-150 cursor-pointer
+						{appState.filters.age === opt.value
+							? 'bg-[#e0f7f7] border-[#80d8d7] text-[#00b3b0]'
+							: 'bg-white border-[#e5e7eb] text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
+					onclick={() => setFilters({ ...appState.filters, age: opt.value })}
+				>{opt.label}</button>
 			{/each}
-		</div>
 		</div>
 	</div>
 </div>
 
-<!-- Subarea filter -->
-{#if leaderboardState.selectedAreaId}
-	{@const area = appState.taxonomy?.areas.find((a) => a.id === leaderboardState.selectedAreaId)}
-	{#if area && area.subareas.length}
-		<div class="flex flex-wrap gap-1 border-b border-[#f3f4f6] px-5 py-1.5">
-			<button
-				class="cursor-pointer rounded-[12px] border-[1.5px] px-[10px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
-					{leaderboardState.selectedSubareaId === null
-					? 'border-[#80d8d7] bg-[#e0f7f7] font-semibold text-[#00b3b0]'
-					: 'border-[#e5e7eb] bg-white text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
-				onclick={() => selectSubarea(null)}>All</button
-			>
-			{#each area.subareas as sub (sub.id)}
-				<button
-					class="cursor-pointer rounded-[12px] border-[1.5px] px-[10px] py-[3px] text-[11px] font-medium whitespace-nowrap transition-all duration-150
-						{leaderboardState.selectedSubareaId === sub.id
-						? 'border-[#80d8d7] bg-[#e0f7f7] font-semibold text-[#00b3b0]'
-						: 'border-[#e5e7eb] bg-white text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a]'}"
-					onclick={() => selectSubarea(sub.id)}>{sub.name}</button
-				>
-			{/each}
-		</div>
-	{/if}
+<!-- Context panel -->
+{#if navContext().mode !== 'overview'}
+	{@const ctx = navContext()}
+	<div class="mx-3 mb-[6px] mt-1 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-[10px] py-[8px]">
+		<div class="text-[10px] font-[700] uppercase tracking-[0.06em] text-[#9ca3af] mb-[4px]">Scoring based on</div>
+		{#if ctx.mode === 'scenario'}
+			<div class="flex items-center gap-[6px]">
+				<i class="fa-solid fa-comment-dots text-[10px] text-[#6b7280] flex-shrink-0"></i>
+				<span class="text-[11px] font-semibold text-[#1a1a1a] leading-[1.3]">{ctx.scenarioMeta.title}</span>
+			</div>
+			<div class="text-[10px] text-[#9ca3af] mt-[2px] ml-[16px]">Pass / Fail per model</div>
+		{:else if ctx.mode === 'metric'}
+			{@const metricName = (() => {
+				for (const area of appState.taxonomy?.areas ?? [])
+					for (const sub of area.subareas)
+						for (const m of sub.metrics)
+							if (m.id === ctx.metricId) return m.name;
+				return ctx.metricId;
+			})()}
+			<div class="flex items-center gap-[6px]">
+				<i class="fa-solid fa-circle-dot text-[10px] text-[#6b7280] flex-shrink-0"></i>
+				<span class="text-[11px] font-semibold text-[#1a1a1a] leading-[1.3]">{metricName}</span>
+			</div>
+		{:else if ctx.mode === 'subarea'}
+			{@const sub = (() => {
+				for (const area of appState.taxonomy?.areas ?? [])
+					for (const s of area.subareas)
+						if (s.id === ctx.subareaId) return s;
+				return null;
+			})()}
+			<div class="flex items-center gap-[6px]">
+				<i class="fa-solid {sub?.icon ?? 'fa-layer-group'} text-[10px] text-[#6b7280] flex-shrink-0"></i>
+				<span class="text-[11px] font-semibold text-[#1a1a1a]">{sub?.name ?? ctx.subareaId}</span>
+			</div>
+		{:else if ctx.mode === 'area'}
+			{@const area = appState.taxonomy?.areas.find((a) => a.id === ctx.areaId)}
+			<div class="flex items-center gap-[6px]">
+				<i class="fa-solid {area?.icon ?? 'fa-layer-group'} text-[10px] text-[#6b7280] flex-shrink-0"></i>
+				<span class="text-[11px] font-semibold text-[#1a1a1a]">{area?.name ?? ctx.areaId}</span>
+			</div>
+		{/if}
+	</div>
 {/if}
 
 <!-- Rankings list -->
@@ -176,11 +206,7 @@
 					: 'border-l-transparent hover:bg-[#f3f4f6]'}"
 				onclick={() => selectModel(entry.id)}
 			>
-				<span
-					class="w-5 flex-shrink-0 text-center text-[12px] font-bold {rank <= 3
-						? 'text-[#f59e0b]'
-						: 'text-[#9ca3af]'}">{rank}</span
-				>
+				<span class="w-5 flex-shrink-0 text-center text-[12px] font-bold {rank <= 3 ? 'text-[#f59e0b]' : 'text-[#9ca3af]'}">{rank}</span>
 				<div class="min-w-0 flex-1">
 					<div class="truncate text-[12px] font-semibold text-[#1a1a1a]">{entry.name}</div>
 					<div class="text-[10px] text-[#9ca3af]">{entry.provider}</div>
@@ -195,17 +221,26 @@
 							style="width:{pct}%"
 						></div>
 					</div>
-					<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]"
-						>{entry.score.toFixed(2)}</span
-					>
+					<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]">{entry.score.toFixed(2)}</span>
 				</div>
 			</button>
 		{/each}
 	{:else}
-		{#each ranked as { model, split }, idx (model.id)}
+		{@const ctx = navContext()}
+		{#each ranked() as { model, split }, idx (model.id)}
 			{@const rank = idx + 1}
 			{@const posPct = Math.round(split.pos * 100)}
 			{@const negPct = Math.round((1 - split.neg) * 100)}
+			{@const isScenarioMode = ctx.mode === 'scenario'}
+			{@const verdict = isScenarioMode ? ctx.scenarioMeta.verdicts?.[model.id] : undefined}
+			{@const isHarmful = isScenarioMode ? (() => {
+				for (const area of appState.taxonomy?.areas ?? [])
+					for (const sub of area.subareas)
+						for (const m of sub.metrics)
+							if (m.id === ctx.metricId) return m.harmful;
+				return false;
+			})() : false}
+			{@const pass = verdict === undefined ? null : isHarmful ? verdict === 'no' : verdict === 'yes'}
 			<button
 				class="flex w-full cursor-pointer items-center gap-[5px] border-l-[3px] px-[12px] py-[9px] text-left transition-colors duration-150
 					{appState.filters.model === model.id
@@ -213,44 +248,37 @@
 					: 'border-l-transparent hover:bg-[#f3f4f6]'}"
 				onclick={() => selectModel(model.id)}
 			>
-				<span
-					class="w-[18px] mr-[4px] flex-shrink-0 text-center text-[11px] font-bold {rank <= 3
-						? 'text-[#f59e0b]'
-						: 'text-[#9ca3af]'}">{rank}</span
-				>
+				<span class="w-[18px] mr-[4px] flex-shrink-0 text-center text-[11px] font-bold {rank <= 3 ? 'text-[#f59e0b]' : 'text-[#9ca3af]'}">{rank}</span>
 				<div class="min-w-0 flex-1">
 					<div class="truncate text-[12px] font-semibold text-[#1a1a1a]">{model.name}</div>
 					<div class="text-[10px] text-[#9ca3af]">{model.provider}</div>
 				</div>
-				<!-- Split pos/neg bar -->
-				<div
-					class="flex h-[6px] w-[72px] flex-shrink-0 items-center overflow-hidden rounded-full bg-[#f3f4f6]"
-					title="Harm avoidance: {formatScore(split.neg)} | Promotes good: {formatScore(split.pos)}"
-				>
-					<!-- Negative half: fills from right toward center -->
+				{#if isScenarioMode}
+					<!-- Pass/fail indicator -->
+					{#if pass !== null}
+						<span
+							class="text-[10px] font-bold px-[7px] py-[2px] rounded-full flex-shrink-0"
+							style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
+						>{pass ? 'Pass' : 'Fail'}</span>
+					{:else}
+						<span class="text-[10px] text-[#c4c9d4] flex-shrink-0">—</span>
+					{/if}
+				{:else}
+					<!-- Split pos/neg bar -->
 					<div
-						class="flex h-full flex-1 items-center justify-end overflow-hidden rounded-l-full bg-[#fee2e2]"
+						class="flex h-[6px] w-[72px] flex-shrink-0 items-center overflow-hidden rounded-full bg-[#f3f4f6]"
+						title="Harm avoidance: {formatScore(split.neg)} | Promotes good: {formatScore(split.pos)}"
 					>
-						<div
-							class="h-full rounded-l-full bg-gradient-to-l from-[#f87171] to-[#dc2626]"
-							style="width:{negPct}%"
-						></div>
+						<div class="flex h-full flex-1 items-center justify-end overflow-hidden rounded-l-full bg-[#fee2e2]">
+							<div class="h-full rounded-l-full bg-gradient-to-l from-[#f87171] to-[#dc2626]" style="width:{negPct}%"></div>
+						</div>
+						<div class="h-full w-[2px] flex-shrink-0 bg-white"></div>
+						<div class="flex h-full flex-1 items-center justify-start overflow-hidden rounded-r-full bg-[#dcfce7]">
+							<div class="h-full rounded-r-full bg-gradient-to-r from-[#4ade80] to-[#16a34a]" style="width:{posPct}%"></div>
+						</div>
 					</div>
-					<!-- Center divider -->
-					<div class="h-full w-[2px] flex-shrink-0 bg-white"></div>
-					<!-- Positive half: fills from left toward right -->
-					<div
-						class="flex h-full flex-1 items-center justify-start overflow-hidden rounded-r-full bg-[#dcfce7]"
-					>
-						<div
-							class="h-full rounded-r-full bg-gradient-to-r from-[#4ade80] to-[#16a34a]"
-							style="width:{posPct}%"
-						></div>
-					</div>
-				</div>
-				<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]"
-					>{formatScore(split.avg)}</span
-				>
+					<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]">{formatScore(split.avg)}</span>
+				{/if}
 			</button>
 		{/each}
 	{/if}

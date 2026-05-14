@@ -311,7 +311,7 @@
 						>
 							<span
 								class="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] font-[800] flex-shrink-0 leading-none"
-								style={m.harmful ? 'border:1.5px solid #fdba74;color:#f97316' : 'border:1.5px solid #93c5fd;color:#60a5fa'}
+								style={m.harmful ? 'border:1.5px solid #dc2626;color:#dc2626' : 'border:1.5px solid #16a34a;color:#16a34a'}
 							>{m.harmful ? '×' : '+'}</span>
 							<div class="flex-1 min-w-0">
 								<div class="text-[12px] font-medium text-[#1a1a1a] truncate">{m.name}</div>
