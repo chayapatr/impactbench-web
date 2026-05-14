@@ -57,7 +57,7 @@
 
 		<!-- Right side -->
 		<div class="flex items-center gap-2 ml-auto">
-			{#if isSmartMode}
+			{#if activeTab === 'explore' && isSmartMode}
 				<button
 					class="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-[6px] text-[13px] font-semibold cursor-pointer border-[1.5px] border-[#00b3b0] text-[#00b3b0] bg-[#e0f7f7] transition-[background,color] duration-150 hover:bg-[#ccf2f1]"
 					onclick={onOpenNutritionLabel}
@@ -72,7 +72,7 @@
 					<i class="fa-solid fa-xmark text-[12px]"></i>
 					Clear Focus
 				</button>
-			{:else}
+			{:else if activeTab === 'explore'}
 				<button
 					disabled={smartExploreLoading}
 					class="inline-flex items-center gap-2 px-4 py-2 rounded-[6px] text-white text-[13px] font-semibold border-none
