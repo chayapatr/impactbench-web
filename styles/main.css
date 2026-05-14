@@ -2540,9 +2540,9 @@ body.modal-open {
   align-items: center;
   gap: 8px;
   padding: 13px 24px;
-  background: none;
+  background: #fff;
   color: #374151;
-  border: 1.5px solid #d1d5db;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
@@ -2551,12 +2551,15 @@ body.modal-open {
   transition:
     border-color 0.15s,
     color 0.15s,
-    transform 0.1s;
+    transform 0.1s,
+    box-shadow 0.15s;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 .gate-btn-secondary:hover {
   border-color: #00b3b0;
   color: #00b3b0;
   transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06), 0 4px 10px rgba(15, 23, 42, 0.06);
 }
 
 .gate-pw-row {
@@ -3722,6 +3725,67 @@ body.gate-mode #smart-explore-overlay {
   display: block;
   width: 100%;
   height: auto;
+}
+
+.forest-plot {
+  margin: 32px 0;
+  padding: 0;
+  width: 100%;
+}
+
+.forest-plot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border-light, #ececec);
+  border-radius: 6px;
+}
+
+ul.about-bullets {
+  list-style: disc;
+  padding-left: 22px;
+  margin: 12px 0 0;
+}
+
+ul.about-bullets li {
+  margin-bottom: 10px;
+}
+
+ul.about-bullets li strong {
+  font-weight: 600;
+}
+
+.methodology-title {
+  font-family:
+    "Source Serif Pro", "Cormorant Garamond", "Iowan Old Style", Georgia,
+    "Times New Roman", serif;
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin: 64px 0 24px;
+  text-align: center;
+}
+
+.section-subheading {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 40px 0 12px;
+  letter-spacing: -0.005em;
+}
+
+#section-about ul.about-bullets li strong,
+#section-methodology ul.about-bullets li strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+#section-methodology .section-body strong {
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 /* Cards Grid */
@@ -6030,6 +6094,12 @@ body.about-mode #about-page {
   position: relative;
   z-index: 9999;
 }
+.gate-sunburst-container svg stop {
+  transition: stop-color 1.2s ease;
+}
+.gate-sunburst-container svg path {
+  transition: fill 1.2s ease;
+}
 .gate-sb-tip {
   position: absolute;
   top: 0;
@@ -6242,6 +6312,7 @@ body.about-mode #about-page {
 #section-about .section-deliverable-body p,
 #section-about .section-callout p,
 #section-about ol.about-ordered,
+#section-explore .section-body,
 #section-methodology .section-body,
 #section-methodology .section-card p,
 #section-methodology .section-deliverable-body p,
@@ -6260,7 +6331,6 @@ body.about-mode #about-page {
 #section-about .section-callout p strong,
 #section-about .section-hero-subtitle strong,
 #section-about ol.about-ordered strong,
-#section-methodology .section-body strong,
 #section-methodology .section-card p strong,
 #section-methodology .section-deliverable-body p strong,
 #section-methodology .section-callout p strong,
@@ -6268,6 +6338,11 @@ body.about-mode #about-page {
 #section-methodology ol.about-ordered strong {
   font-weight: 400;
   color: inherit;
+}
+
+#section-methodology .section-body strong {
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 #section-about .section-card-icon,
@@ -6320,6 +6395,7 @@ body.about-mode #about-page {
   line-height: 1.2;
   margin-bottom: 12px;
   color: var(--text-primary);
+  text-align: center;
 }
 #section-team .section-hero-subtitle,
 #section-team .section-body,
