@@ -3710,6 +3710,20 @@ body.gate-mode #smart-explore-overlay {
   display: none;
 }
 
+.pipeline-diagram {
+  margin: 56px 0 40px;
+  padding: 0;
+  width: min(1440px, calc(100vw - 48px));
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+.pipeline-diagram img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* Cards Grid */
 .section-cards-grid {
   display: grid;
@@ -6182,7 +6196,7 @@ body.about-mode #about-page {
 #section-about .section-hero-subtitle,
 #section-methodology .section-hero-subtitle {
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.65;
   color: var(--text-primary);
   max-width: 720px;
@@ -6234,7 +6248,7 @@ body.about-mode #about-page {
 #section-methodology .section-callout p,
 #section-methodology ol.about-ordered {
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.7;
   color: var(--text-primary);
   font-weight: 400;
@@ -6312,7 +6326,7 @@ body.about-mode #about-page {
 #section-team .team-list,
 #section-team .team-partners-title {
   font-family: "Inter", system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.7;
   color: var(--text-primary);
   font-weight: 400;
