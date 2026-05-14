@@ -3610,7 +3610,13 @@ body.gate-mode #smart-explore-overlay {
 
 /* Section Hero */
 .section-hero {
-  margin-bottom: 40px;
+  margin-top: 64px;
+  margin-bottom: 32px;
+}
+
+.tab-section-inner > .section-hero:first-child,
+.whitepaper-banner + .section-hero {
+  margin-top: 0;
 }
 
 .section-hero-tag {
@@ -3656,10 +3662,20 @@ body.gate-mode #smart-explore-overlay {
   font-weight: 550;
   color: var(--text-primary);
   letter-spacing: -0.012em;
-  margin-bottom: 12px;
+  margin-top: 64px;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.tab-section-inner > .section-heading:first-child,
+.tab-section-inner > .section-hero + .section-heading {
+  margin-top: 0;
+}
+
+.section-body + .section-body {
+  margin-top: 14px;
 }
 
 .section-heading i {
