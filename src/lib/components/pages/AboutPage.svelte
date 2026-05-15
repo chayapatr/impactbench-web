@@ -210,6 +210,59 @@
 					<figcaption>The ImpactBench four-stage evaluation pipeline.</figcaption>
 				</figure>
 
+				<div class="text-col">
+					<h2 class="section-heading">Built around human impact</h2>
+					<p class="section-body">
+						ImpactBench reframes evaluation around what AI systems do to the
+						people who use them, rather than what they are capable of doing in
+						isolation. This shift, from measuring the correct answer to
+						measuring appropriate behavior across an unfolding interaction, is
+						central to the framework. Human impact is inherently relational and
+						accumulates over time, so each benchmark is operationalized as a
+						multi-turn scenario in which a user-simulator model probes a target
+						model while pursuing a latent objective. Personas are stratified by
+						age and gender to surface demographic sensitivity, and conversations
+						include surface-form perturbations that mimic typos and autocorrect
+						artifacts to mirror authentic use. This approach builds on prior
+						work showing that user behavior and model behavior shape interaction
+						outcomes
+						(<a class="section-inline-link" href="https://www.nature.com/articles/s42256-023-00720-7" target="_blank" rel="noopener noreferrer">Pataranutaporn et al., 2023</a>,
+						<a class="section-inline-link" href="https://arxiv.org/pdf/2503.17473" target="_blank" rel="noopener noreferrer">Fang et al., 2025</a>,
+						<a class="section-inline-link" href="https://ojs.aaai.org/index.php/AIES/article/view/36658" target="_blank" rel="noopener noreferrer">Liu et al., 2025</a>),
+						and that these outcomes can be surfaced through structured
+						simulation grounded in user modeling
+						(<a class="section-inline-link" href="https://www.pnas.org/doi/abs/10.1073/pnas.2519394122" target="_blank" rel="noopener noreferrer">Pataranutaporn et al., 2025</a>)
+						and documented harm cases
+						(<a class="section-inline-link" href="https://arxiv.org/abs/2511.08880" target="_blank" rel="noopener noreferrer">Archiwaranguprok et al., 2025</a>).
+					</p>
+
+					<h2 class="section-heading">Grounded in scientific rigor and domain expertise</h2>
+					<p class="section-body">
+						ImpactBench is grounded in a statistical and psychometric audit
+						designed to ensure that benchmark results reflect stable properties
+						of model behavior rather than artifacts of measurement choices. The
+						audit operates along two complementary axes. Main statistical
+						analyses establish what models do and how those behaviors vary
+						across populations. Reliability and validity checks establish
+						whether the measurement itself can be trusted, separating signal
+						from the noise introduced by stochastic conversations, judge
+						variability, and design choices in the pipeline. See the full
+						statistical analysis in the
+						<a class="section-inline-link" href="#section-methodology" onclick={(e) => { e.preventDefault(); scrollToSection('methodology'); }}>methodology</a>
+						section.
+					</p>
+
+					<h2 class="section-heading">Designed for everyone, not just experts</h2>
+					<p class="section-body">
+						ImpactBench translates benchmark results into representations that
+						non-technical audiences can interpret directly. The headline
+						visualization renders each domain on a continuous scale from red
+						(the system consistently undermines this dimension) to green (the
+						system consistently supports it), so that the direction and
+						magnitude of effect are visible at a glance.
+					</p>
+				</div>
+
 			</div>
 		</div>
 
