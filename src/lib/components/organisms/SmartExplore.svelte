@@ -4,11 +4,17 @@
 		onClose: () => void;
 		onSubmit: (text: string) => void;
 		loading?: boolean;
+		initialText?: string;
 	}
 
-	let { open, onClose, onSubmit, loading = false }: Props = $props();
+	let { open, onClose, onSubmit, loading = false, initialText = '' }: Props = $props();
 
 	let inputText = $state('');
+
+	// Sync input text whenever the modal opens (so editing pre-fills correctly)
+	$effect(() => {
+		if (open) inputText = initialText;
+	});
 
 	function handleSubmit() {
 		if (inputText.trim() && !loading) onSubmit(inputText.trim());
@@ -54,6 +60,8 @@
 				>
 					{#if loading}
 						<i class="fa-solid fa-spinner fa-spin"></i> Analyzing…
+					{:else if initialText}
+						<i class="fa-solid fa-arrow-rotate-right"></i> Re-submit
 					{:else}
 						<i class="fa-solid fa-magnifying-glass"></i> Explore
 					{/if}

@@ -6,11 +6,9 @@
 		isAuthenticated: boolean;
 		isSmartMode?: boolean;
 		smartExploreLoading?: boolean;
-		onOpenNutritionLabel?: () => void;
-		onClearFocus?: () => void;
 	}
 
-	let { onSmartExplore, onTabChange, activeTab, isAuthenticated, isSmartMode = false, smartExploreLoading = false, onOpenNutritionLabel, onClearFocus }: Props = $props();
+	let { onSmartExplore, onTabChange, activeTab, isAuthenticated, isSmartMode = false, smartExploreLoading = false }: Props = $props();
 
 	const TABS = [
 		{ id: 'home', label: 'Home', icon: 'fa-house', locked: false },
@@ -57,22 +55,7 @@
 
 		<!-- Right side -->
 		<div class="flex items-center gap-2 ml-auto">
-			{#if activeTab === 'explore' && isSmartMode}
-				<button
-					class="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-[6px] text-[13px] font-semibold cursor-pointer border-[1.5px] border-[#00b3b0] text-[#00b3b0] bg-[#e0f7f7] transition-[background,color] duration-150 hover:bg-[#ccf2f1]"
-					onclick={onOpenNutritionLabel}
-				>
-					<i class="fa-solid fa-flask text-[12px]"></i>
-					Nutrition Label
-				</button>
-				<button
-					class="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-[6px] text-[13px] font-semibold cursor-pointer border-[1.5px] border-[#e5e7eb] text-[#6b7280] bg-white transition-[background,color,border-color] duration-150 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-[#fee2e2]"
-					onclick={onClearFocus}
-				>
-					<i class="fa-solid fa-xmark text-[12px]"></i>
-					Clear Focus
-				</button>
-			{:else if activeTab === 'explore'}
+			{#if activeTab === 'explore' && !isSmartMode}
 				<button
 					disabled={smartExploreLoading}
 					class="inline-flex items-center gap-2 px-4 py-2 rounded-[6px] text-white text-[13px] font-semibold border-none

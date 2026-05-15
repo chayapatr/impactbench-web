@@ -15,6 +15,14 @@
 	import SmartFocusPanel from './sidebar/SmartFocusPanel.svelte';
 	import ThemeMetricsPanel from './sidebar/ThemeMetricsPanel.svelte';
 
+	interface Props {
+		onOpenNutritionLabel?: () => void;
+		onEditFocus?: () => void;
+		onClearFocus?: () => void;
+	}
+
+	let { onOpenNutritionLabel, onEditFocus, onClearFocus }: Props = $props();
+
 	const top = $derived(sidebarState.navStack[sidebarState.navStack.length - 1]);
 	const isFocused = $derived(top.type !== 'overview' && top.type !== 'smart-focus');
 
@@ -44,33 +52,61 @@
 		if (prev.type === 'metric') return prev.metricName;
 		return 'Back';
 	}
-
-	function goToSmartFocus() {
-		const node = leaderboardState.smartFocusNode;
-		if (node) sidebarState.navStack = [{ type: 'overview' }, node];
-	}
 </script>
 
 <div class="flex h-full flex-col overflow-hidden bg-[#fafaf9]">
-	<!-- Smart focus banner -->
-	{#if leaderboardState.smartRanked.length > 0}
+	<!-- Smart focus card -->
+	{#if leaderboardState.smartFocusNode}
+		{@const focusNode = leaderboardState.smartFocusNode}
 		{@const isOnSmartFocus = top.type === 'smart-focus'}
-		<div class="flex-shrink-0 px-[10px] py-[8px]">
-			<button
-				class="flex w-full items-center gap-[8px] rounded-[8px] bg-[#e0f7f7] px-[12px] py-[8px] text-left transition-colors duration-150
-					{isOnSmartFocus ? 'opacity-50 cursor-default' : 'hover:bg-[#ccf2f1] cursor-pointer'}"
-				disabled={isOnSmartFocus}
-				onclick={goToSmartFocus}
-			>
-				<i class="fa-solid fa-wand-magic-sparkles text-[11px] flex-shrink-0 text-[#00b3b0]"></i>
-				<div class="min-w-0 flex-1">
-					<div class="text-[10px] font-[700] uppercase tracking-[0.06em] text-[#00b3b0] leading-none mb-[2px]">Smart Focus</div>
-					<div class="text-[11px] font-semibold text-[#0e7490] truncate leading-none">Go to Your Focus Areas</div>
+		<div class="flex-shrink-0 px-[10px] pt-[10px] pb-[6px]">
+			<div class="rounded-[12px] border border-[#b8e8e7] bg-[#e0f7f7] p-[14px] shadow-[0_1px_2px_rgba(0,179,176,0.08)]">
+				<div class="flex items-start justify-between gap-2">
+					<div class="flex items-center gap-[6px] text-[10px] font-[700] uppercase tracking-[0.06em] text-[#00b3b0]">
+						<i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+						Focus Area
+					</div>
+					{#if onClearFocus}
+						<button
+							class="flex h-[20px] w-[20px] flex-shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[#0e7490] transition-colors duration-150 hover:bg-[#ccf2f1] hover:text-[#dc2626]"
+							aria-label="Clear focus"
+							title="Clear focus"
+							onclick={onClearFocus}
+						>
+							<i class="fa-solid fa-xmark text-[11px]"></i>
+						</button>
+					{/if}
+				</div>
+				<p class="mt-[8px] text-[13px] leading-[1.45] text-[#1a1a1a] italic">
+					"{focusNode.userText}"
+				</p>
+				<div class="mt-[12px] flex flex-col gap-[6px]">
+					<button
+						class="inline-flex w-full cursor-pointer items-center justify-center gap-[6px] rounded-[8px] border-none px-3 py-[8px] text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(3,141,143,0.25)] transition-[transform,box-shadow,filter] duration-150 hover:-translate-y-px hover:brightness-[1.06] hover:shadow-[0_3px_10px_rgba(3,141,143,0.35)] active:translate-y-0"
+						style="background:linear-gradient(135deg,#00b3b0,#038d8f)"
+						onclick={onOpenNutritionLabel}
+					>
+						<i class="fa-solid fa-flask text-[12px]"></i>
+						Download Nutrition Label
+					</button>
+					<button
+						class="inline-flex w-full cursor-pointer items-center justify-center gap-[6px] rounded-[8px] border-[1.5px] border-[#b8e8e7] bg-white px-3 py-[7px] text-[13px] font-semibold text-[#0e7490] transition-[background,border-color] duration-150 hover:border-[#00b3b0] hover:bg-[#f0fafa]"
+						onclick={onEditFocus}
+					>
+						<i class="fa-solid fa-pen text-[11px]"></i>
+						Edit Focus Area
+					</button>
 				</div>
 				{#if !isOnSmartFocus}
-					<i class="fa-solid fa-arrow-up text-[9px] text-[#00b3b0] flex-shrink-0"></i>
+					<button
+						class="mt-[8px] inline-flex w-full cursor-pointer items-center justify-center gap-[6px] rounded-[6px] border-none bg-transparent px-2 py-[5px] text-[11px] font-semibold text-[#0e7490] transition-colors duration-150 hover:bg-[#ccf2f1]"
+						onclick={() => { if (focusNode) sidebarState.navStack = [{ type: 'overview' }, focusNode]; }}
+					>
+						<i class="fa-solid fa-arrow-up text-[9px]"></i>
+						Go to Your Focus Areas
+					</button>
 				{/if}
-			</button>
+			</div>
 		</div>
 	{/if}
 

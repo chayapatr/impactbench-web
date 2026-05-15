@@ -261,7 +261,24 @@
 						system consistently supports it), so that the direction and
 						magnitude of effect are visible at a glance.
 					</p>
+					<p class="section-body">
+						Beyond the aggregate view, ImpactBench generates personalized AI
+						nutrition labels: users specify who they are, including age band,
+						context of use, and constructs they care most about, and the system
+						produces a label tailored to that profile. Parents evaluating a
+						companion app for a teenager, educators considering a tutoring
+						product, and clinicians assessing a mental-health chatbot can each
+						obtain a view of model behavior calibrated to the population and
+						risk profile they are responsible for. The aim is calibrated trust
+						rather than simplified confidence: labels communicate what was
+						tested, which populations were represented, and where the benchmark
+						is least informative.
+					</p>
 				</div>
+
+				<figure class="img-full">
+					<img src="/impactbench3.png" alt="ImpactBench headline visualization" />
+				</figure>
 
 			</div>
 		</div>

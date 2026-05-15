@@ -43,6 +43,7 @@
 	let activeTab = $state('home');
 	let smartExploreOpen = $state(false);
 	let smartExploreLoading = $state(false);
+	let smartExploreInitialText = $state('');
 	let smartNutritionOpen = $state(false);
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
 
@@ -417,11 +418,10 @@
 			{isSmartMode}
 			{smartExploreLoading}
 			onTabChange={handleTabChange}
-			onSmartExplore={() => (smartExploreOpen = true)}
-			onOpenNutritionLabel={() => {
-				smartNutritionOpen = true;
+			onSmartExplore={() => {
+				smartExploreInitialText = '';
+				smartExploreOpen = true;
 			}}
-			onClearFocus={handleClearFocus}
 		/>
 
 		<!-- Beta banner (below navbar) -->
@@ -505,7 +505,14 @@
 				<aside
 					class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-[#fafaf9]"
 				>
-					<Sidebar />
+					<Sidebar
+						onOpenNutritionLabel={() => { smartNutritionOpen = true; }}
+						onEditFocus={() => {
+							smartExploreInitialText = leaderboardState.smartFocusNode?.userText ?? '';
+							smartExploreOpen = true;
+						}}
+						onClearFocus={handleClearFocus}
+					/>
 				</aside>
 			</div>
 		{:else if activeTab === 'metrics'}
@@ -530,6 +537,7 @@
 	}}
 	onSubmit={handleSmartExploreSubmit}
 	loading={smartExploreLoading}
+	initialText={smartExploreInitialText}
 />
 <SmartNutritionLabel
 	open={smartNutritionOpen}
