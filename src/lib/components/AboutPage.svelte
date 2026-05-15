@@ -137,7 +137,8 @@
 			<div class="tab-section-inner">
 
 				<div class="text-col">
-					<div class="section-title-block" data-label="§ — Benchmark Suite">
+					<div class="section-title-block">
+						<div class="section-overline"><span>§ — Benchmark Suite</span></div>
 						<h1 class="section-title">Explore ImpactBench</h1>
 					</div>
 				</div>
@@ -183,7 +184,8 @@
 			<div class="tab-section-inner">
 
 				<div class="text-col">
-					<div class="section-title-block" data-label="§ — Evaluation Design">
+					<div class="section-title-block">
+						<div class="section-overline"><span>§ — Evaluation Design</span></div>
 						<h1 class="section-title">Methodology</h1>
 					</div>
 					<p class="section-body">
@@ -269,7 +271,8 @@
 			<div class="tab-section-inner">
 
 				<div class="text-col">
-					<div class="section-title-block" data-label="§ — Contributors">
+					<div class="section-title-block">
+						<div class="section-overline"><span>§ — Contributors</span></div>
 						<h1 class="section-title">Team &amp; Collaborators</h1>
 					</div>
 					<p class="section-hero-subtitle">
@@ -518,6 +521,7 @@
 		padding: 64px 0 56px;
 		margin-bottom: 48px;
 		border-bottom: 1px solid #e5e7eb;
+		text-align: center;
 	}
 
 	.whitepaper-title {
@@ -534,13 +538,15 @@
 		font-size: 20px;
 		font-weight: 400;
 		color: #6b7280;
-		margin: 0 0 28px;
+		margin: 0 auto 28px;
 		line-height: 1.5;
+		white-space: nowrap;
 	}
 
 	.whitepaper-cta {
 		display: inline-flex;
 		align-items: center;
+		margin: 0 auto;
 		padding: 9px 20px;
 		background: #f3f4f6;
 		color: #6b7280;
@@ -554,20 +560,32 @@
 	/* Section title block with overline label */
 	.section-title-block {
 		margin-bottom: 32px;
+		text-align: center;
 	}
 
-	.section-title-block::before {
-		content: attr(data-label);
-		display: block;
+	.section-overline {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	.section-overline::before,
+	.section-overline::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: #e5e7eb;
+	}
+
+	.section-overline span {
 		font-family: 'Inter', system-ui, sans-serif;
 		font-size: 11px;
 		font-weight: 600;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: #9ca3af;
-		margin-bottom: 14px;
-		padding-bottom: 14px;
-		border-bottom: 1px solid #e5e7eb;
+		white-space: nowrap;
 	}
 
 	/* Section titles */
@@ -579,6 +597,7 @@
 		letter-spacing: -0.018em;
 		line-height: 1.15;
 		margin: 0;
+		text-wrap: balance;
 	}
 
 	.section-hero-subtitle {
