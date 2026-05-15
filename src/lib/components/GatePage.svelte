@@ -254,9 +254,6 @@
 				<button class="btn-primary" onclick={() => openTab('request')}>
 					<i class="fa-solid fa-key"></i> Request Access
 				</button>
-				<button class="btn-secondary" onclick={() => openTab('support')}>
-					<i class="fa-solid fa-hand-holding-heart"></i> Support Us
-				</button>
 				<button
 					class="btn-secondary"
 					onclick={() => {
@@ -264,7 +261,10 @@
 						pwError = false;
 					}}
 				>
-					<i class="fa-solid fa-lock-open"></i> Enter
+					<i class="fa-solid fa-lock-open"></i> Explore
+				</button>
+				<button class="btn-secondary" onclick={() => onTabChange('about')}>
+					<i class="fa-solid fa-file-lines"></i> About
 				</button>
 			</div>
 
