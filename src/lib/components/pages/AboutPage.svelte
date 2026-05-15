@@ -20,6 +20,7 @@
 
 	const SUBTABS = [
 		{ id: 'pipeline', label: 'Pipeline' },
+		{ id: 'why', label: 'Why ImpactBench?' },
 		{ id: 'explore', label: 'Explore' },
 		{ id: 'methodology', label: 'Methodology' },
 		{ id: 'team', label: 'Team' }
@@ -148,26 +149,69 @@
 					</p>
 				</div>
 
+			</div>
+		</div>
+
+		<!-- Why ImpactBench? -->
+		<div id="section-why" class="tab-section">
+			<div class="tab-section-inner">
+
+				<div class="text-col">
+					<div class="section-title-block">
+						<h1 class="section-title">Why ImpactBench?</h1>
+					</div>
+					<p class="section-body">
+						ImpactBench was designed in response to three structural gaps in current
+						benchmarks, which we seek to overcome.
+					</p>
+					<p class="section-body">
+						<strong>Benchmarks focus on model capability, not human impact.</strong>
+						Strong performance on capability benchmarks does not guarantee positive
+						effects on human flourishing. Prior simulation work has shown that models
+						passing conventional safety evaluations still worsened user outcomes in
+						the majority of high-risk scenarios tested
+						(<a class="section-inline-link" href="https://arxiv.org/pdf/2511.08880" target="_blank" rel="noopener noreferrer">Archiwaranguprok et al., 2025</a>),
+						and that sycophantic tendencies establish structural preconditions for
+						psychological dependency that prevailing paradigms cannot detect
+						(<a class="section-inline-link" href="https://arxiv.org/pdf/2602.19141" target="_blank" rel="noopener noreferrer">Chandra et al., 2026</a>;
+						<a class="section-inline-link" href="https://mit-serc.pubpub.org/pub/iopjyxcx/release/2" target="_blank" rel="noopener noreferrer">Mahari &amp; Pataranutaporn, 2025</a>).
+					</p>
+					<p class="section-body">
+						<strong>Benchmark methods often lack scientific rigor and domain expertise.</strong>
+						Only 16.0% of reviewed benchmarks include any statistical testing of
+						measurement properties, and core concepts such as reasoning, alignment,
+						and harmlessness are frequently operationalized without precise
+						definitions. Many of those best positioned to identify consequential
+						harms, including clinicians, educators, and affected community members,
+						lack the technical infrastructure to build benchmarks, while those with
+						technical expertise often lack grounding in the psychological, medical,
+						or legal constructs at stake.
+					</p>
+					<p class="section-body">
+						<strong>Benchmarks primarily serve the technical community.</strong>
+						Public-facing tools are needed to translate benchmark findings for
+						parents, teachers, policymakers, and users themselves, who are most
+						affected by AI systems but least equipped to interpret leaderboard
+						scores.
+					</p>
+					<p class="section-body">
+						ImpactBench is grounded in the conviction that evaluations of AI systems
+						should be:
+					</p>
+					<ul class="section-body about-bullets">
+						<li><strong>Human-centered.</strong> Scores reflect potential impact on people, not just model capability.</li>
+						<li><strong>Scientifically rigorous.</strong> Scores are built on validated methods, domain expertise, and audits that make operationalization choices empirically contestable.</li>
+						<li><strong>Publicly accessible.</strong> Scores are legible to the audiences who need them. Parents, teachers, policymakers, and users should be able to understand how AI systems behave, not only the technical community.</li>
+					</ul>
+				</div>
+
 				<figure class="img-full">
 					<img src="/impactbench2.png" alt="ImpactBench pipeline diagram" />
 					<figcaption>The ImpactBench four-stage evaluation pipeline.</figcaption>
 				</figure>
 
-				<div class="text-col">
-					<p class="section-body">
-						ImpactBench is grounded in our belief that evaluations for AI systems should be:
-					</p>
-					<ul class="section-body about-bullets">
-						<li><strong>Human-centered:</strong> Scores reflect impact on people, not just model capability. Strong performance on capability benchmarks does not guarantee that a system supports human flourishing.</li>
-						<li><strong>Scientifically rigorous:</strong> Scores are built on validated methods and domain expertise. Only 16.0% of reviewed ML and NLP benchmarks include any statistical testing, and many operationalize contested constructs without expert input.</li>
-						<li><strong>Publicly accessible:</strong> Scores are legible to the audiences who need them. Parents, teachers, policymakers, and users themselves should be able to understand how AI systems behave, not just the technical community.</li>
-					</ul>
-					<p class="section-body">
-						Alongside the ImpactBench benchmark suite, we're sharing how 14
-						leading AI systems perform across 18 expert-submitted constructs,
-						setting a baseline for the field to improve upon.
-					</p>
-				</div>
+			</div>
+		</div>
 
 			</div>
 		</div>
@@ -178,7 +222,6 @@
 
 				<div class="text-col">
 					<div class="section-title-block">
-						<div class="section-overline"><span>§ — Benchmark Suite</span></div>
 						<h1 class="section-title">Explore ImpactBench</h1>
 					</div>
 				</div>
@@ -225,7 +268,6 @@
 
 				<div class="text-col">
 					<div class="section-title-block">
-						<div class="section-overline"><span>§ — Evaluation Design</span></div>
 						<h1 class="section-title">Methodology</h1>
 					</div>
 					<p class="section-body">
@@ -312,7 +354,6 @@
 
 				<div class="text-col">
 					<div class="section-title-block">
-						<div class="section-overline"><span>§ — Contributors</span></div>
 						<h1 class="section-title">Team &amp; Collaborators</h1>
 					</div>
 					<p class="section-hero-subtitle">
