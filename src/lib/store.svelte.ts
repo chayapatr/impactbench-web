@@ -45,6 +45,7 @@ export interface TooltipData {
 	description?: string;
 	children?: { score?: number; children?: { score?: number }[] }[];
 	harmful?: boolean;
+	behavior_type?: 'flourishing' | 'restrain_harm';
 }
 
 export const tooltipState = $state({

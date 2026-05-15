@@ -49,7 +49,7 @@
 				if (subareaId && sub.id !== subareaId) continue;
 				for (const m of sub.metrics) {
 					if (metricId && m.id !== metricId) continue;
-					if (m.harmful) negIds.push(m.id);
+					if ((m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'restrain_harm') negIds.push(m.id);
 					else posIds.push(m.id);
 				}
 			}
@@ -245,7 +245,7 @@
 				for (const area of appState.taxonomy?.areas ?? [])
 					for (const sub of area.subareas)
 						for (const m of sub.metrics)
-							if (m.id === ctx.metricId) return m.harmful;
+							if (m.id === ctx.metricId) return m.behavior_type === 'restrain_harm' && m.measurement === 'presence';
 				return false;
 			})() : false}
 			{@const pass = verdict === undefined ? null : isHarmful ? verdict === 'no' : verdict === 'yes'}

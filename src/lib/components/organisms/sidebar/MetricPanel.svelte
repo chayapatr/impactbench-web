@@ -16,7 +16,10 @@
 
 	const score = $derived(getScores(appState)[metricId] ?? 0);
 	const metricColors = $derived(scoreColors(score));
-	const isHarmful = $derived(findMetricInTaxonomy(appState, metricId)?.metric.harmful ?? false);
+	const _metric = $derived(findMetricInTaxonomy(appState, metricId)?.metric);
+	const isHarmful = $derived(
+		_metric?.behavior_type === 'restrain_harm' && _metric?.measurement === 'presence'
+	);
 	const scenarios = $derived(filterScenariosByAge(appState, metricId));
 </script>
 

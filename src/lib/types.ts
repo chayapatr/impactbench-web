@@ -4,6 +4,8 @@ export interface Metric {
 	id: string;
 	name: string;
 	harmful: boolean;
+	behavior_type?: 'flourishing' | 'restrain_harm';
+	measurement?: 'presence' | 'absence';
 }
 
 export interface MetricGroup {
@@ -69,6 +71,7 @@ export interface SunburstNodeData {
 	subareaId?: string;
 	color?: string;
 	harmful?: boolean;
+	behavior_type?: 'flourishing' | 'restrain_harm';
 	children?: SunburstNodeData[];
 	value?: number;
 }

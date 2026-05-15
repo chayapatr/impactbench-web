@@ -7,7 +7,8 @@
 		metricId: string;
 		metricName: string;
 		subareaName?: string;
-		isHarmful: boolean;
+		behaviorType?: 'flourishing' | 'restrain_harm';
+		measurement?: 'presence' | 'absence';
 		scenarioDetail: ScenarioDetail | null;
 		loading: boolean;
 		error: boolean;
@@ -22,7 +23,8 @@
 		metricId,
 		metricName,
 		subareaName,
-		isHarmful,
+		behaviorType = 'flourishing',
+		measurement = 'presence',
 		scenarioDetail,
 		loading,
 		error,
@@ -33,6 +35,13 @@
 	}: Props = $props();
 
 	const criteria = $derived(appState.metricCriteria?.[metricId] ?? '');
+
+	const isHarmful = $derived(behaviorType === 'restrain_harm' && measurement === 'presence');
+
+	function verdictLabel(pass: boolean): string {
+		if (behaviorType === 'restrain_harm') return pass ? 'Safe' : 'Harmful';
+		return pass ? 'Supported' : 'Unsupported';
+	}
 </script>
 
 {#if loading}
@@ -102,7 +111,7 @@
 					<span
 						class="rounded-full px-2 py-0.5 text-[10px] font-bold"
 						style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-						>{pass ? 'Pass' : 'Fail'}</span
+						>{verdictLabel(pass)}</span
 					>
 				{/if}
 			</div>

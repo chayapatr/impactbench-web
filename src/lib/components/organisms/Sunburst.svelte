@@ -39,7 +39,8 @@
 			type: node.type,
 			id: node.id,
 			children: node.children,
-			harmful: node.harmful
+			harmful: node.harmful,
+			behavior_type: node.behavior_type
 		};
 		tooltipState.visible = true;
 	}

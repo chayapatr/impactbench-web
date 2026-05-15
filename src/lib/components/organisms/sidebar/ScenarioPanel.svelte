@@ -15,7 +15,7 @@
 
 	let { metricId, scenarioMeta, backLabel }: Props = $props();
 
-	const isHarmful = $derived(findMetricInTaxonomy(appState, metricId)?.metric.harmful ?? false);
+	const _metric = $derived(findMetricInTaxonomy(appState, metricId)?.metric);
 
 	let scenarioDetail: ScenarioDetail | null = $state(null);
 	let scenarioLoading = $state(false);
@@ -41,10 +41,19 @@
 </StickyHeader>
 
 <div class="px-6 py-4">
+	{#if _metric?.behavior_type}
+		<div class="mb-4">
+			<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[4px] text-[11px] font-semibold" style="background:#f3f4f6;color:#6b7280">
+				<i class="fa-solid {_metric.behavior_type === 'flourishing' ? 'fa-star' : 'fa-shield'}" style="font-size:8px"></i>
+				{_metric.behavior_type === 'flourishing' ? 'Flourishing' : 'Harm restraint'}
+			</span>
+		</div>
+	{/if}
 	<ConversationViewer
 		{metricId}
 		metricName={scenarioMeta.title}
-		{isHarmful}
+		behaviorType={_metric?.behavior_type}
+		measurement={_metric?.measurement}
 		{scenarioDetail}
 		loading={scenarioLoading}
 		error={scenarioError}

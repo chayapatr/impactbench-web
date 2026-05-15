@@ -56,10 +56,12 @@
 				: sidebarState.behaviorSort === 'name-asc'
 					? [...metrics].sort((a, b) => a.name.localeCompare(b.name))
 					: metrics}
-	{@const posMetrics = metrics.filter((m) => !m.harmful)}
-	{@const negMetrics = metrics.filter((m) => m.harmful)}
+	{@const posMetrics = metrics.filter((m) => (m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'flourishing')}
+	{@const negMetrics = metrics.filter((m) => (m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'restrain_harm')}
 	{@const posAvg = posMetrics.length ? posMetrics.reduce((s, m) => s + m.score, 0) / posMetrics.length : 0}
 	{@const negAvg = negMetrics.length ? negMetrics.reduce((s, m) => s + m.score, 0) / negMetrics.length : 0}
+	{@const posColor = posAvg >= 0.55 ? '#16a34a' : posAvg >= 0.45 ? '#d97706' : '#dc2626'}
+	{@const negColor = negAvg >= 0.55 ? '#16a34a' : negAvg >= 0.45 ? '#d97706' : '#dc2626'}
 
 	<StickyHeader backLabel={area.name} onBack={sidebarBack}>
 		{#snippet right()}
@@ -84,28 +86,28 @@
 		<div>
 			<div class="mb-1.5 flex items-center justify-between">
 				<span class="flex items-center gap-1.5 text-[12px] font-semibold text-[#374151]">
-					<span class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px] font-[800]" style="border:1.5px solid #16a34a;color:#16a34a">+</span>
-					Promoting good behavior
+					<span class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px]" style="background:#f3f4f6;color:#6b7280"><i class="fa-solid fa-star" style="font-size:7px"></i></span>
+					Flourishing
 					<span class="font-normal text-[#9ca3af]">· {posMetrics.length} metrics</span>
 				</span>
-				<span class="text-[12px] font-bold" style="color:#16a34a">{posAvg.toFixed(2)}</span>
+				<span class="text-[12px] font-bold" style="color:{posColor}">{posAvg.toFixed(2)}</span>
 			</div>
 			<div class="h-[8px] w-full overflow-hidden rounded-[4px] bg-[#f3f4f6]">
-				<div class="h-full rounded-[4px] bg-[#16a34a] transition-[width] duration-300" style="width:{Math.round(posAvg * 100)}%"></div>
+				<div class="h-full rounded-[4px] transition-[width] duration-300" style="width:{Math.round(posAvg * 100)}%;background:{posColor}"></div>
 			</div>
 		</div>
 		{#if negMetrics.length > 0}
 			<div>
 				<div class="mb-1.5 flex items-center justify-between">
 					<span class="flex items-center gap-1.5 text-[12px] font-semibold text-[#374151]">
-						<span class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px] font-[800]" style="border:1.5px solid #dc2626;color:#dc2626">×</span>
-						Avoiding bad behavior
+						<span class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px]" style="background:#f3f4f6;color:#6b7280"><i class="fa-solid fa-shield" style="font-size:7px"></i></span>
+						Harm restraint
 						<span class="font-normal text-[#9ca3af]">· {negMetrics.length} metrics</span>
 					</span>
-					<span class="text-[12px] font-bold" style="color:#dc2626">{(1 - negAvg).toFixed(2)}</span>
+					<span class="text-[12px] font-bold" style="color:{negColor}">{negAvg.toFixed(2)}</span>
 				</div>
 				<div class="h-[8px] w-full overflow-hidden rounded-[4px] bg-[#f3f4f6]">
-					<div class="h-full rounded-[4px] bg-[#dc2626] transition-[width] duration-300" style="width:{Math.round((1 - negAvg) * 100)}%"></div>
+					<div class="h-full rounded-[4px] transition-[width] duration-300" style="width:{Math.round(negAvg * 100)}%;background:{negColor}"></div>
 				</div>
 			</div>
 		{/if}
@@ -121,7 +123,7 @@
 					{expandedMetricId === m.id ? 'border-l-[#00b3b0] bg-[#f3f4f6]' : 'border-l-transparent'}"
 				onclick={() => toggleMetric(m.id)}
 			>
-				<BadgeIcon type={m.harmful ? 'fail' : 'pass'} variant="metric" />
+				<BadgeIcon type={(m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'flourishing' ? 'pass' : 'fail'} variant="metric" />
 				<span class="min-w-0 flex-1 overflow-hidden text-[12px] text-ellipsis whitespace-nowrap text-[#374151]">{m.name}</span>
 				<ScorePill score={m.score} />
 				<i class="fa-solid {expandedMetricId === m.id ? 'fa-chevron-up' : 'fa-chevron-down'} flex-shrink-0 text-[9px] text-[#9ca3af]"></i>
@@ -133,7 +135,8 @@
 					{:else}
 						{#each expandedScenarios as sc (sc.scenario_id)}
 							{@const rawResult = sc.verdicts?.[appState.filters.model]}
-							{@const pass = rawResult === undefined ? null : m.harmful ? rawResult === 'no' : rawResult === 'yes'}
+							{@const _isHarmful = m.behavior_type === 'restrain_harm' && m.measurement === 'presence'}
+							{@const pass = rawResult === undefined ? null : _isHarmful ? rawResult === 'no' : rawResult === 'yes'}
 							<button
 								class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]"
 								onclick={() => sidebarPush({ type: 'scenario', metricId: m.id, scenarioMeta: sc })}
