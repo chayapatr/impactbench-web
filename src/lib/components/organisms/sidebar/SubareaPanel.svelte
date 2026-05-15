@@ -60,8 +60,8 @@
 	{@const negMetrics = metrics.filter((m) => (m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'restrain_harm')}
 	{@const posAvg = posMetrics.length ? posMetrics.reduce((s, m) => s + m.score, 0) / posMetrics.length : 0}
 	{@const negAvg = negMetrics.length ? negMetrics.reduce((s, m) => s + m.score, 0) / negMetrics.length : 0}
-	{@const posColor = posAvg >= 0.55 ? '#16a34a' : posAvg >= 0.45 ? '#d97706' : '#dc2626'}
-	{@const negColor = negAvg >= 0.55 ? '#16a34a' : negAvg >= 0.45 ? '#d97706' : '#dc2626'}
+	{@const posColor = posAvg >= 0.75 ? '#16a34a' : posAvg >= 0.55 ? '#d97706' : posAvg >= 0.35 ? '#ea580c' : '#dc2626'}
+	{@const negColor = negAvg >= 0.75 ? '#16a34a' : negAvg >= 0.55 ? '#d97706' : negAvg >= 0.35 ? '#ea580c' : '#dc2626'}
 
 	<StickyHeader backLabel={area.name} onBack={sidebarBack}>
 		{#snippet right()}

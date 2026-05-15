@@ -124,6 +124,7 @@ export interface SmartTopModel {
 	name: string;
 	provider: string;
 	score: number;
+	flatScore?: number;
 	constructScores: number[];
 	worstAreas: { name: string; score: number }[];
 }

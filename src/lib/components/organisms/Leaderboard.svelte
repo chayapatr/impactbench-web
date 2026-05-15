@@ -86,6 +86,37 @@
 		return top.type === 'smart-focus' || top.type === 'theme-metrics';
 	});
 
+	// Compute split pos/neg for smart mode using taxonomy behavior_type
+	function computeSmartSplit(modelId: string): { pos: number; neg: number; avg: number } {
+		const key = makeBenchmarkKey(modelId, appState.filters.age);
+		const scores = appState.benchmarkData[key];
+		if (!scores || !leaderboardState.smartFocusNode) return { pos: 0.5, neg: 0.5, avg: 0.5 };
+
+		// Collect all smart-focus metric IDs
+		const allMetricIds = leaderboardState.smartFocusNode.themes.flatMap((t) => t.metrics.map((m) => m.id));
+		const idSet = new Set(allMetricIds);
+
+		const posIds: string[] = [];
+		const negIds: string[] = [];
+		for (const area of appState.taxonomy?.areas ?? []) {
+			for (const sub of area.subareas) {
+				for (const m of sub.metrics) {
+					if (!idSet.has(m.id)) continue;
+					if ((m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'restrain_harm') negIds.push(m.id);
+					else posIds.push(m.id);
+				}
+			}
+		}
+
+		const posVals = posIds.map((id) => scores[id]).filter((v): v is number => v !== undefined);
+		const negVals = negIds.map((id) => scores[id]).filter((v): v is number => v !== undefined);
+		const allVals = [...posVals, ...negVals];
+		const pos = posVals.length ? posVals.reduce((a, b) => a + b, 0) / posVals.length : 0.5;
+		const neg = negVals.length ? negVals.reduce((a, b) => a + b, 0) / negVals.length : 0.5;
+		const avg = allVals.length ? allVals.reduce((a, b) => a + b, 0) / allVals.length : 0.5;
+		return { pos, neg, avg };
+	}
+
 	const subtitle = $derived(() => {
 		if (isSmartMode()) return 'Rankings reflect your focus areas from Smart Explore.';
 		const ctx = navContext();
@@ -203,7 +234,7 @@
 		</div>
 		{#each leaderboardState.smartRanked as entry, idx (entry.id)}
 			{@const rank = idx + 1}
-			{@const split = computeSplitScore(entry.id, null, null, null)}
+			{@const split = computeSmartSplit(entry.id)}
 			{@const posPct = Math.round(split.pos * 100)}
 			{@const negPct = Math.round((1 - split.neg) * 100)}
 			<button
@@ -230,7 +261,7 @@
 						<div class="h-full rounded-r-full bg-gradient-to-r from-[#4ade80] to-[#16a34a]" style="width:{posPct}%"></div>
 					</div>
 				</div>
-				<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]">{formatScore(split.avg)}</span>
+				<span class="w-8 text-right text-[11px] font-semibold text-[#6b7280]">{formatScore(entry.flatScore ?? entry.score)}</span>
 			</button>
 		{/each}
 	{:else}

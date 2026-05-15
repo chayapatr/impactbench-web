@@ -229,22 +229,43 @@
 				}
 			);
 
-			// Collect all focus metric IDs and rank models
-			const focusMetricIds = [...new Set(constructs.flatMap((c) => c.metrics.map((m) => m.id)))];
-			renderSmartRankings(focusMetricIds);
+			// Single pass: compute construct scores for all models, rank, build nutrition opts
+			const constructMetricIds = constructs.map((c) => c.metrics.map((m) => m.id));
 
-			// Build nutrition label opts and open
-			const smartRanked = leaderboardState.smartRanked;
-			const topModels = smartRanked.slice(0, 3).map((m) => {
-				const themeMetricIds = constructs.map((c) => c.metrics.map((met) => met.id));
-				return {
-					name: m.name,
-					provider: m.provider,
-					score: m.score,
-					constructScores: getConstructScoresForModel(m.id, themeMetricIds),
-					worstAreas: getWorstSubareasForModel(m.id, 3)
-				};
-			});
+			// All metric IDs flat (for sidebar/label score)
+			const allFlatMetricIds = constructMetricIds.flat();
+
+			const allModelScores = appState.models.map((m) => {
+				const constructScores = getConstructScoresForModel(m.id, constructMetricIds);
+				const avg = constructScores.length
+					? constructScores.reduce((a, b) => a + b, 0) / constructScores.length
+					: 0;
+				// Flat avg across all metric IDs (for sidebar header + nutrition label)
+				const key = makeBenchmarkKey(m.id, appState.filters.age);
+				const rawScores = appState.benchmarkData[key];
+				const flatVals = allFlatMetricIds
+					.map((id) => rawScores?.[id] ?? null)
+					.filter((v): v is number => v !== null);
+				const flatScore = flatVals.length ? flatVals.reduce((a, b) => a + b, 0) / flatVals.length : 0;
+				return { model: m, avg, constructScores, flatScore };
+			}).sort((a, b) => b.avg - a.avg);
+
+			leaderboardState.smartRanked = allModelScores.map(({ model, avg, flatScore }) => ({
+				id: model.id,
+				name: model.name,
+				provider: model.provider,
+				score: avg,
+				flatScore
+			}));
+
+			const topModels = allModelScores.slice(0, 3).map(({ model, avg, constructScores, flatScore }) => ({
+				name: model.name,
+				provider: model.provider,
+				score: avg,
+				flatScore,
+				constructScores,
+				worstAreas: getWorstSubareasForModel(model.id, 3)
+			}));
 
 			smartNutritionState.opts = {
 				userText: text,
@@ -280,25 +301,30 @@
 
 	// ===== Leaderboard helpers =====
 
-	function renderSmartRankings(metricIds: string[]) {
+	function renderSmartRankings(constructMetricIds: string[][]) {
+		const allFlatMetricIds = constructMetricIds.flat();
 		const ranked = appState.models
 			.map((m) => {
 				const key = makeBenchmarkKey(m.id, appState.filters.age);
 				const scores = appState.benchmarkData[key];
-				if (!scores || !metricIds.length) return { model: m, avg: 0 };
-				const vals = metricIds
-					.map((id) => scores[id] ?? null)
-					.filter((v) => v !== null) as number[];
-				const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-				return { model: m, avg };
+				if (!scores || !constructMetricIds.length) return { model: m, avg: 0, flatScore: 0 };
+				const constructAvgs = constructMetricIds.map((ids) => {
+					const vals = ids.map((id) => scores[id] ?? null).filter((v) => v !== null) as number[];
+					return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+				}).filter((v): v is number => v !== null);
+				const avg = constructAvgs.length ? constructAvgs.reduce((a, b) => a + b, 0) / constructAvgs.length : 0;
+				const flatVals = allFlatMetricIds.map((id) => scores[id] ?? null).filter((v): v is number => v !== null);
+				const flatScore = flatVals.length ? flatVals.reduce((a, b) => a + b, 0) / flatVals.length : 0;
+				return { model: m, avg, flatScore };
 			})
 			.sort((a, b) => b.avg - a.avg);
 
-		leaderboardState.smartRanked = ranked.map(({ model, avg }) => ({
+		leaderboardState.smartRanked = ranked.map(({ model, avg, flatScore }) => ({
 			id: model.id,
 			name: model.name,
 			provider: model.provider,
-			score: avg
+			score: avg,
+			flatScore
 		}));
 	}
 

@@ -19,6 +19,11 @@
 	const isFocused = $derived(top.type !== 'overview' && top.type !== 'smart-focus');
 
 	const overallScore = $derived(() => {
+		// In smart mode, show flat avg of all smart-focus metrics for the selected model
+		if (leaderboardState.smartRanked.length > 0) {
+			const entry = leaderboardState.smartRanked.find((e) => e.id === appState.filters.model);
+			if (entry) return entry.flatScore;
+		}
 		const vals = Object.values(getScores(appState));
 		return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
 	});

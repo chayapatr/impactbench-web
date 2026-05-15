@@ -60,7 +60,7 @@ export function scoreColors(score: number): { color: string; light: string; bord
 
 export function scorePillStyle(score: number): string {
 	if (score >= 0.75) return 'background:#dcfce7;color:#16a34a';
-	if (score >= 0.50) return 'background:#fef3c7;color:#d97706';
-	if (score >= 0.25) return 'background:#ffedd5;color:#ea580c';
+	if (score >= 0.55) return 'background:#fef3c7;color:#d97706';
+	if (score >= 0.35) return 'background:#ffedd5;color:#ea580c';
 	return 'background:#fee2e2;color:#dc2626';
 }
