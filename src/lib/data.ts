@@ -4,8 +4,6 @@ import type {
 	BenchmarkData,
 	FilterState,
 	SunburstNodeData,
-	DetailSubarea,
-	DetailMetric,
 	ScenarioIndex,
 	ScenarioDetail
 } from './types';
@@ -145,36 +143,3 @@ export function buildHierarchy(
 	return root;
 }
 
-export function buildSubareaDetail(
-	taxonomy: Taxonomy,
-	scores: Record<string, number>,
-	subareaId: string
-): DetailSubarea | null {
-	for (const area of taxonomy.areas) {
-		for (const subarea of area.subareas) {
-			if (subarea.id !== subareaId) continue;
-
-			const metrics: DetailMetric[] = subarea.metrics.map((m) => ({
-				id: m.id,
-				name: m.name,
-				score: scores[m.id] ?? 0,
-				harmful: m.harmful
-			}));
-
-			metrics.sort((a, b) => b.score - a.score);
-			const avgScore = averageScore(metrics.map((m) => m.score));
-
-			return {
-				id: subarea.id,
-				name: subarea.name,
-				icon: subarea.icon,
-				areaName: area.name,
-				areaColor: area.color,
-				areaIcon: area.icon,
-				avgScore,
-				metrics
-			};
-		}
-	}
-	return null;
-}

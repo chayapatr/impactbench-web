@@ -73,24 +73,6 @@ export interface SunburstNodeData {
 	value?: number;
 }
 
-export interface DetailMetric {
-	id: string;
-	name: string;
-	score: number;
-	harmful: boolean;
-}
-
-export interface DetailSubarea {
-	id: string;
-	name: string;
-	icon: string;
-	areaName: string;
-	areaColor: string;
-	areaIcon: string;
-	avgScore: number;
-	metrics: DetailMetric[];
-}
-
 // ===== Scenario Types =====
 
 export interface ScenarioMeta {

@@ -1,5 +1,4 @@
 import type { Taxonomy, AIModel, BenchmarkData, FilterState, ScenarioIndex } from './types';
-import { getScoresForFilter } from './data';
 
 // ===== App State (Svelte 5 runes) =====
 
@@ -32,14 +31,6 @@ export function setScenarioIndex(idx: ScenarioIndex) {
 
 export function setMetricCriteria(criteria: Record<string, string>) {
 	appState.metricCriteria = criteria;
-}
-
-export function getCurrentScores(): Record<string, number> {
-	return getScoresForFilter(appState.benchmarkData, appState.filters);
-}
-
-export function getCurrentModel(): AIModel | undefined {
-	return appState.models.find((m) => m.id === appState.filters.model);
 }
 
 // ===== Tooltip State =====
@@ -100,10 +91,6 @@ export function sidebarBack() {
 	if (sidebarState.navStack.length > 1) {
 		sidebarState.navStack = sidebarState.navStack.slice(0, -1);
 	}
-}
-
-export function sidebarNavigateToIndex(idx: number) {
-	sidebarState.navStack = sidebarState.navStack.slice(0, idx + 1);
 }
 
 export function sidebarNavigateToArea(areaId: string) {

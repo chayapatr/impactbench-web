@@ -1,40 +1,12 @@
 <script lang="ts">
 	import { nutritionLabelState, appState, sidebarState } from '$lib/store.svelte';
 	import { formatScore, scoreToClass, scoreInterpretation } from '$lib/scores';
+	import { getScores, computeAreaScore, computeSubareaScore } from '$lib/utils';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
 
-	function getCurrentScores(): Record<string, number> {
-		return appState.benchmarkData[`${appState.filters.model}|${appState.filters.age}`] ?? {};
-	}
-
-	function computeAreaScore(areaId: string): number {
-		const area = appState.taxonomy?.areas.find((a) => a.id === areaId);
-		if (!area) return 0;
-		const scores = getCurrentScores();
-		const vals: number[] = [];
-		for (const sub of area.subareas)
-			for (const m of sub.metrics) {
-				const s = scores[m.id];
-				if (s !== undefined) vals.push(s);
-			}
-		return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-	}
-
-	function computeSubareaScore(subareaId: string): number {
-		const scores = getCurrentScores();
-		for (const area of appState.taxonomy?.areas ?? []) {
-			const sub = area.subareas.find((s) => s.id === subareaId);
-			if (sub) {
-				const vals = sub.metrics.map((m) => scores[m.id] ?? 0);
-				return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-			}
-		}
-		return 0;
-	}
-
 	const ctx = $derived(() => {
-		const scores = getCurrentScores();
+		const scores = getScores(appState);
 		const stack = sidebarState.navStack;
 		if (stack.length <= 1) return undefined;
 		const top = stack[stack.length - 1];
@@ -58,7 +30,7 @@
 			if (area) {
 				areaName = area.name;
 				if (top.type === 'area') {
-					focusScore = computeAreaScore(areaId);
+					focusScore = computeAreaScore(appState, areaId);
 					behaviorIds = area.subareas.flatMap((s) => s.metrics.map((m) => m.id));
 				}
 			}
@@ -71,7 +43,7 @@
 				areaName = area.name;
 				subareaName = sub.name;
 				if (top.type === 'subarea') {
-					focusScore = computeSubareaScore(subareaId);
+					focusScore = computeSubareaScore(appState, subareaId);
 					behaviorIds = sub.metrics.map((m) => m.id);
 				}
 				break;

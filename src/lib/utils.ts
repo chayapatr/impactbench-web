@@ -1,5 +1,6 @@
 import type { appState as AppStateInstance } from '$lib/store.svelte';
 import type { Area, Subarea, Metric, ScenarioMeta } from '$lib/types';
+import { averageScore } from '$lib/scores';
 
 type AppState = typeof AppStateInstance;
 
@@ -23,23 +24,15 @@ export function computeAreaScore(appState: AppState, areaId: string, modelId?: s
 	const area = appState.taxonomy?.areas.find((a) => a.id === areaId);
 	if (!area) return 0;
 	const scores = getScores(appState, modelId, age);
-	const vals: number[] = [];
-	for (const sub of area.subareas)
-		for (const m of sub.metrics) {
-			const s = scores[m.id];
-			if (s !== undefined) vals.push(s);
-		}
-	return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+	const vals = area.subareas.flatMap((sub) => sub.metrics.map((m) => scores[m.id]).filter((s): s is number => s !== undefined));
+	return averageScore(vals);
 }
 
 export function computeSubareaScore(appState: AppState, subareaId: string, modelId?: string, age?: string): number {
 	const scores = getScores(appState, modelId, age);
 	for (const area of appState.taxonomy?.areas ?? []) {
 		const sub = area.subareas.find((s) => s.id === subareaId);
-		if (sub) {
-			const vals = sub.metrics.map((m) => scores[m.id] ?? 0);
-			return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-		}
+		if (sub) return averageScore(sub.metrics.map((m) => scores[m.id] ?? 0));
 	}
 	return 0;
 }

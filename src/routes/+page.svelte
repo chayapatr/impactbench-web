@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { loadTaxonomy, loadModels, loadBenchmarkData, loadScenarioIndex, loadMetricCriteria, buildHierarchy, getScoresForFilter, buildSubareaDetail } from '$lib/data';
+	import { loadTaxonomy, loadModels, loadBenchmarkData, loadScenarioIndex, loadMetricCriteria, buildHierarchy, getScoresForFilter } from '$lib/data';
 	import {
 		appState,
 		setData,
