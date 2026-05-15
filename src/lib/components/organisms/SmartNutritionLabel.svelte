@@ -42,9 +42,17 @@
 	}
 
 	function scoreClass(s: number): string {
-		if (s > 0.55) return 'positive';
-		if (s < 0.45) return 'negative';
-		return 'neutral';
+		if (s >= 0.75) return 'positive';
+		if (s >= 0.55) return 'yellow';
+		if (s >= 0.35) return 'orange';
+		return 'negative';
+	}
+
+	function scoreColor(s: number): string {
+		if (s >= 0.75) return '#16a34a';
+		if (s >= 0.55) return '#d97706';
+		if (s >= 0.35) return '#ea580c';
+		return '#dc2626';
 	}
 </script>
 
@@ -63,21 +71,21 @@
 			<!-- Model toggle -->
 			<div class="smart-nl-toggle">
 				{#each opts.topModels as model, i (i)}
-					{@const cls = scoreClass(model.score)}
+					{@const chipScore = model.flatScore ?? model.score}
 					<button
 						class="smart-nl-toggle-btn {activeIdx === i ? 'active' : ''}"
 						onclick={() => (smartNutritionState.activeModelIdx = i)}
 					>
 						<span class="smart-nl-toggle-rank">#{i + 1}</span>
 						<span class="smart-nl-toggle-name">{model.name}</span>
-						<span class="smart-nl-toggle-score {cls}">{fmtScore(model.score)}</span>
+						<span class="smart-nl-toggle-score" style="color:{scoreColor(chipScore)}">{fmtScore(chipScore)}</span>
 					</button>
 				{/each}
 			</div>
 
 			{#each [opts.topModels[activeIdx]].filter(Boolean) as model (activeIdx)}
-				{@const overallCls = scoreClass(model.score)}
-				{@const overallPct = Math.max(0, Math.min(100, model.score * 100))}
+				{@const displayScore = model.flatScore ?? model.score}
+				{@const overallPct = Math.max(0, Math.min(100, displayScore * 100))}
 				<div class="nutrition-scroll-wrap">
 					<div class="nutrition-label smart-nl-label" bind:this={cardEl}>
 						<div class="nutrition-headline">AI Nutrition Label</div>
@@ -93,11 +101,11 @@
 
 						<div class="nutrition-score-row">
 							<div class="nutrition-score-label">Focus Area Score</div>
-							<div class="nutrition-score-value {overallCls}">{fmtScore(model.score)}</div>
+							<div class="nutrition-score-value" style="color:{scoreColor(displayScore)}">{fmtScore(displayScore)}</div>
 						</div>
 						<div class="smart-nl-overall-track" aria-hidden="true">
 							<div class="smart-nl-overall-zero"></div>
-							<div class="smart-nl-overall-marker {overallCls}" style="left:{overallPct}%"></div>
+							<div class="smart-nl-overall-marker" style="left:{overallPct}%;background:{scoreColor(displayScore)}"></div>
 						</div>
 
 						<div class="nutrition-thick-rule"></div>
@@ -109,15 +117,14 @@
 							{#each opts.constructs as c, i (i)}
 								{@const score = model.constructScores[i] ?? 0}
 								{@const pct = Math.max(4, Math.min(100, Math.round(score * 100)))}
-								{@const cls = scoreClass(score)}
 								<div class="smart-nl-area">
 									<div class="smart-nl-area-top">
 										<span class="smart-nl-area-icon"><i class="fa-solid {c.icon ?? 'fa-bullseye'}"></i></span>
 										<span class="smart-nl-area-name">{c.text}</span>
-										<span class="smart-nl-area-score {cls}">{fmtScore(score)}</span>
+										<span class="smart-nl-area-score" style="color:{scoreColor(score)}">{fmtScore(score)}</span>
 									</div>
 									<div class="smart-nl-area-track">
-										<div class="smart-nl-area-fill {cls}" style="width:{pct}%"></div>
+										<div class="smart-nl-area-fill" style="width:{pct}%;background:{scoreColor(score)}"></div>
 									</div>
 								</div>
 							{/each}
@@ -131,11 +138,10 @@
 						</div>
 						<div class="smart-nl-warnings">
 							{#each (model.worstAreas ?? []).slice(0, 3) as w (w.name)}
-								{@const cls = scoreClass(w.score)}
 								<div class="smart-nl-warning">
 									<div class="smart-nl-warning-head">
 										<span class="smart-nl-warning-label">{w.name}</span>
-										<span class="smart-nl-warning-score {cls}">{fmtScore(w.score)}</span>
+										<span class="smart-nl-warning-score" style="color:{scoreColor(w.score)}">{fmtScore(w.score)}</span>
 									</div>
 								</div>
 							{/each}
@@ -221,8 +227,9 @@
 	.nutrition-score-label { font-family: Arial, sans-serif; font-size: 44px; line-height: 0.95; font-weight: 900; }
 	.nutrition-score-value { font-size: 56px; line-height: 0.9; font-weight: 900; }
 	.nutrition-score-value.positive { color: #16a34a; }
+	.nutrition-score-value.yellow { color: #d97706; }
+	.nutrition-score-value.orange { color: #ea580c; }
 	.nutrition-score-value.negative { color: #dc2626; }
-	.nutrition-score-value.neutral { color: #374151; }
 	.nutrition-footnote { font-family: Arial, sans-serif; font-size: 11px; line-height: 1.35; }
 	.nutrition-actions { border-top: 1px solid #d1d5db; background: #ffffff; padding: 10px 14px; display: flex; justify-content: flex-end; }
 	.nutrition-save-pdf-btn {
@@ -265,8 +272,9 @@
 	.smart-nl-toggle-name { font-size: 12.5px; font-weight: 700; color: #111827; line-height: 1.2; }
 	.smart-nl-toggle-score { font-size: 11px; font-weight: 700; margin-top: 2px; }
 	.smart-nl-toggle-score.positive { color: #16a34a; }
+	.smart-nl-toggle-score.yellow { color: #d97706; }
+	.smart-nl-toggle-score.orange { color: #ea580c; }
 	.smart-nl-toggle-score.negative { color: #dc2626; }
-	.smart-nl-toggle-score.neutral { color: #6b7280; }
 
 	/* Label internals */
 	.smart-nl-label { padding-top: 22px; }
@@ -275,8 +283,9 @@
 	.smart-nl-overall-zero { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: #9ca3af; }
 	.smart-nl-overall-marker { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%,-50%); border: 2px solid #fff; box-shadow: 0 0 0 1px #111827; }
 	.smart-nl-overall-marker.positive { background: #16a34a; }
+	.smart-nl-overall-marker.yellow { background: #d97706; }
+	.smart-nl-overall-marker.orange { background: #ea580c; }
 	.smart-nl-overall-marker.negative { background: #dc2626; }
-	.smart-nl-overall-marker.neutral { background: #9ca3af; }
 	.smart-nl-section-title { font-family: Arial, sans-serif; font-size: 14px; font-weight: 800; color: #111827; margin: 12px 0 8px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 	.smart-nl-section-sub { font-size: 11px; font-weight: 500; color: #6b7280; text-transform: none; letter-spacing: 0; }
 	.smart-nl-areas { display: flex; flex-direction: column; gap: 10px; }
@@ -286,19 +295,22 @@
 	.smart-nl-area-name { flex: 1; font-weight: 700; color: #111827; }
 	.smart-nl-area-score { font-weight: 700; font-size: 13px; }
 	.smart-nl-area-score.positive { color: #16a34a; }
+	.smart-nl-area-score.yellow { color: #d97706; }
+	.smart-nl-area-score.orange { color: #ea580c; }
 	.smart-nl-area-score.negative { color: #dc2626; }
-	.smart-nl-area-score.neutral { color: #6b7280; }
 	.smart-nl-area-track { margin-top: 6px; height: 5px; background: #f3f4f6; border-radius: 999px; overflow: hidden; }
 	.smart-nl-area-fill { height: 100%; border-radius: 999px; }
 	.smart-nl-area-fill.positive { background: #16a34a; }
+	.smart-nl-area-fill.yellow { background: #d97706; }
+	.smart-nl-area-fill.orange { background: #ea580c; }
 	.smart-nl-area-fill.negative { background: #dc2626; }
-	.smart-nl-area-fill.neutral { background: #9ca3af; }
 	.smart-nl-warnings { display: flex; flex-direction: column; gap: 8px; }
 	.smart-nl-warning { padding: 5px 0; border-top: 1px solid #d1d5db; }
 	.smart-nl-warning-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-family: Arial, sans-serif; font-size: 13px; font-weight: 700; color: #111111; }
 	.smart-nl-warning-label { flex: 1; }
 	.smart-nl-warning-score { font-size: 13px; font-weight: 900; flex-shrink: 0; }
 	.smart-nl-warning-score.positive { color: #16a34a; }
+	.smart-nl-warning-score.yellow { color: #d97706; }
+	.smart-nl-warning-score.orange { color: #ea580c; }
 	.smart-nl-warning-score.negative { color: #dc2626; }
-	.smart-nl-warning-score.neutral { color: #6b7280; }
 </style>

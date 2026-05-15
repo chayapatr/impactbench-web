@@ -13,8 +13,8 @@
 </script>
 
 <div class="sticky top-0 z-10 border-b border-[#f3f4f6] bg-white">
-	<div class="flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-[8px]">
-		<BackButton label={backLabel} onclick={onBack} />
+	<div class="flex min-w-0 items-center justify-between gap-2 px-[14px] pt-[10px] pb-[8px]">
+		<div class="min-w-0 flex-1"><BackButton label={backLabel} onclick={onBack} /></div>
 		{#if right}
 			{@render right()}
 		{/if}

@@ -88,7 +88,7 @@
 			{/if}
 		{:else if d.type === 'metric'}
 			<div class="text-[11px] text-[#9ca3af]">
-				{d.harmful ? '↓ Harmful behaviour metric' : '↑ Beneficial behaviour metric'}
+				<i class="fa-solid {d.behavior_type === 'restrain_harm' ? 'fa-shield' : 'fa-star'} mr-1"></i>{d.behavior_type === 'restrain_harm' ? 'Harm restraint' : 'Flourishing'}
 			</div>
 		{/if}
 	</div>

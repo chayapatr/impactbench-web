@@ -117,6 +117,7 @@ export function buildHierarchy(
 					subareaId: subarea.id,
 					color: area.color,
 					harmful: metric.harmful,
+					behavior_type: metric.behavior_type,
 					score,
 					value: scoreToArcValue(score)
 				};

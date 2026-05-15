@@ -54,6 +54,8 @@
 		id: string;
 		name: string;
 		harmful: boolean;
+		behavior_type?: 'flourishing' | 'restrain_harm';
+		measurement?: 'presence' | 'absence';
 		areaId: string;
 		areaName: string;
 		areaIcon: string;
@@ -80,6 +82,8 @@
 						id: m.id,
 						name: m.name,
 						harmful: m.harmful,
+						behavior_type: m.behavior_type,
+						measurement: m.measurement,
 						areaId: area.id,
 						areaName: area.name,
 						areaIcon: area.icon,
@@ -411,7 +415,8 @@
 						metricId={selectedMetricForScenario.id}
 						metricName={selectedMetricForScenario.name}
 						subareaName={selectedMetricForScenario.subareaName}
-						isHarmful={selectedMetricForScenario.harmful}
+						behaviorType={selectedMetricForScenario.behavior_type}
+					measurement={selectedMetricForScenario.measurement}
 						scenarioDetail={conversationDetail}
 						loading={conversationLoading}
 						error={conversationError}

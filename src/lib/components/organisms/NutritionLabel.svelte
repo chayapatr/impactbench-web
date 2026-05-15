@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { nutritionLabelState, appState, sidebarState } from '$lib/store.svelte';
-	import { formatScore, scoreToClass, scoreInterpretation } from '$lib/scores';
+	import { formatScore, scoreToClass, scoreInterpretation, scorePillStyle } from '$lib/scores';
+
+	function scoreTextColor(score: number): string {
+		if (score >= 0.75) return '#16a34a';
+		if (score >= 0.55) return '#d97706';
+		if (score >= 0.35) return '#ea580c';
+		return '#dc2626';
+	}
 	import { getScores, computeAreaScore, computeSubareaScore } from '$lib/utils';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
@@ -159,12 +166,7 @@
 
 					<div class="flex items-baseline justify-between mb-1">
 						<span class="text-[11px] font-semibold text-gray-700">Net Impact Score</span>
-						<span
-							class="text-2xl font-black"
-							class:text-green-600={scoreToClass(c.focusScore) === 'positive'}
-							class:text-red-600={scoreToClass(c.focusScore) === 'negative'}
-							class:text-gray-500={scoreToClass(c.focusScore) === 'neutral'}
-						>{formatScore(c.focusScore)}</span>
+						<span class="text-2xl font-black" style="color:{scoreTextColor(c.focusScore)}">{formatScore(c.focusScore)}</span>
 					</div>
 
 					<div class="border-t-4 border-black my-3"></div>
@@ -188,7 +190,7 @@
 							{#each c.topBeneficial as item (item.name)}
 								<div class="flex justify-between py-0.5 text-[11px]">
 									<span class="text-gray-700 truncate">{item.name}</span>
-									<span class="font-semibold text-green-600 ml-2">{formatScore(item.score)}</span>
+									<span class="font-semibold ml-2" style="color:{scoreTextColor(item.score)}">{formatScore(item.score)}</span>
 								</div>
 							{/each}
 						{:else}
@@ -202,7 +204,7 @@
 							{#each c.topHarmful as item (item.name)}
 								<div class="flex justify-between py-0.5 text-[11px]">
 									<span class="text-gray-700 truncate">{item.name}</span>
-									<span class="font-semibold text-red-600 ml-2">{formatScore(item.score)}</span>
+									<span class="font-semibold ml-2" style="color:{scoreTextColor(item.score)}">{formatScore(item.score)}</span>
 								</div>
 							{/each}
 						{:else}

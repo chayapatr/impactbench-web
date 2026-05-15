@@ -27,13 +27,13 @@
 		class:w-[18px]={!isVerdict}
 		class:text-[11px]={!isVerdict}
 		style={type === 'pass'
-			? isVerdict ? 'background:#dcfce7;color:#16a34a' : 'border:1.5px solid #16a34a;color:#16a34a'
-			: isVerdict ? 'background:#fee2e2;color:#dc2626' : 'border:1.5px solid #dc2626;color:#dc2626'}
+			? isVerdict ? 'background:#dcfce7;color:#16a34a' : 'background:#f3f4f6;color:#93c5fd'
+			: isVerdict ? 'background:#fee2e2;color:#dc2626' : 'background:#f3f4f6;color:#c4b5fd'}
 	>
 		{#if isVerdict}
 			{type === 'pass' ? '✓' : '✗'}
 		{:else}
-			{type === 'pass' ? '+' : '×'}
+			<i class="fa-solid {type === 'pass' ? 'fa-star' : 'fa-shield'}" style="font-size:8px"></i>
 		{/if}
 	</span>
 {/if}

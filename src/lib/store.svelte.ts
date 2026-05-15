@@ -45,6 +45,7 @@ export interface TooltipData {
 	description?: string;
 	children?: { score?: number; children?: { score?: number }[] }[];
 	harmful?: boolean;
+	behavior_type?: 'flourishing' | 'restrain_harm';
 }
 
 export const tooltipState = $state({
@@ -144,7 +145,7 @@ export function sidebarNavigateToThemeMetrics(
 export const leaderboardState = $state({
 	selectedAreaId: null as string | null,
 	selectedSubareaId: null as string | null,
-	smartRanked: [] as { id: string; name: string; provider: string; score: number }[],
+	smartRanked: [] as { id: string; name: string; provider: string; score: number; flatScore: number }[],
 	smartFocusNode: null as { type: 'smart-focus'; userText: string; themes: SmartTheme[] } | null
 });
 

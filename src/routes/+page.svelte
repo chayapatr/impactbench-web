@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { loadTaxonomy, loadModels, loadBenchmarkData, loadScenarioIndex, loadMetricCriteria, buildHierarchy, getScoresForFilter } from '$lib/data';
+	import {
+		loadTaxonomy,
+		loadModels,
+		loadBenchmarkData,
+		loadScenarioIndex,
+		loadMetricCriteria,
+		buildHierarchy,
+		getScoresForFilter
+	} from '$lib/data';
 	import {
 		appState,
 		setData,
@@ -62,7 +70,10 @@
 	// Derived hierarchy data for sunburst
 	const hierarchyData = $derived(
 		appState.taxonomy && !appState.loading
-			? buildHierarchy(appState.taxonomy, getScoresForFilter(appState.benchmarkData, appState.filters))
+			? buildHierarchy(
+					appState.taxonomy,
+					getScoresForFilter(appState.benchmarkData, appState.filters)
+				)
 			: null
 	);
 
@@ -83,8 +94,12 @@
 			setData(taxonomy, models, benchmarkData);
 
 			// Load scenario index and metric criteria in background
-			loadScenarioIndex().then(setScenarioIndex).catch(() => {});
-			loadMetricCriteria().then(setMetricCriteria).catch(() => {});
+			loadScenarioIndex()
+				.then(setScenarioIndex)
+				.catch(() => {});
+			loadMetricCriteria()
+				.then(setMetricCriteria)
+				.catch(() => {});
 
 			// Wire up global window callbacks for backwards compat
 			const w = window as unknown as Record<string, unknown>;
@@ -98,7 +113,8 @@
 				sidebarNavigateToThemeMetrics(name, desc, metrics);
 			w.__getSmartRanked = () => leaderboardState.smartRanked;
 			w.__getBenchmarkScores = () =>
-				appState.benchmarkData[makeBenchmarkKey(appState.filters.model, appState.filters.age)] ?? {};
+				appState.benchmarkData[makeBenchmarkKey(appState.filters.model, appState.filters.age)] ??
+				{};
 			w.__getWorstSubareas = getWorstSubareasForModel;
 			w.__getConstructScores = getConstructScoresForModel;
 			w.__openSmartNutritionLabel = (opts: typeof smartNutritionState.opts) => {
@@ -137,12 +153,13 @@
 	const CASPER_API = 'https://casper-production-7f8e.up.railway.app';
 
 	const BENCHMARK_ICONS: Record<string, string> = {
-		'humanebench': 'fa-heart-pulse',
+		humanebench: 'fa-heart-pulse',
 		'humanagency-bench': 'fa-graduation-cap',
 		'spillunder-effect': 'fa-compass',
 		'emotional-dependency': 'fa-heart',
 		'modulated-cognitive-autonomy-benchmark-mcab': 'fa-brain',
-		'cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses': 'fa-seedling'
+		'cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses':
+			'fa-seedling'
 	};
 
 	function subareaNameToId(name: string): string {
@@ -161,52 +178,94 @@
 			if (!resp.ok) throw new Error('Casper API error: ' + resp.status);
 			const data = await resp.json();
 
-			interface ParsedMetric { id: string; name: string; benchmark: string; icon: string; subareas: string[]; score: number; summary: string }
-			interface ParsedConstruct { text: string; description: string; avg_score: number; metrics: ParsedMetric[]; subareas: string[]; primarySubarea: string; icon: string; id: string | null }
+			interface ParsedMetric {
+				id: string;
+				name: string;
+				benchmark: string;
+				icon: string;
+				subareas: string[];
+				score: number;
+				summary: string;
+			}
+			interface ParsedConstruct {
+				text: string;
+				description: string;
+				avg_score: number;
+				metrics: ParsedMetric[];
+				subareas: string[];
+				primarySubarea: string;
+				icon: string;
+				id: string | null;
+			}
 
 			// Parse themes into constructs
-			const constructs: ParsedConstruct[] = (data.themes ?? []).map((theme: Record<string, unknown>) => {
-				const metrics = ((theme.metrics as Record<string, unknown>[]) ?? []).map((m: Record<string, unknown>) => {
-					const subareaIds = ((m.subareas as string[]) ?? []).map(subareaNameToId);
+			const constructs: ParsedConstruct[] = (data.themes ?? []).map(
+				(theme: Record<string, unknown>) => {
+					const metrics = ((theme.metrics as Record<string, unknown>[]) ?? []).map(
+						(m: Record<string, unknown>) => {
+							const subareaIds = ((m.subareas as string[]) ?? []).map(subareaNameToId);
+							return {
+								id: m.id as string,
+								name: m.name as string,
+								benchmark: m.benchmark as string,
+								icon: BENCHMARK_ICONS[m.benchmark as string] ?? 'fa-bullseye',
+								subareas: subareaIds.length ? subareaIds : ['autonomy-preservation'],
+								score: (m.score as number) ?? 0,
+								summary: (m.description as string) ?? ''
+							};
+						}
+					);
+					const allSubareas = [...new Set(metrics.flatMap((m): string[] => m.subareas))];
 					return {
-						id: m.id as string,
-						name: m.name as string,
-						benchmark: m.benchmark as string,
-						icon: BENCHMARK_ICONS[m.benchmark as string] ?? 'fa-bullseye',
-						subareas: subareaIds.length ? subareaIds : ['autonomy-preservation'],
-						score: (m.score as number) ?? 0,
-						summary: (m.description as string) ?? ''
+						text: theme.name as string,
+						description: (theme.description as string) ?? '',
+						avg_score: (theme.avg_score as number) ?? 0,
+						metrics,
+						subareas: allSubareas.length ? allSubareas : ['autonomy-preservation'],
+						primarySubarea: allSubareas[0] ?? 'autonomy-preservation',
+						icon: metrics[0]?.icon ?? 'fa-bullseye',
+						id: metrics[0]?.id ?? null
 					};
-				});
-				const allSubareas = [...new Set(metrics.flatMap((m): string[] => m.subareas))];
-				return {
-					text: theme.name as string,
-					description: (theme.description as string) ?? '',
-					avg_score: (theme.avg_score as number) ?? 0,
-					metrics,
-					subareas: allSubareas.length ? allSubareas : ['autonomy-preservation'],
-					primarySubarea: allSubareas[0] ?? 'autonomy-preservation',
-					icon: metrics[0]?.icon ?? 'fa-bullseye',
-					id: metrics[0]?.id ?? null
-				};
-			});
+				}
+			);
 
-			// Collect all focus metric IDs and rank models
-			const focusMetricIds = [...new Set(constructs.flatMap((c) => c.metrics.map((m) => m.id)))];
-			renderSmartRankings(focusMetricIds);
+			// Single pass: compute construct scores for all models, rank, build nutrition opts
+			const constructMetricIds = constructs.map((c) => c.metrics.map((m) => m.id));
 
-			// Build nutrition label opts and open
-			const smartRanked = leaderboardState.smartRanked;
-			const topModels = smartRanked.slice(0, 3).map((m) => {
-				const themeMetricIds = constructs.map((c) => c.metrics.map((met) => met.id));
-				return {
-					name: m.name,
-					provider: m.provider,
-					score: m.score,
-					constructScores: getConstructScoresForModel(m.id, themeMetricIds),
-					worstAreas: getWorstSubareasForModel(m.id, 3)
-				};
-			});
+			// All metric IDs flat (for sidebar/label score)
+			const allFlatMetricIds = constructMetricIds.flat();
+
+			const allModelScores = appState.models.map((m) => {
+				const constructScores = getConstructScoresForModel(m.id, constructMetricIds);
+				const avg = constructScores.length
+					? constructScores.reduce((a, b) => a + b, 0) / constructScores.length
+					: 0;
+				// Flat avg across all metric IDs (for sidebar header + nutrition label)
+				const key = makeBenchmarkKey(m.id, appState.filters.age);
+				const rawScores = appState.benchmarkData[key];
+				const flatVals = allFlatMetricIds
+					.map((id) => rawScores?.[id] ?? null)
+					.filter((v): v is number => v !== null);
+				const flatScore = flatVals.length ? flatVals.reduce((a, b) => a + b, 0) / flatVals.length : 0;
+				return { model: m, avg, constructScores, flatScore };
+			}).sort((a, b) => b.avg - a.avg);
+
+			leaderboardState.smartRanked = allModelScores.map(({ model, avg, flatScore }) => ({
+				id: model.id,
+				name: model.name,
+				provider: model.provider,
+				score: avg,
+				flatScore
+			}));
+
+			const topModels = allModelScores.slice(0, 3).map(({ model, avg, constructScores, flatScore }) => ({
+				name: model.name,
+				provider: model.provider,
+				score: avg,
+				flatScore,
+				constructScores,
+				worstAreas: getWorstSubareasForModel(model.id, 3)
+			}));
 
 			smartNutritionState.opts = {
 				userText: text,
@@ -242,23 +301,30 @@
 
 	// ===== Leaderboard helpers =====
 
-	function renderSmartRankings(metricIds: string[]) {
+	function renderSmartRankings(constructMetricIds: string[][]) {
+		const allFlatMetricIds = constructMetricIds.flat();
 		const ranked = appState.models
 			.map((m) => {
 				const key = makeBenchmarkKey(m.id, appState.filters.age);
 				const scores = appState.benchmarkData[key];
-				if (!scores || !metricIds.length) return { model: m, avg: 0 };
-				const vals = metricIds.map((id) => scores[id] ?? null).filter((v) => v !== null) as number[];
-				const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-				return { model: m, avg };
+				if (!scores || !constructMetricIds.length) return { model: m, avg: 0, flatScore: 0 };
+				const constructAvgs = constructMetricIds.map((ids) => {
+					const vals = ids.map((id) => scores[id] ?? null).filter((v) => v !== null) as number[];
+					return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+				}).filter((v): v is number => v !== null);
+				const avg = constructAvgs.length ? constructAvgs.reduce((a, b) => a + b, 0) / constructAvgs.length : 0;
+				const flatVals = allFlatMetricIds.map((id) => scores[id] ?? null).filter((v): v is number => v !== null);
+				const flatScore = flatVals.length ? flatVals.reduce((a, b) => a + b, 0) / flatVals.length : 0;
+				return { model: m, avg, flatScore };
 			})
 			.sort((a, b) => b.avg - a.avg);
 
-		leaderboardState.smartRanked = ranked.map(({ model, avg }) => ({
+		leaderboardState.smartRanked = ranked.map(({ model, avg, flatScore }) => ({
 			id: model.id,
 			name: model.name,
 			provider: model.provider,
-			score: avg
+			score: avg,
+			flatScore
 		}));
 	}
 
@@ -333,11 +399,18 @@
 {#if showGate}
 	<GatePage
 		{isAuthenticated}
-		onEnter={() => { isAuthenticated = true; showGate = false; activeTab = 'explore'; }}
+		onEnter={() => {
+			isAuthenticated = true;
+			showGate = false;
+			activeTab = 'explore';
+		}}
 		onTabChange={(tab) => handleTabChange(tab)}
 	/>
 {:else}
-	<div class="h-screen overflow-hidden flex flex-col bg-[#fafaf9]" style="font-family:'Inter',system-ui,-apple-system,sans-serif">
+	<div
+		class="flex h-screen flex-col overflow-hidden bg-[#fafaf9]"
+		style="font-family:'Inter',system-ui,-apple-system,sans-serif"
+	>
 		<ControlBar
 			{activeTab}
 			{isAuthenticated}
@@ -345,32 +418,42 @@
 			{smartExploreLoading}
 			onTabChange={handleTabChange}
 			onSmartExplore={() => (smartExploreOpen = true)}
-			onOpenNutritionLabel={() => { smartNutritionOpen = true; }}
+			onOpenNutritionLabel={() => {
+				smartNutritionOpen = true;
+			}}
 			onClearFocus={handleClearFocus}
 		/>
 
 		<!-- Beta banner (below navbar) -->
-		<div class="flex-shrink-0 bg-[#fef9c3] border-b border-[#fde047] text-[#713f12] text-[13px] leading-[1.5] px-6 py-[10px] text-center z-[99]">
+		<div
+			class="z-[99] flex-shrink-0 border-b border-[#fde047] bg-[#fef9c3] px-6 py-[10px] text-center text-[13px] leading-[1.5] text-[#713f12]"
+		>
 			<i class="fa-solid fa-triangle-exclamation mr-1.5 text-[#a16207]"></i>
 			The current data and benchmarks are subject to change and still under validation and review.
 		</div>
 
 		{#if activeTab === 'explore'}
 			<!-- Main 3-column layout -->
-			<div class="flex-1 overflow-hidden flex">
+			<div class="flex flex-1 overflow-hidden">
 				<!-- LEFT: Leaderboard (324px) -->
-				<aside class="w-[324px] flex-shrink-0 bg-white border-r border-[#e5e7eb] flex flex-col overflow-hidden h-full">
+				<aside
+					class="flex h-full w-[324px] flex-shrink-0 flex-col overflow-hidden border-r border-[#e5e7eb] bg-white"
+				>
 					<Leaderboard onModelSelect={handleLeaderboardModelSelect} />
 				</aside>
 
 				<!-- CENTER: Sunburst + legend -->
-				<div class="flex-1 flex flex-col items-center overflow-hidden p-3 min-w-0 h-full">
+				<div class="flex h-full min-w-0 flex-1 flex-col items-center overflow-hidden p-3">
 					<!-- Sunburst wrapper -->
-					<div class="flex-1 min-h-0 relative flex items-center justify-center w-full">
+					<div class="relative flex min-h-0 w-full flex-1 items-center justify-center">
 						{#if appState.loading}
-							<div class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#fafaf9] rounded-[16px] z-10">
-								<div class="w-10 h-10 rounded-full border-[3px] border-[#e5e7eb] border-t-[#00b3b0] animate-spin"></div>
-								<p class="text-[14px] text-[#6b7280] font-medium">Loading data...</p>
+							<div
+								class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-[16px] bg-[#fafaf9]"
+							>
+								<div
+									class="h-10 w-10 animate-spin rounded-full border-[3px] border-[#e5e7eb] border-t-[#00b3b0]"
+								></div>
+								<p class="text-[14px] font-medium text-[#6b7280]">Loading data...</p>
 							</div>
 						{:else if appState.error}
 							<div class="flex flex-col items-center gap-3 text-[#dc2626]">
@@ -390,41 +473,50 @@
 					</div>
 
 					<!-- Model name label (below sunburst) -->
-					<div class="flex-shrink-0 text-[18px] font-semibold text-[#1a1a1a] text-center mt-[-8px] tracking-[-0.01em]">
+					<div
+						class="mt-[-8px] flex-shrink-0 text-center text-[16px] font-semibold tracking-[-0.01em] text-[#1a1a1a]"
+					>
 						{appState.models.find((m) => m.id === appState.filters.model)?.name ?? ''}
 					</div>
 
 					<!-- Legend (pinned at bottom of center column) -->
-					<div class="flex-shrink-0 w-full max-w-[700px] py-1.5 pb-2">
+					<div class="w-full max-w-[700px] flex-shrink-0 py-1.5 pb-2">
 						<div class="px-4 pt-1 pb-2">
 							<div class="flex items-center gap-3">
-								<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]">Prohibits human flourishing</span>
-								<div class="flex-1 h-[10px] rounded-[5px]" style="background:linear-gradient(to right,#dc2626,#e5e7eb)"></div>
-								<div class="w-1.5 h-1.5 rounded-full bg-[#9ca3af] flex-shrink-0"></div>
-								<div class="flex-1 h-[10px] rounded-[5px]" style="background:linear-gradient(to right,#e5e7eb,#16a34a)"></div>
-								<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]">Promotes human flourishing</span>
+								<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]">Harm</span>
+								<div
+									class="h-[10px] flex-1 rounded-[5px]"
+									style="background:linear-gradient(to right,#dc2626,#e5e7eb)"
+								></div>
+								<div class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#9ca3af]"></div>
+								<div
+									class="h-[10px] flex-1 rounded-[5px]"
+									style="background:linear-gradient(to right,#e5e7eb,#16a34a)"
+								></div>
+								<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]"
+									>Flourishing</span
+								>
 							</div>
 						</div>
 					</div>
 				</div>
 
 				<!-- RIGHT: Sidebar panel (360px) -->
-				<aside class="w-[360px] flex-shrink-0 bg-[#fafaf9] border-l border-[#e5e7eb] flex flex-col overflow-hidden h-full">
+				<aside
+					class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-[#fafaf9]"
+				>
 					<Sidebar />
 				</aside>
 			</div>
-
 		{:else if activeTab === 'metrics'}
-			<div class="flex-1 overflow-hidden flex">
+			<div class="flex flex-1 overflow-hidden">
 				<MetricsPage onTabChange={handleTabChange} />
 			</div>
-
 		{:else if activeTab === 'about'}
-			<div class="flex-1 overflow-hidden flex">
+			<div class="flex flex-1 overflow-hidden">
 				<AboutPage onTabChange={handleTabChange} />
 			</div>
 		{/if}
-
 	</div>
 {/if}
 
@@ -433,11 +525,15 @@
 <NutritionLabel />
 <SmartExplore
 	open={smartExploreOpen}
-	onClose={() => { smartExploreOpen = false; }}
+	onClose={() => {
+		smartExploreOpen = false;
+	}}
 	onSubmit={handleSmartExploreSubmit}
 	loading={smartExploreLoading}
 />
 <SmartNutritionLabel
 	open={smartNutritionOpen}
-	onClose={() => { smartNutritionOpen = false; }}
+	onClose={() => {
+		smartNutritionOpen = false;
+	}}
 />
