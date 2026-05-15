@@ -206,7 +206,7 @@
 				</div>
 
 				<figure class="img-full">
-					<img src="/impactbench2.png" alt="ImpactBench pipeline diagram" />
+					<img src="/impactbench4.png" alt="ImpactBench pipeline diagram" />
 					<figcaption>The ImpactBench four-stage evaluation pipeline.</figcaption>
 				</figure>
 
@@ -261,6 +261,13 @@
 						system consistently supports it), so that the direction and
 						magnitude of effect are visible at a glance.
 					</p>
+				</div>
+
+				<figure class="img-full">
+					<img src="/impactbench3.png" alt="ImpactBench headline visualization" />
+				</figure>
+
+				<div class="text-col">
 					<p class="section-body">
 						Beyond the aggregate view, ImpactBench generates personalized AI
 						nutrition labels: users specify who they are, including age band,
@@ -277,8 +284,25 @@
 				</div>
 
 				<figure class="img-full">
-					<img src="/impactbench3.png" alt="ImpactBench headline visualization" />
+					<img src="/impactbench5.png" alt="Personalized AI nutrition label example" />
+					<figcaption>Personalized focus areas with the 'Smart Explore' feature.</figcaption>
 				</figure>
+
+				<figure class="img-full">
+					<img src="/impactbench6.png" alt="Comparative results across leading AI systems" />
+				</figure>
+
+				<div class="text-col">
+					<p class="section-body">
+						Alongside the benchmark suite, we are releasing the first
+						comparative results across 14 leading AI systems on 18
+						expert-submitted constructs, establishing a baseline for the field
+						to improve upon. This is a starting point rather than a conclusion.
+						We expect the suite, the methodology, and the constructs themselves
+						to evolve as additional experts contribute and as deployed-product
+						evaluation becomes feasible at scale.
+					</p>
+				</div>
 
 			</div>
 		</div>
