@@ -42,8 +42,6 @@
 
 <div class="about-page" bind:this={pageEl}>
 	<aside class="about-sidebar">
-		<div class="about-sidebar-title">ImpactBench</div>
-		<div class="about-sidebar-divider"></div>
 		<nav class="about-sidebar-nav">
 			{#each SUBTABS as tab, i (tab.id)}
 				<button
@@ -68,7 +66,7 @@
 				<div class="text-col">
 					<section class="whitepaper-banner">
 						<h1 class="whitepaper-title">Introducing ImpactBench</h1>
-						<p class="whitepaper-subtitle">Benchmarking human flourishing across multi-turn conversations.</p>
+						<p class="whitepaper-subtitle">Open infrastructure for benchmarking the human impact of AI in multi-turn, realistic settings</p>
 						<div class="whitepaper-cta" aria-disabled="true">White paper coming soon</div>
 					</section>
 
@@ -520,7 +518,6 @@
 	.whitepaper-banner {
 		padding: 64px 0 56px;
 		margin-bottom: 48px;
-		border-bottom: 1px solid #e5e7eb;
 		text-align: center;
 	}
 
@@ -540,7 +537,6 @@
 		color: #6b7280;
 		margin: 0 auto 28px;
 		line-height: 1.5;
-		white-space: nowrap;
 	}
 
 	.whitepaper-cta {
@@ -566,16 +562,9 @@
 	.section-overline {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		gap: 12px;
 		margin-bottom: 16px;
-	}
-
-	.section-overline::before,
-	.section-overline::after {
-		content: '';
-		flex: 1;
-		height: 1px;
-		background: #e5e7eb;
 	}
 
 	.section-overline span {
