@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { appState } from '$lib/store.svelte';
-	import { formatScore, scorePillStyle, scoreToClass, scoreColors } from '$lib/scores';
+	import { formatScore, scoreToClass, scoreColors } from '$lib/scores';
 	import { loadScenarioDetail } from '$lib/data';
+	import { filterScenariosByAge } from '$lib/utils';
 	import type { ScenarioMeta, ScenarioDetail } from '$lib/types';
-	import ConversationViewer from './ConversationViewer.svelte';
+	import ConversationViewer from '../organisms/ConversationViewer.svelte';
+	import ScorePill from '../atoms/ScorePill.svelte';
 
 	interface Props {
 		onTabChange: (tab: string) => void;
@@ -30,10 +32,6 @@
 	let conversationDetail: ScenarioDetail | null = $state(null);
 	let conversationLoading = $state(false);
 	let conversationError = $state(false);
-
-	function getCurrentScores(): Record<string, number> {
-		return appState.benchmarkData[`${appState.filters.model}|${appState.filters.age}`] ?? {};
-	}
 
 	const allBenchmarks = $derived(() => {
 		const set = new Set<string>();
@@ -123,9 +121,7 @@
 	// ── Scenario helpers ──────────────────────────────────────────
 
 	function getScenariosForMetric(metricId: string): ScenarioMeta[] {
-		return (appState.scenarioIndex?.[metricId] ?? []).filter(
-			(sc) => sc.age === appState.filters.age
-		);
+		return filterScenariosByAge(appState, metricId);
 	}
 
 	function toggleMetric(uid: string) {
@@ -317,10 +313,7 @@
 								<div class="text-[12px] font-medium text-[#1a1a1a] truncate">{m.name}</div>
 								<div class="text-[10px] text-[#9ca3af] truncate mt-[1px]">{m.subareaName}{m.benchmarks.length ? ' · ' + m.benchmarks.map(benchmarkLabel).join(', ') : ''}</div>
 							</div>
-							<span
-								class="inline-block px-[5px] py-[1px] rounded-[5px] text-[10px] font-semibold flex-shrink-0 min-w-[30px] text-center"
-								style={scorePillStyle(m.avgScore)}
-							>{formatScore(m.avgScore)}</span>
+							<ScorePill score={m.avgScore} size="sm" />
 							<i class="fa-solid {expandedMetricUid === m.uid ? 'fa-chevron-up' : 'fa-chevron-down'} text-[8px] text-[#c4c9d1] flex-shrink-0"></i>
 						</button>
 

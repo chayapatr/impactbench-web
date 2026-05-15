@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { appState } from '$lib/store.svelte';
 	import { buildHierarchy, getScoresForFilter } from '$lib/data';
-	import Sunburst from './Sunburst.svelte';
-	import ControlBar from './ControlBar.svelte';
+	import Sunburst from '../organisms/Sunburst.svelte';
+	import ControlBar from '../molecules/ControlBar.svelte';
 
 	interface Props {
 		onEnter: () => void;
@@ -261,7 +261,7 @@
 						pwError = false;
 					}}
 				>
-					<i class="fa-solid fa-lock-open"></i> Explore
+					<i class="fa-solid fa-lock-open"></i> Unlock
 				</button>
 				<button class="btn-secondary" onclick={() => onTabChange('about')}>
 					<i class="fa-solid fa-file-lines"></i> About

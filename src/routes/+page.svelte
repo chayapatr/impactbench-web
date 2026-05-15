@@ -18,17 +18,17 @@
 		type ThemeMetricItem
 	} from '$lib/store.svelte';
 	import { makeBenchmarkKey } from '$lib/data';
-	import ControlBar from '$lib/components/ControlBar.svelte';
-	import Sunburst from '$lib/components/Sunburst.svelte';
-	import Sidebar from '$lib/components/Sidebar.svelte';
-	import Leaderboard from '$lib/components/Leaderboard.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
-	import NutritionLabel from '$lib/components/NutritionLabel.svelte';
-	import SmartExplore from '$lib/components/SmartExplore.svelte';
-	import SmartNutritionLabel from '$lib/components/SmartNutritionLabel.svelte';
-	import GatePage from '$lib/components/GatePage.svelte';
-	import AboutPage from '$lib/components/AboutPage.svelte';
-	import MetricsPage from '$lib/components/MetricsPage.svelte';
+	import ControlBar from '$lib/components/molecules/ControlBar.svelte';
+	import Tooltip from '$lib/components/molecules/Tooltip.svelte';
+	import Sunburst from '$lib/components/organisms/Sunburst.svelte';
+	import Sidebar from '$lib/components/organisms/Sidebar.svelte';
+	import Leaderboard from '$lib/components/organisms/Leaderboard.svelte';
+	import NutritionLabel from '$lib/components/organisms/NutritionLabel.svelte';
+	import SmartExplore from '$lib/components/organisms/SmartExplore.svelte';
+	import SmartNutritionLabel from '$lib/components/organisms/SmartNutritionLabel.svelte';
+	import GatePage from '$lib/components/pages/GatePage.svelte';
+	import AboutPage from '$lib/components/pages/AboutPage.svelte';
+	import MetricsPage from '$lib/components/pages/MetricsPage.svelte';
 
 	let showGate = $state(true);
 	let isAuthenticated = $state(false);
