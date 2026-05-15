@@ -213,9 +213,6 @@
 			</div>
 		</div>
 
-			</div>
-		</div>
-
 		<!-- Explore -->
 		<div id="section-explore" class="tab-section">
 			<div class="tab-section-inner">
