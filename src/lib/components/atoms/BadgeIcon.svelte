@@ -27,8 +27,8 @@
 		class:w-[18px]={!isVerdict}
 		class:text-[11px]={!isVerdict}
 		style={type === 'pass'
-			? isVerdict ? 'background:#dcfce7;color:#16a34a' : 'background:#f3f4f6;color:#6b7280'
-			: isVerdict ? 'background:#fee2e2;color:#dc2626' : 'background:#f3f4f6;color:#6b7280'}
+			? isVerdict ? 'background:#dcfce7;color:#16a34a' : 'background:#f3f4f6;color:#93c5fd'
+			: isVerdict ? 'background:#fee2e2;color:#dc2626' : 'background:#f3f4f6;color:#c4b5fd'}
 	>
 		{#if isVerdict}
 			{type === 'pass' ? '✓' : '✗'}

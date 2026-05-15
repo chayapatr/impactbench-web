@@ -86,7 +86,7 @@
 		<div>
 			<div class="mb-1.5 flex items-center justify-between">
 				<span class="flex items-center gap-1.5 text-[12px] font-semibold text-[#374151]">
-					<span class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px]" style="background:#f3f4f6;color:#6b7280"><i class="fa-solid fa-star" style="font-size:7px"></i></span>
+					<span class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px]" style="background:#f3f4f6;color:#93c5fd"><i class="fa-solid fa-star" style="font-size:7px"></i></span>
 					Flourishing
 					<span class="font-normal text-[#9ca3af]">· {posMetrics.length} metrics</span>
 				</span>
@@ -100,7 +100,7 @@
 			<div>
 				<div class="mb-1.5 flex items-center justify-between">
 					<span class="flex items-center gap-1.5 text-[12px] font-semibold text-[#374151]">
-						<span class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px]" style="background:#f3f4f6;color:#6b7280"><i class="fa-solid fa-shield" style="font-size:7px"></i></span>
+						<span class="inline-flex h-[16px] w-[16px] items-center justify-center rounded-full text-[10px]" style="background:#f3f4f6;color:#c4b5fd"><i class="fa-solid fa-shield" style="font-size:7px"></i></span>
 						Harm restraint
 						<span class="font-normal text-[#9ca3af]">· {negMetrics.length} metrics</span>
 					</span>
