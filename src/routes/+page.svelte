@@ -421,7 +421,7 @@
 
 		{:else if activeTab === 'about'}
 			<div class="flex-1 overflow-hidden flex">
-				<AboutPage />
+				<AboutPage onTabChange={handleTabChange} />
 			</div>
 		{/if}
 

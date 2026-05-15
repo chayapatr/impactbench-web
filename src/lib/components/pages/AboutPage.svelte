@@ -1,8 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	interface Props {
+		onTabChange?: (tab: string) => void;
+	}
+
+	let { onTabChange }: Props = $props();
+
 	let activeSubtab = $state<string>('pipeline');
 	let pageEl: HTMLElement | undefined = $state();
+
+	function goToSupport(e: MouseEvent) {
+		e.preventDefault();
+		if (typeof window !== 'undefined') {
+			history.replaceState(null, '', window.location.pathname + '#support');
+		}
+		onTabChange?.('home');
+	}
 
 	const SUBTABS = [
 		{ id: 'pipeline', label: 'Pipeline' },
@@ -71,38 +85,66 @@
 					</section>
 
 					<p class="section-body">
-						Generative AI is being rapidly adopted into systems people rely
-						on to make decisions about their health, finances, relationships,
-						and sense of self. If developed and deployed thoughtfully, these
-						systems have the potential to expand human access and agency. But
-						the psychological risks are relational, context-dependent, and
-						unfold over time. A model can pass conventional safety benchmarks
-						and still erode a user's autonomy, scaffold emotional dependency,
-						or quietly degrade the skills it was meant to support.
+						AI is being rapidly adopted into the systems that people rely on to
+						make decisions about their health, finances, relationships, work, and
+						sense of self. Deployed thoughtfully, these systems have the potential
+						to expand human capabilities and agency. Yet existing benchmarks rarely
+						capture the behaviors that matter most for users, measuring neither the
+						harmful patterns that erode wellbeing nor the supportive behaviors that
+						scaffold flourishing. A growing body of real-world incidents illustrates
+						this gap, from companion chatbots scaffolding delusional belief systems
+						(<a class="section-inline-link" href="https://arxiv.org/abs/2511.08880" target="_blank" rel="noopener noreferrer">Archiwaranguprok et al., 2025</a>) to tutoring tools quietly
+						eroding the cognitive skills they were intended to support
+						(<a class="section-inline-link" href="https://www.brainonllm.com/" target="_blank" rel="noopener noreferrer">Kosmyna et al., 2025</a>). A model can pass widely used safety benchmarks
+						and still undermine a user's autonomy, cultivate emotional dependency,
+						or displace the judgment of the people who depend on it.
 					</p>
 					<p class="section-body">
-						Existing evaluations rarely capture these dynamics: most are
-						single-turn, static, and validated against narrow definitions of
-						harm that no single discipline would have written alone.
+						Existing evaluations rarely capture these dynamics. Most are
+						single-turn, static, and validated against narrow definitions of harm
+						that no single discipline would have written alone. A recent systematic
+						review of 445 leading benchmarks found that only 16.0% conducted any
+						statistical testing, 21.7% provided no definition of the phenomenon they
+						claimed to measure (<a class="section-inline-link" href="https://arxiv.org/pdf/2511.04703" target="_blank" rel="noopener noreferrer">Bean et al</a>).
 					</p>
 					<p class="section-body">
-						Today, we're introducing ImpactBench: a benchmark suite designed
-						to measure how AI systems affect human flourishing across
-						extended, realistic interactions. Built through an open
-						submission process with researchers, clinicians, legal scholars,
-						and community advocates, the suite spans 18 expert-submitted
-						benchmarks covering emotional dependence, cognitive autonomy,
-						health, legal and financial advice, child safety, and more. Each
-						benchmark is evaluated through multi-turn adversarial simulation
-						with demographically stratified user personas, so that risks are
-						surfaced the way they appear in real conversations rather than in
-						isolated prompts.
+						Today, we are introducing the Open Benchmark of AI Impact on Humans
+						(ImpactBench): an open suite of evaluations designed to measure how AI
+						systems affect human outcomes across extended, realistic interactions.
+						Built through an open submission process with researchers, clinicians,
+						legal scholars, and community advocates, ImpactBench currently spans 18
+						expert-submitted benchmarks covering emotional dependence, cognitive
+						autonomy, health, legal and financial advice, child safety, and
+						additional constructs drawn from clinical, educational, and policy
+						literatures. The suite is designed to grow over time, and we invite
+						researchers and practitioners to
+						<a class="section-inline-link" href="https://www.media.mit.edu/projects/the-open-benchmark-for-the-human-impact-of-ai/overview/" target="_blank" rel="noopener noreferrer">submit additional benchmarks</a>
+						as the framework matures. Each benchmark is evaluated through multi-turn
+						adversarial simulation with demographically stratified user personas,
+						so that risks surface the way they appear in real conversations rather
+						than in isolated prompts.
 					</p>
 					<p class="section-body">
-						ImpactBench is a first-of-its-kind collaboration between the MIT
-						Media Lab, the Psychology of Technology Institute, the USC Neely
-						Center, and UC Berkeley, launched at the AHA Flourishing Workshop
-						at MIT in October 2025 with support from the Omidyar Network.
+						ImpactBench is a first-of-its-kind collaboration between the MIT Media
+						Lab, the Psychology of Technology Institute, the USC Marshall Neely
+						Center, and UC Berkeley. The project was launched at the Workshop for
+						Designing Benchmarks for Human Flourishing with AI, organized by the
+						Advancing Humans with AI (AHA) research program at MIT in October 2025
+						with support from the Omidyar Network, which convened 80 experts from
+						over 40 academic, industry, non-profit, and government institutions.
+					</p>
+					<p class="section-body">
+						<strong>A note on these results.</strong> The findings reported here are
+						preliminary. Model performance can drift over time as systems are
+						updated, retrained, or reconfigured for deployment, and benchmark scores
+						reflect a snapshot of behavior rather than a permanent property of any
+						given model. We welcome feedback, critique, and continued collaboration
+						from researchers, clinicians, advocates, and institutions whose
+						perspectives can deepen what this evaluation can see. Researchers
+						interested in submitting a benchmark, contributing methodological
+						improvements, or collaboration on domain-specific extensions are
+						encouraged to
+						<a class="section-inline-link" href="#support" onclick={goToSupport}>reach out</a>.
 					</p>
 				</div>
 
