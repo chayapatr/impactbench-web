@@ -12,6 +12,7 @@ const colorScaleBright = d3
 	.range(['#ef4444', '#f3f4f6', '#22c55e'])
 	.clamp(true);
 
+
 export function scoreToColor(score: number): string {
 	return colorScale(score);
 }
@@ -59,7 +60,7 @@ export function scoreColors(score: number): { color: string; light: string; bord
 
 export function scorePillStyle(score: number): string {
 	if (score >= 0.75) return 'background:#dcfce7;color:#16a34a';
-	if (score >= 0.55) return 'background:#fef3c7;color:#d97706';
-	if (score >= 0.45) return 'background:#f3f4f6;color:#6b7280';
+	if (score >= 0.50) return 'background:#fef3c7;color:#d97706';
+	if (score >= 0.25) return 'background:#ffedd5;color:#ea580c';
 	return 'background:#fee2e2;color:#dc2626';
 }

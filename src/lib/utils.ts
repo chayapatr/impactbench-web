@@ -32,7 +32,7 @@ export function computeSubareaScore(appState: AppState, subareaId: string, model
 	const scores = getScores(appState, modelId, age);
 	for (const area of appState.taxonomy?.areas ?? []) {
 		const sub = area.subareas.find((s) => s.id === subareaId);
-		if (sub) return averageScore(sub.metrics.map((m) => scores[m.id] ?? 0));
+		if (sub) return averageScore(sub.metrics.map((m) => scores[m.id]).filter((s): s is number => s !== undefined));
 	}
 	return 0;
 }

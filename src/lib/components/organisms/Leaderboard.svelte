@@ -57,12 +57,12 @@
 
 		if (posIds.length + negIds.length === 0) return { avg: 0.5, pos: 0.5, neg: 0.5 };
 
-		const posVals = posIds.map((id) => scores[id] ?? 0);
-		const negVals = negIds.map((id) => scores[id] ?? 0);
+		const posVals = posIds.map((id) => scores[id]).filter((v): v is number => v !== undefined);
+		const negVals = negIds.map((id) => scores[id]).filter((v): v is number => v !== undefined);
 		const allVals = [...posVals, ...negVals];
 		const pos = posVals.length ? posVals.reduce((a, b) => a + b, 0) / posVals.length : 0.5;
 		const neg = negVals.length ? negVals.reduce((a, b) => a + b, 0) / negVals.length : 0.5;
-		const avg = allVals.reduce((a, b) => a + b, 0) / allVals.length;
+		const avg = allVals.length ? allVals.reduce((a, b) => a + b, 0) / allVals.length : 0.5;
 		return { avg, pos, neg };
 	}
 
