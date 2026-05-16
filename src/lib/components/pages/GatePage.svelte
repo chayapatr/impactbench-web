@@ -293,6 +293,7 @@
 			{#if hierarchyData}
 				<Sunburst
 					data={hierarchyData}
+					gateMode={true}
 					onSubareaClick={() => {
 						onEnter();
 					}}

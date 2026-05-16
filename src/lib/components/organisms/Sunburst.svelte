@@ -9,9 +9,10 @@
 		onSubareaClick: (id: string) => void;
 		onAreaClick: (id: string) => void;
 		onCenterClick: () => void;
+		gateMode?: boolean;
 	}
 
-	let { data, onSubareaClick, onAreaClick, onCenterClick }: Props = $props();
+	let { data, onSubareaClick, onAreaClick, onCenterClick, gateMode = false }: Props = $props();
 
 	let svgEl: SVGSVGElement | undefined = $state();
 
@@ -31,6 +32,7 @@
 		if (y + 200 > vh) y = event.clientY - 200 + 10;
 		if (y < 8) y = 8;
 
+		tooltipState.gateMode = gateMode;
 		tooltipState.data = {
 			x,
 			y,

@@ -50,6 +50,7 @@ export interface TooltipData {
 
 export const tooltipState = $state({
 	visible: false,
+	gateMode: false,
 	data: null as TooltipData | null
 });
 
