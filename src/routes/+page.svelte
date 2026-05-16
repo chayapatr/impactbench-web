@@ -236,20 +236,24 @@
 			// All metric IDs flat (for sidebar/label score)
 			const allFlatMetricIds = constructMetricIds.flat();
 
-			const allModelScores = appState.models.map((m) => {
-				const constructScores = getConstructScoresForModel(m.id, constructMetricIds);
-				const avg = constructScores.length
-					? constructScores.reduce((a, b) => a + b, 0) / constructScores.length
-					: 0;
-				// Flat avg across all metric IDs (for sidebar header + nutrition label)
-				const key = makeBenchmarkKey(m.id, appState.filters.age);
-				const rawScores = appState.benchmarkData[key];
-				const flatVals = allFlatMetricIds
-					.map((id) => rawScores?.[id] ?? null)
-					.filter((v): v is number => v !== null);
-				const flatScore = flatVals.length ? flatVals.reduce((a, b) => a + b, 0) / flatVals.length : 0;
-				return { model: m, avg, constructScores, flatScore };
-			}).sort((a, b) => b.avg - a.avg);
+			const allModelScores = appState.models
+				.map((m) => {
+					const constructScores = getConstructScoresForModel(m.id, constructMetricIds);
+					const avg = constructScores.length
+						? constructScores.reduce((a, b) => a + b, 0) / constructScores.length
+						: 0;
+					// Flat avg across all metric IDs (for sidebar header + nutrition label)
+					const key = makeBenchmarkKey(m.id, appState.filters.age);
+					const rawScores = appState.benchmarkData[key];
+					const flatVals = allFlatMetricIds
+						.map((id) => rawScores?.[id] ?? null)
+						.filter((v): v is number => v !== null);
+					const flatScore = flatVals.length
+						? flatVals.reduce((a, b) => a + b, 0) / flatVals.length
+						: 0;
+					return { model: m, avg, constructScores, flatScore };
+				})
+				.sort((a, b) => b.avg - a.avg);
 
 			leaderboardState.smartRanked = allModelScores.map(({ model, avg, flatScore }) => ({
 				id: model.id,
@@ -259,14 +263,16 @@
 				flatScore
 			}));
 
-			const topModels = allModelScores.slice(0, 3).map(({ model, avg, constructScores, flatScore }) => ({
-				name: model.name,
-				provider: model.provider,
-				score: avg,
-				flatScore,
-				constructScores,
-				worstAreas: getWorstSubareasForModel(model.id, 3)
-			}));
+			const topModels = allModelScores
+				.slice(0, 3)
+				.map(({ model, avg, constructScores, flatScore }) => ({
+					name: model.name,
+					provider: model.provider,
+					score: avg,
+					flatScore,
+					constructScores,
+					worstAreas: getWorstSubareasForModel(model.id, 3)
+				}));
 
 			smartNutritionState.opts = {
 				userText: text,
@@ -309,13 +315,21 @@
 				const key = makeBenchmarkKey(m.id, appState.filters.age);
 				const scores = appState.benchmarkData[key];
 				if (!scores || !constructMetricIds.length) return { model: m, avg: 0, flatScore: 0 };
-				const constructAvgs = constructMetricIds.map((ids) => {
-					const vals = ids.map((id) => scores[id] ?? null).filter((v) => v !== null) as number[];
-					return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-				}).filter((v): v is number => v !== null);
-				const avg = constructAvgs.length ? constructAvgs.reduce((a, b) => a + b, 0) / constructAvgs.length : 0;
-				const flatVals = allFlatMetricIds.map((id) => scores[id] ?? null).filter((v): v is number => v !== null);
-				const flatScore = flatVals.length ? flatVals.reduce((a, b) => a + b, 0) / flatVals.length : 0;
+				const constructAvgs = constructMetricIds
+					.map((ids) => {
+						const vals = ids.map((id) => scores[id] ?? null).filter((v) => v !== null) as number[];
+						return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+					})
+					.filter((v): v is number => v !== null);
+				const avg = constructAvgs.length
+					? constructAvgs.reduce((a, b) => a + b, 0) / constructAvgs.length
+					: 0;
+				const flatVals = allFlatMetricIds
+					.map((id) => scores[id] ?? null)
+					.filter((v): v is number => v !== null);
+				const flatScore = flatVals.length
+					? flatVals.reduce((a, b) => a + b, 0) / flatVals.length
+					: 0;
 				return { model: m, avg, flatScore };
 			})
 			.sort((a, b) => b.avg - a.avg);
@@ -383,7 +397,7 @@
 </script>
 
 <svelte:head>
-	<title>Human-AI Impact Bench</title>
+	<title>MIT | Human-AI Impact Bench</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
@@ -506,7 +520,9 @@
 					class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-[#fafaf9]"
 				>
 					<Sidebar
-						onOpenNutritionLabel={() => { smartNutritionOpen = true; }}
+						onOpenNutritionLabel={() => {
+							smartNutritionOpen = true;
+						}}
 						onEditFocus={() => {
 							smartExploreInitialText = leaderboardState.smartFocusNode?.userText ?? '';
 							smartExploreOpen = true;
