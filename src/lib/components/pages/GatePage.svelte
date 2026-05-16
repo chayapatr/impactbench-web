@@ -8,9 +8,10 @@
 		onEnter: () => void;
 		onTabChange?: (tab: string) => void;
 		isAuthenticated?: boolean;
+		showPasswordOnMount?: boolean;
 	}
 
-	let { onEnter, onTabChange, isAuthenticated = false }: Props = $props();
+	let { onEnter, onTabChange, isAuthenticated = false, showPasswordOnMount = false }: Props = $props();
 
 	const hierarchyData = $derived(
 		appState.taxonomy && !appState.loading
@@ -22,7 +23,7 @@
 	);
 
 	let activeTab = $state<'request' | 'support' | 'feedback'>('request');
-	let pwVisible = $state(false);
+	let pwVisible = $state(showPasswordOnMount);
 	let pwValue = $state('');
 	let pwError = $state(false);
 

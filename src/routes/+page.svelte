@@ -48,9 +48,10 @@
 	let smartNutritionOpen = $state(false);
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
 
-	// Deep link params — set on mount, consumed after auth
-	let pendingDeepMetric = $state<string | null>(null);
-	let pendingDeepScenario = $state<string | null>(null);
+	// Deep link params — parsed immediately (browser-only), consumed after auth
+	const _initialParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+	let pendingDeepMetric = $state<string | null>(_initialParams?.get('metric') ?? null);
+	let pendingDeepScenario = $state<string | null>(_initialParams?.get('scenario') ?? null);
 
 	let sunburstRef: Sunburst | undefined = $state();
 
@@ -84,11 +85,6 @@
 	);
 
 	onMount(async () => {
-		// Check for deep link params — stored for post-auth navigation
-		const urlParams = new URLSearchParams(window.location.search);
-		pendingDeepMetric = urlParams.get('metric');
-		pendingDeepScenario = urlParams.get('scenario');
-
 		// Check gate
 		if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('aib-auth') === '1') {
 			isAuthenticated = true;
@@ -439,6 +435,7 @@
 {#if showGate}
 	<GatePage
 		{isAuthenticated}
+		showPasswordOnMount={!!(pendingDeepMetric || pendingDeepScenario)}
 		onEnter={() => {
 			isAuthenticated = true;
 			showGate = false;
