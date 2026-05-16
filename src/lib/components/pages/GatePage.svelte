@@ -141,7 +141,8 @@
 			form?.reportValidity();
 			return;
 		}
-		const data: Record<string, string> = { form: tabKey };
+		const FORM_TYPE_LABELS: Record<string, string> = { request: 'Access', support: 'Support', feedback: 'Feedback' };
+		const data: Record<string, string> = { form_type: FORM_TYPE_LABELS[tabKey] ?? tabKey };
 		for (const el of form.elements) {
 			const input = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 			if (!input.name && !input.id) continue;
@@ -150,13 +151,9 @@
 			else data[key] = input.value;
 		}
 		formStates[tabKey] = 'loading';
+		const params = new URLSearchParams(data).toString();
 		try {
-			await fetch(APPS_SCRIPT_URL, {
-				method: 'POST',
-				mode: 'no-cors',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(data)
-			});
+			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
 			formStates[tabKey] = 'success';
 		} catch {
 			formStates[tabKey] = 'idle';
@@ -507,7 +504,6 @@
 											class="form-input"
 											type="text"
 											id="gac-name"
-											name="name"
 											placeholder="Dr. Jane Smith"
 											required
 										/>
@@ -520,7 +516,6 @@
 											class="form-input"
 											type="email"
 											id="gac-email"
-											name="email"
 											placeholder="you@institution.edu"
 											required
 										/>
@@ -535,7 +530,6 @@
 											class="form-input"
 											type="text"
 											id="gac-affiliation"
-											name="affiliation"
 											placeholder="MIT Media Lab"
 											required
 										/>
@@ -548,7 +542,6 @@
 											class="form-input"
 											type="text"
 											id="gac-role"
-											name="role"
 											placeholder="Assistant Professor"
 											required
 										/>
@@ -562,7 +555,6 @@
 									<textarea
 										class="form-input min-h-[100px] resize-y leading-[1.6]"
 										id="gac-use"
-										name="use"
 										rows="3"
 										placeholder="Describe your research goals…"
 										required
@@ -635,7 +627,6 @@
 											class="form-input"
 											type="text"
 											id="gsp-name"
-											name="name"
 											placeholder="Your full name"
 											required
 										/>
@@ -648,7 +639,6 @@
 											class="form-input"
 											type="text"
 											id="gsp-contact"
-											name="contact"
 											placeholder="Email or phone"
 											required
 										/>
@@ -660,7 +650,6 @@
 										class="form-input"
 										type="text"
 										id="gsp-affiliation"
-										name="affiliation"
 										placeholder="Organization or institution"
 									/>
 								</div>
@@ -672,7 +661,6 @@
 									<textarea
 										class="form-input min-h-[100px] resize-y leading-[1.6]"
 										id="gsp-how"
-										name="how"
 										rows="3"
 										placeholder="Describe your ideas…"
 										required
@@ -716,7 +704,7 @@
 									<label class="form-label" for="gfb-topic"
 										>Topic <span class="text-[#dc2626]">*</span></label
 									>
-									<select class="form-input form-select" id="gfb-topic" name="topic" required>
+									<select class="form-input form-select" id="gfb-topic" required>
 										<option value="">Select a topic…</option>
 										<option>Benchmark methodology</option>
 										<option>Data accuracy or scores</option>
@@ -733,7 +721,6 @@
 									<textarea
 										class="form-input min-h-[100px] resize-y leading-[1.6]"
 										id="gfb-message"
-										name="message"
 										rows="4"
 										placeholder="Tell us what you think…"
 										required
@@ -747,7 +734,6 @@
 										class="form-input"
 										type="email"
 										id="gfb-email"
-										name="email"
 										placeholder="you@example.com"
 									/>
 								</div>
