@@ -44,7 +44,7 @@
 				{/if}
 			{:else if d.type === 'subarea'}
 				{@const desc = SUBAREA_DESCRIPTIONS[d.id] ?? ''}
-				<div class="text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase mb-[5px]">{d.name.split(' ')[0]}&nbsp;area</div>
+				<div class="text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase mb-[5px]">Behavioral sub-area</div>
 				<div class="text-[16px] font-[700] text-white leading-[1.2] mb-[6px]" style="font-family:'Source Serif Pro',Georgia,serif">{d.name}</div>
 				{#if desc}<div class="text-[11.5px] text-[#d1d5db] leading-relaxed">{desc}</div>{/if}
 			{:else if d.type === 'metric'}

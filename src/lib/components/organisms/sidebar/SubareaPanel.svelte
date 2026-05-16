@@ -52,7 +52,7 @@
 		navigator.clipboard.writeText(url.toString()).then(() => {
 			copiedMetricId = metricId;
 			setTimeout(() => { copiedMetricId = null; }, 2000);
-		});
+		}).catch(() => {});
 	}
 </script>
 

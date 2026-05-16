@@ -44,7 +44,7 @@
 		navigator.clipboard.writeText(url.toString()).then(() => {
 			copyLinkState = 'copied';
 			setTimeout(() => { copyLinkState = 'idle'; }, 2000);
-		});
+		}).catch(() => {});
 	}
 
 	const overallScore = $derived(() => {

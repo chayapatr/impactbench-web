@@ -116,7 +116,9 @@
 						if (scenarioMeta) {
 							sidebarPush({ type: 'scenario', metricId: pendingDeepMetric, scenarioMeta });
 						}
+						pendingDeepScenario = null;
 					}
+					if (isAuthenticated && pendingDeepMetric) pendingDeepMetric = null;
 				})
 				.catch(() => {});
 			loadMetricCriteria()
@@ -444,12 +446,18 @@
 			if (pendingDeepMetric && appState.taxonomy) {
 				sidebarNavigateToMetric(pendingDeepMetric, appState.taxonomy);
 			}
-			if (pendingDeepScenario && pendingDeepMetric && appState.scenarioIndex) {
-				const scenarios = appState.scenarioIndex[pendingDeepMetric] ?? [];
-				const scenarioMeta = scenarios.find((s) => s.scenario_id === pendingDeepScenario);
-				if (scenarioMeta) {
-					sidebarPush({ type: 'scenario', metricId: pendingDeepMetric, scenarioMeta });
+			if (pendingDeepScenario && pendingDeepMetric) {
+				// scenarioIndex may still be loading — navigate now if ready, otherwise wait for it
+				if (appState.scenarioIndex) {
+					const scenarios = appState.scenarioIndex[pendingDeepMetric] ?? [];
+					const scenarioMeta = scenarios.find((s) => s.scenario_id === pendingDeepScenario);
+					if (scenarioMeta) sidebarPush({ type: 'scenario', metricId: pendingDeepMetric!, scenarioMeta });
+					pendingDeepScenario = null;
+					pendingDeepMetric = null;
 				}
+				// else: scenarioIndex .then() handler above will pick it up when it arrives
+			} else {
+				pendingDeepMetric = null;
 			}
 		}}
 		onTabChange={(tab) => handleTabChange(tab)}

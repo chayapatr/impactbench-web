@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	interface Props {
 		onTabChange?: (tab: string) => void;
@@ -67,6 +67,10 @@
 			if (el) observer.observe(el);
 		}
 		return () => observer.disconnect();
+	});
+
+	onDestroy(() => {
+		if (typeof document !== 'undefined') document.body.style.overflow = '';
 	});
 </script>
 
