@@ -16,6 +16,7 @@
 		setScenarioIndex,
 		setMetricCriteria,
 		sidebarState,
+		sidebarPush,
 		sidebarNavigateToArea,
 		sidebarNavigateToSubarea,
 		sidebarNavigateToMetric,
@@ -46,6 +47,10 @@
 	let smartExploreInitialText = $state('');
 	let smartNutritionOpen = $state(false);
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
+
+	// Deep link params — set on mount, consumed after auth
+	let pendingDeepMetric = $state<string | null>(null);
+	let pendingDeepScenario = $state<string | null>(null);
 
 	let sunburstRef: Sunburst | undefined = $state();
 
@@ -79,6 +84,11 @@
 	);
 
 	onMount(async () => {
+		// Check for deep link params — stored for post-auth navigation
+		const urlParams = new URLSearchParams(window.location.search);
+		pendingDeepMetric = urlParams.get('metric');
+		pendingDeepScenario = urlParams.get('scenario');
+
 		// Check gate
 		if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('aib-auth') === '1') {
 			isAuthenticated = true;
@@ -94,9 +104,24 @@
 			]);
 			setData(taxonomy, models, benchmarkData);
 
+			// Handle deep linking after data is loaded (only if already authenticated)
+			if (isAuthenticated && pendingDeepMetric && taxonomy) {
+				sidebarNavigateToMetric(pendingDeepMetric, taxonomy);
+			}
+
 			// Load scenario index and metric criteria in background
 			loadScenarioIndex()
-				.then(setScenarioIndex)
+				.then((idx) => {
+					setScenarioIndex(idx);
+					// Navigate to scenario if specified in deep link (only if already authenticated)
+					if (isAuthenticated && pendingDeepScenario && pendingDeepMetric && idx) {
+						const scenarios = idx[pendingDeepMetric] ?? [];
+						const scenarioMeta = scenarios.find((s) => s.scenario_id === pendingDeepScenario);
+						if (scenarioMeta) {
+							sidebarPush({ type: 'scenario', metricId: pendingDeepMetric, scenarioMeta });
+						}
+					}
+				})
 				.catch(() => {});
 			loadMetricCriteria()
 				.then(setMetricCriteria)
@@ -418,6 +443,17 @@
 			isAuthenticated = true;
 			showGate = false;
 			activeTab = 'explore';
+			// Navigate to deep link target if present
+			if (pendingDeepMetric && appState.taxonomy) {
+				sidebarNavigateToMetric(pendingDeepMetric, appState.taxonomy);
+			}
+			if (pendingDeepScenario && pendingDeepMetric && appState.scenarioIndex) {
+				const scenarios = appState.scenarioIndex[pendingDeepMetric] ?? [];
+				const scenarioMeta = scenarios.find((s) => s.scenario_id === pendingDeepScenario);
+				if (scenarioMeta) {
+					sidebarPush({ type: 'scenario', metricId: pendingDeepMetric, scenarioMeta });
+				}
+			}
 		}}
 		onTabChange={(tab) => handleTabChange(tab)}
 	/>

@@ -32,6 +32,7 @@
 
 	let expandedMetricId: string | null = $state(null);
 	let expandedScenarios: ScenarioMeta[] = $state([]);
+	let copiedMetricId: string | null = $state(null);
 
 	function toggleMetric(metricId: string) {
 		if (expandedMetricId === metricId) {
@@ -41,6 +42,17 @@
 			expandedMetricId = metricId;
 			expandedScenarios = filterScenariosByAge(appState, metricId);
 		}
+	}
+
+	function copyMetricLink(metricId: string, e: MouseEvent) {
+		e.stopPropagation();
+		const url = new URL(window.location.href);
+		url.search = '';
+		url.searchParams.set('metric', metricId);
+		navigator.clipboard.writeText(url.toString()).then(() => {
+			copiedMetricId = metricId;
+			setTimeout(() => { copiedMetricId = null; }, 2000);
+		});
 	}
 </script>
 
@@ -118,16 +130,39 @@
 
 	{#snippet metricRow(m: (typeof metrics)[0])}
 		<div>
-			<button
-				class="flex w-full items-center gap-[8px] border-l-[3px] px-[14px] py-[7px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]
+			<div
+				class="group flex w-full items-center gap-[8px] border-l-[3px] transition-colors duration-150 hover:bg-[#f3f4f6]
 					{expandedMetricId === m.id ? 'border-l-[#00b3b0] bg-[#f3f4f6]' : 'border-l-transparent'}"
-				onclick={() => toggleMetric(m.id)}
 			>
-				<BadgeIcon type={(m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'flourishing' ? 'pass' : 'fail'} variant="metric" />
-				<span class="min-w-0 flex-1 overflow-hidden text-[12px] text-ellipsis whitespace-nowrap text-[#374151]">{m.name}</span>
-				<ScorePill score={m.score} />
-				<i class="fa-solid {expandedMetricId === m.id ? 'fa-chevron-up' : 'fa-chevron-down'} flex-shrink-0 text-[9px] text-[#9ca3af]"></i>
-			</button>
+				<button
+					class="flex min-w-0 flex-1 items-center gap-[8px] px-[14px] py-[7px] text-left cursor-pointer border-none bg-transparent"
+					onclick={() => toggleMetric(m.id)}
+				>
+					<BadgeIcon type={(m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'flourishing' ? 'pass' : 'fail'} variant="metric" />
+					<span class="min-w-0 flex-1 text-[12px] text-[#374151] {expandedMetricId === m.id ? 'whitespace-normal' : 'overflow-hidden text-ellipsis whitespace-nowrap'}">{m.name}</span>
+				</button>
+				<div class="relative flex-shrink-0">
+					<button
+						class="p-[3px] rounded text-[#9ca3af] opacity-0 group-hover:opacity-100 transition-opacity duration-150 hover:text-[#00b3b0] cursor-pointer border-none bg-transparent"
+						onclick={(e) => copyMetricLink(m.id, e)}
+					>
+						<i class="fa-solid {copiedMetricId === m.id ? 'fa-check text-[#16a34a]' : 'fa-link'} text-[9px]"></i>
+					</button>
+					{#if copiedMetricId === m.id}
+						<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-[5px] whitespace-nowrap rounded-[5px] bg-[#1a1a1a] px-[8px] py-[4px] text-[11px] font-medium text-white shadow-md pointer-events-none z-50">
+							Link copied!
+							<div class="absolute top-full left-1/2 -translate-x-1/2 border-[4px] border-transparent border-t-[#1a1a1a]"></div>
+						</div>
+					{/if}
+				</div>
+				<button
+					class="flex-shrink-0 flex items-center gap-[4px] pr-[14px] py-[7px] cursor-pointer border-none bg-transparent"
+					onclick={() => toggleMetric(m.id)}
+				>
+					<ScorePill score={m.score} />
+					<i class="fa-solid {expandedMetricId === m.id ? 'fa-chevron-up' : 'fa-chevron-down'} text-[9px] text-[#9ca3af]"></i>
+				</button>
+			</div>
 			{#if expandedMetricId === m.id}
 				<div class="bg-[#f9fafb] pb-1">
 					{#if expandedScenarios.length === 0}

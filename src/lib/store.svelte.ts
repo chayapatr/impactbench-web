@@ -43,7 +43,7 @@ export interface TooltipData {
 	type: string;
 	id: string;
 	description?: string;
-	children?: { score?: number; children?: { score?: number }[] }[];
+	children?: { id?: string; name?: string; score?: number; children?: { score?: number }[] }[];
 	harmful?: boolean;
 	behavior_type?: 'flourishing' | 'restrain_harm';
 }
