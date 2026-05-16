@@ -1348,9 +1348,13 @@
 		margin: 0;
 	}
 	.stat-mini-callout {
-		margin: 8px 0 0;
-		color: #b91c1c;
-		font-weight: 600;
+		margin: 10px 0 0;
+		padding: 10px 12px;
+		background: #fef2f2;
+		border: 1px solid #fee2e2;
+		border-radius: 6px;
+		color: #991b1b;
+		font-weight: 500;
 	}
 	.stat-mini-callout em {
 		font-style: italic;
@@ -1637,6 +1641,7 @@
 		color: #6b7280;
 		margin: 0 auto 28px;
 		line-height: 1.5;
+		text-wrap: balance;
 	}
 
 	.whitepaper-cta {

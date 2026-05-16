@@ -97,11 +97,34 @@
 	function tryUnlock() {
 		if (pwValue === 'flourishing') {
 			if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('aib-auth', '1');
+			pwVisible = false;
 			onEnter();
 		} else {
 			pwError = true;
 			pwValue = '';
 		}
+	}
+
+	function openPwModal() {
+		pwVisible = true;
+		pwError = false;
+		pwValue = '';
+	}
+
+	function closePwModal() {
+		pwVisible = false;
+		pwError = false;
+		pwValue = '';
+	}
+
+	function onPwBackdropKey(e: KeyboardEvent) {
+		if (e.key === 'Escape') closePwModal();
+	}
+
+	function goRequestFromModal(e: MouseEvent) {
+		e.preventDefault();
+		closePwModal();
+		openTab('request');
 	}
 
 	const APPS_SCRIPT_URL =
@@ -254,44 +277,13 @@
 				<button class="btn-primary" onclick={() => openTab('request')}>
 					<i class="fa-solid fa-key"></i> Request Access
 				</button>
-				<button
-					class="btn-secondary"
-					onclick={() => {
-						pwVisible = !pwVisible;
-						pwError = false;
-					}}
-				>
-					<i class="fa-solid fa-lock-open"></i> Unlock
+				<button class="btn-white" onclick={openPwModal}>
+					<i class="fa-solid fa-chart-pie"></i> Explore
 				</button>
-				<button class="btn-secondary" onclick={() => onTabChange('about')}>
+				<button class="btn-white" onclick={() => onTabChange('about')}>
 					<i class="fa-solid fa-file-lines"></i> About
 				</button>
 			</div>
-
-			{#if pwVisible}
-				<div class="mx-auto mt-3 flex max-w-[380px] flex-col items-stretch gap-2">
-					<div class="flex gap-2">
-						<input
-							type="password"
-							class="flex-1 rounded-[10px] border-[1.5px] bg-white px-4 py-3 text-[15px] text-[#111827] transition-colors outline-none"
-							class:border-[#dc2626]={pwError}
-							class:border-[#d1d5db]={!pwError}
-							placeholder="Enter password…"
-							bind:value={pwValue}
-							onkeydown={(e) => {
-								if (e.key === 'Enter') tryUnlock();
-							}}
-						/>
-						<button
-							class="cursor-pointer rounded-[10px] border-none bg-[#111827] px-4 py-3 text-[16px] text-white"
-							onclick={tryUnlock}>→</button
-						>
-					</div>
-					{#if pwError}
-						<p class="m-0 text-[13px] font-medium text-[#dc2626]">Incorrect password. Try again.</p>
-					{/if}
-				</div>
-			{/if}
 		</div>
 	</section>
 
@@ -803,6 +795,50 @@
 	</footer>
 </div>
 
+{#if pwVisible}
+	<div
+		class="pw-modal-overlay"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="pw-modal-title"
+		tabindex="-1"
+		onclick={closePwModal}
+		onkeydown={onPwBackdropKey}
+	>
+		<div
+			class="pw-modal"
+			role="document"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+		>
+			<button class="pw-modal-close" aria-label="Close" onclick={closePwModal}>×</button>
+			<h2 id="pw-modal-title" class="pw-modal-title">Enter password</h2>
+			<p class="pw-modal-subtitle">
+				Don't have a password?
+				<a href="#access" class="pw-modal-link" onclick={goRequestFromModal}>Request access</a>.
+			</p>
+			<div class="pw-modal-row">
+				<!-- svelte-ignore a11y_autofocus -->
+				<input
+					type="password"
+					class="pw-modal-input"
+					class:is-error={pwError}
+					placeholder="Enter password…"
+					autofocus
+					bind:value={pwValue}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') tryUnlock();
+					}}
+				/>
+				<button class="pw-modal-submit" onclick={tryUnlock}>→</button>
+			</div>
+			{#if pwError}
+				<p class="pw-modal-error">Incorrect password. Try again.</p>
+			{/if}
+		</div>
+	</div>
+{/if}
+
 <style>
 	/* Serif title for hero — font-weight 550 not a Tailwind token */
 	.hero-title {
@@ -952,6 +988,135 @@
 		border-color: #00b3b0;
 		color: #00b3b0;
 		transform: translateY(-1px);
+	}
+
+	.btn-white {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 13px 24px;
+		background: #ffffff;
+		color: #374151;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
+		font-size: 15px;
+		font-weight: 600;
+		font-family: inherit;
+		cursor: pointer;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.02);
+		transition:
+			color 0.15s,
+			transform 0.1s,
+			box-shadow 0.15s;
+	}
+	.btn-white:hover {
+		color: #00b3b0;
+		transform: translateY(-1px);
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+	}
+
+	:global(.pw-modal-overlay) {
+		position: fixed;
+		inset: 0;
+		z-index: 9999;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 24px;
+		background: rgba(17, 24, 39, 0.35);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+	:global(.pw-modal) {
+		background: #ffffff;
+		border-radius: 16px;
+		padding: 28px 28px 24px;
+		width: 100%;
+		max-width: 420px;
+		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.08);
+		position: relative;
+		font-family: inherit;
+	}
+	:global(.pw-modal-title) {
+		margin: 0 0 6px;
+		font-size: 18px;
+		font-weight: 700;
+		color: #111827;
+	}
+	:global(.pw-modal-subtitle) {
+		margin: 0 0 18px;
+		font-size: 14px;
+		color: #6b7280;
+		line-height: 1.5;
+	}
+	:global(.pw-modal-link) {
+		color: #00b3b0;
+		text-decoration: underline;
+		cursor: pointer;
+		font-weight: 600;
+	}
+	:global(.pw-modal-link:hover) {
+		color: #038d8f;
+	}
+	:global(.pw-modal-row) {
+		display: flex;
+		gap: 8px;
+	}
+	:global(.pw-modal-input) {
+		flex: 1;
+		border-radius: 10px;
+		border: 1.5px solid #d1d5db;
+		background: #ffffff;
+		padding: 12px 14px;
+		font-size: 15px;
+		color: #111827;
+		outline: none;
+		transition: border-color 0.15s;
+		font-family: inherit;
+	}
+	:global(.pw-modal-input:focus) {
+		border-color: #00b3b0;
+	}
+	:global(.pw-modal-input.is-error) {
+		border-color: #dc2626;
+	}
+	:global(.pw-modal-submit) {
+		cursor: pointer;
+		border-radius: 10px;
+		border: none;
+		background: linear-gradient(135deg, #00b3b0, #038d8f);
+		color: #ffffff;
+		padding: 12px 18px;
+		font-size: 16px;
+		box-shadow: 0 2px 8px rgba(3, 141, 143, 0.25);
+		transition: filter 0.15s, box-shadow 0.15s;
+	}
+	:global(.pw-modal-submit:hover) {
+		filter: brightness(1.06);
+		box-shadow: 0 3px 12px rgba(3, 141, 143, 0.35);
+	}
+	:global(.pw-modal-error) {
+		margin: 8px 0 0;
+		font-size: 13px;
+		font-weight: 500;
+		color: #dc2626;
+	}
+	:global(.pw-modal-close) {
+		position: absolute;
+		top: 10px;
+		right: 12px;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		border: none;
+		background: transparent;
+		color: #6b7280;
+		font-size: 20px;
+		line-height: 1;
+		cursor: pointer;
+	}
+	:global(.pw-modal-close:hover) {
+		color: #111827;
 	}
 
 	/* Form section headings */
