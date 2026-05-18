@@ -37,7 +37,7 @@
 				<i class="fa-solid fa-wand-magic-sparkles"></i> Smart Explore
 			</div>
 
-			<h2 class="se-title">Explore the Benchmark</h2>
+			<h2 class="se-title">Explore a focus area</h2>
 			<p class="se-desc">
 				Describe your context or concern. We'll surface the most relevant benchmark dimensions and re-rank models based on your focus.
 			</p>
