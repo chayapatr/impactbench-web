@@ -35,13 +35,14 @@
 			{#each TABS as tab (tab.id)}
 				{@const locked = tab.locked && !isAuthenticated}
 				<button
-					disabled={locked}
 					class="inline-flex items-center gap-1.5 px-[14px] py-[7px] rounded-[6px] text-[14px] font-medium transition-[background,color] duration-150 whitespace-nowrap border-none
 						{activeTab === tab.id
 						? 'bg-[#e0f7f7] text-[#00b3b0] font-semibold cursor-pointer'
 						: locked
-						? 'bg-transparent text-[#c4c9d4] cursor-not-allowed'
+						? 'bg-transparent text-[#c4c9d4] cursor-pointer hover:bg-[#f3f4f6] hover:text-[#6b7280]'
 						: 'bg-transparent text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1a1a1a] cursor-pointer'}"
+					aria-disabled={locked}
+					title={locked ? 'Enter passcode to unlock' : undefined}
 					onclick={() => onTabChange(tab.id)}
 				>
 					<i class="fa-solid {tab.icon} text-[13px]"></i>

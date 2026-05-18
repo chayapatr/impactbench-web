@@ -407,11 +407,17 @@
 
 	const LOCKED_TABS = new Set(['explore', 'metrics']);
 
+	// Incremented each time a locked tab is clicked to (re-)trigger the
+	// password modal on the gate page. Seeded to 1 when a deep link is
+	// present so the modal auto-opens on first mount.
+	let gatePasswordRequest = $state(_initialParams?.get('metric') || _initialParams?.get('scenario') ? 1 : 0);
+
 	function handleTabChange(tab: string) {
 		if (tab === 'home') {
 			showGate = true;
 		} else if (LOCKED_TABS.has(tab) && !isAuthenticated) {
 			showGate = true;
+			gatePasswordRequest += 1;
 		} else {
 			activeTab = tab;
 			showGate = false;
@@ -438,6 +444,7 @@
 	<GatePage
 		{isAuthenticated}
 		showPasswordOnMount={!!(pendingDeepMetric || pendingDeepScenario)}
+		passwordRequestNonce={gatePasswordRequest}
 		onEnter={() => {
 			isAuthenticated = true;
 			showGate = false;

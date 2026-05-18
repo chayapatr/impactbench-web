@@ -9,9 +9,21 @@
 		onTabChange?: (tab: string) => void;
 		isAuthenticated?: boolean;
 		showPasswordOnMount?: boolean;
+		/**
+		 * Incremented by the parent to request the password modal to open
+		 * (e.g. when the user clicks a locked tab in the header while the
+		 * gate page is already mounted).
+		 */
+		passwordRequestNonce?: number;
 	}
 
-	let { onEnter, onTabChange, isAuthenticated = false, showPasswordOnMount = false }: Props = $props();
+	let {
+		onEnter,
+		onTabChange,
+		isAuthenticated = false,
+		showPasswordOnMount = false,
+		passwordRequestNonce = 0
+	}: Props = $props();
 
 	const hierarchyData = $derived(
 		appState.taxonomy && !appState.loading
@@ -26,6 +38,20 @@
 	let pwVisible = $state(showPasswordOnMount);
 	let pwValue = $state('');
 	let pwError = $state(false);
+
+	// React to external requests to open the password modal (e.g. user clicks
+	// a locked tab in the header while already on the gate page). The parent
+	// increments `passwordRequestNonce` each time it wants to (re)open it.
+	let _seenPwNonce = $state(0);
+	$effect(() => {
+		const n = passwordRequestNonce;
+		if (n > 0 && n !== _seenPwNonce && !isAuthenticated) {
+			_seenPwNonce = n;
+			pwVisible = true;
+			pwError = false;
+			pwValue = '';
+		}
+	});
 
 	const ROTATOR_PHRASES = [
 		'as a therapist impact mental health',
