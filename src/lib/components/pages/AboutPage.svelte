@@ -405,12 +405,12 @@
 
 				<figure class="img-full">
 					<div class="img-frame">
-						<img src="/impactbench5.png" alt="Personalized AI nutrition label example" /><button
+						<img src="/impactbench8.png" alt="Personalized focus areas with the 'Smart Explore' feature" /><button
 							type="button"
 							class="img-expand"
 							aria-label="Expand image"
 							onclick={() =>
-								openLightbox('/impactbench5.png', 'Personalized AI nutrition label example')}
+								openLightbox('/impactbench8.png', "Personalized focus areas with the 'Smart Explore' feature")}
 						>
 							<svg
 								width="14"
