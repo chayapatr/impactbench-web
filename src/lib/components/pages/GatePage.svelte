@@ -347,15 +347,14 @@
 	<section class="bg-[#fafaf9] px-7 py-16">
 		<div class="mx-auto grid max-w-[1100px] grid-cols-2 gap-12">
 			<div class="flex flex-col gap-4">
-				<h2 class="section-title">The Rationale</h2>
+				<h2 class="section-title">Benchmarking human flourishing with AI</h2>
 				<p class="m-0 text-[15px] leading-[1.75] text-[#4b5563]">
-					Today's AI benchmarks measure what models can do: accuracy, reasoning, task completion.
-					They tell us almost nothing about what AI does to the people who use it. Two models with
+					Today's AI benchmarks measure what models can do — accuracy, reasoning, task completion.
+					They say almost nothing about what AI does to the people who rely on it. Two models with
 					identical capability scores can shape a user's autonomy, mental health, and relationships
-					in fundamentally different ways, and the field currently has no shared, independent way to
-					tell them apart. AI Human Impact Bench is the first open standard built to answer a
-					different question: across realistic, multi-turn conversations, does an AI system support
-					or undermine human flourishing?
+					in completely different ways, and the field has had no shared way to tell them apart.
+					ImpactBench is built to answer a different question: across realistic, multi-turn
+					conversations, does an AI system support or undermine human flourishing?
 				</p>
 				<ul class="m-0 flex list-none flex-col gap-[10px] p-0">
 					{#each RATIONALE_POINTS as point, i (i)}
@@ -369,14 +368,15 @@
 			</div>
 
 			<div class="flex flex-col gap-4">
-				<h2 class="section-title">The Methodology</h2>
+				<h2 class="section-title">Introducing ImpactBench</h2>
 				<p class="m-0 text-[15px] leading-[1.75] text-[#4b5563]">
-					Scores reflect how consistently a model supports, or undermines, human flourishing across
-					realistic, multi-turn, adversarially probed scenarios. Each conversation pairs a target
-					model with a demographically varied simulated user pursuing a latent adversarial goal
-					designed to elicit a specific failure mode. Conversations are then graded by an
-					LLM-as-judge whose reliability is validated through test-retest consistency, between-judge
-					ranking agreement, generator-swap audits, and sampling-stability checks.
+					ImpactBench evaluates 14 leading AI systems against 18 expert-submitted benchmarks
+					spanning physical, psychological, and societal impact. Each construct is contributed by
+					clinicians, educators, legal scholars, and community advocates through an open submission
+					process, then tested through multi-turn adversarial simulation with demographically
+					stratified personas — the way harms actually unfold in real conversations, not in
+					isolated prompts. Every score is paired with reliability checks so users can see not just
+					what we found, but how much to trust it.
 				</p>
 				<ul class="m-0 flex list-none flex-col gap-[10px] p-0">
 					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
