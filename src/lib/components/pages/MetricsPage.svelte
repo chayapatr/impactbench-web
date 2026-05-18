@@ -505,7 +505,13 @@
 					<div class="text-[14px] font-[700] text-[#1a1a1a] tracking-[-0.01em] leading-[1.3] mb-[3px]">
 						{conversationDetail ? conversationDetail.scenario.title : '…'}
 					</div>
-					<div class="text-[11px] text-[#9ca3af]">{selectedMetricForScenario.name}</div>
+					<div class="flex items-center gap-2 mt-[4px]">
+						<span class="text-[11px] text-[#9ca3af]">{selectedMetricForScenario.name}</span>
+						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{selectedMetricForScenario.harmful ? 'background:#fee2e2;color:#dc2626' : 'background:#dcfce7;color:#16a34a'}">
+							<i class="fa-solid {selectedMetricForScenario.harmful ? 'fa-shield-halved' : 'fa-star'} text-[9px]"></i>
+							{selectedMetricForScenario.harmful ? 'Avoiding bad behavior' : 'Promoting good behavior'}
+						</span>
+					</div>
 				{/if}
 			</div>
 			<div class="flex-1 overflow-y-auto px-6 py-4">

@@ -732,7 +732,9 @@
 	<footer
 		class="mt-auto flex items-center justify-center gap-[10px] bg-white px-7 py-5 text-center text-[12px] text-[#111827]"
 	>
-		<span>© 2026 MIT Media Lab · AHA Research Program</span>
+		<span>© 2026 <a class="underline" href="https://media.mit.edu"> MIT Media Lab</a></span>
+		<span>·</span>
+		<span><a class="underline" href="https://accessibility.mit.edu/">Accessibility</a></span>
 		<span>·</span>
 		<span>Human-AI Impact Bench</span>
 	</footer>
