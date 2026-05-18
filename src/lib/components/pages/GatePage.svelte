@@ -368,6 +368,7 @@
 					alt="Explore page showing model comparisons across impact domains"
 					class="block h-auto w-full"
 				/>
+				<h2 class="section-title">Explore ImpactBench flexibly</h2>
 				<p class="m-0 text-[15px] leading-[1.75] text-[#4b5563]">
 					The Explore page lets you move from aggregate scores down to the underlying evidence:
 					compare models across the three impact domains, drill into specific constructs like
@@ -382,6 +383,7 @@
 					alt="Personalized ImpactBench nutrition label"
 					class="block h-auto w-full"
 				/>
+				<h2 class="section-title">Nutritional labels for AI</h2>
 				<p class="m-0 text-[15px] leading-[1.75] text-[#4b5563]">
 					Tell us who you are: a parent, educator, clinician, or everyday user, and ImpactBench
 					generates a nutrition label calibrated to your context. You see how each individual model
