@@ -2268,7 +2268,7 @@
 	}
 
 	.img-full.img-lift {
-		margin-top: 32px;
+		margin-top: 16px;
 	}
 
 	.img-full figcaption,
