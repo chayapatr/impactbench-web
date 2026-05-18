@@ -175,11 +175,13 @@ function drawLabels(
 			labelsGroup
 				.append('text')
 				.attr('class', 'area-label')
+				.attr('data-node-id', d.data.id)
 				.style('fill', '#111827')
 				.style('font-size', '14px')
 				.style('font-weight', '800')
 				.style('letter-spacing', '0.05em')
 				.style('pointer-events', 'none')
+				.style('transition', 'opacity 150ms ease')
 				.append('textPath')
 				.attr('href', `#${pathId}`)
 				.attr('startOffset', '50%')
@@ -204,6 +206,8 @@ function drawLabels(
 
 			labelsGroup
 				.append('text')
+				.attr('class', 'subarea-label')
+				.attr('data-node-id', d.data.id)
 				.attr('x', 0)
 				.attr('y', 0)
 				.attr('transform', `translate(${px},${py}) rotate(${rotDeg + flip})`)
@@ -213,6 +217,7 @@ function drawLabels(
 				.style('text-anchor', 'middle')
 				.style('dominant-baseline', 'middle')
 				.style('pointer-events', 'none')
+				.style('transition', 'opacity 150ms ease')
 				.text(truncate(d.data.name, maxChars));
 		});
 }
@@ -370,6 +375,12 @@ function highlightNode(target: ArcDatum, nodes: ArcDatum[]): void {
 			.classed('hover-highlighted', isHighlighted)
 			.attr('fill', isHighlighted ? lightenColor(scoreToColor(d.data.score ?? 0)) : subareaFill(d));
 	});
+	// Dim labels not in the hovered ancestor chain
+	d3.selectAll<SVGTextElement, unknown>('.area-label, .subarea-label').each(function () {
+		const id = (this as SVGTextElement).getAttribute('data-node-id') ?? '';
+		const isHighlighted = ancestorIds.has(id);
+		d3.select(this).style('opacity', isHighlighted ? 1 : 0.2);
+	});
 }
 
 function unhighlightAll(_nodes: ArcDatum[]): void {
@@ -377,6 +388,7 @@ function unhighlightAll(_nodes: ArcDatum[]): void {
 		.classed('hover-dimmed', false)
 		.classed('hover-highlighted', false)
 		.attr('fill', (d) => subareaFill(d));
+	d3.selectAll<SVGTextElement, unknown>('.area-label, .subarea-label').style('opacity', 1);
 }
 
 function drawCenterImage(g: d3.Selection<SVGGElement, unknown, null, undefined>): void {

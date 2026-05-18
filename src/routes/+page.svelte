@@ -492,6 +492,18 @@
 		>
 			<i class="fa-solid fa-triangle-exclamation mr-1.5 text-[#a16207]"></i>
 			The current data and benchmarks are subject to change and still under validation and review.
+			<button
+				type="button"
+				class="ml-1 cursor-pointer border-none bg-transparent p-0 font-semibold text-[#713f12] underline hover:opacity-80"
+				onclick={() => {
+					if (typeof window !== 'undefined') {
+						window.location.hash = '#feedback';
+					}
+					handleTabChange('home');
+				}}
+			>
+				Add feedback
+			</button>
 		</div>
 
 		{#if activeTab === 'explore'}

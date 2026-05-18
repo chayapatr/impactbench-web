@@ -318,12 +318,8 @@
 				<Sunburst
 					data={hierarchyData}
 					gateMode={true}
-					onSubareaClick={() => {
-						onEnter();
-					}}
-					onAreaClick={() => {
-						onEnter();
-					}}
+					onSubareaClick={() => {}}
+					onAreaClick={() => {}}
 					onCenterClick={() => {}}
 				/>
 			{/if}
@@ -919,6 +915,11 @@
 
 	#gate-sunburst-wrapper :global(#sunburst-svg) {
 		max-height: none !important;
+	}
+
+	/* Wheel is decorative on the homepage — disable click affordance */
+	#gate-sunburst-wrapper :global(.arc-path) {
+		cursor: default !important;
 	}
 
 	/* Stat card hover */
