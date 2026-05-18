@@ -217,10 +217,14 @@
 	});
 
 	const STATS = [
-		{ num: '260+', label: 'Behavioral Indicators', desc: 'Tested across realistic scenarios.' },
-		{ num: '18+', label: 'AI Models Evaluated', desc: 'Compared on the same standard.' },
-		{ num: '3', label: 'Well-being Dimensions', desc: 'Physical, psychological, societal.' },
-		{ num: '4', label: 'Audience Groups', desc: 'Parents, educators, policymakers, developers.' }
+		{ num: '375', label: 'Metrics', desc: 'Tested across realistic scenarios.' },
+		{ num: '14', label: 'AI Systems Evaluated', desc: 'Compared on the same standard.' },
+		{
+			num: '18',
+			label: 'Expert-Submitted Benchmarks',
+			desc: 'Spanning clinical, legal, and educational constructs.'
+		},
+		{ num: '3', label: 'Domains of Human Impact', desc: 'Physical, psychological, societal.' }
 	];
 
 	const SUPPORT_CARDS = [
