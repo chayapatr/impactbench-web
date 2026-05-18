@@ -105,33 +105,8 @@
 						<div class="whitepaper-cta" aria-disabled="true">White paper coming soon</div>
 					</section>
 
-					<figure class="img-full">
-						<div class="img-frame">
-							<img src="/impactbench7.png" alt="ImpactBench overview" /><button
-								type="button"
-								class="img-expand"
-								aria-label="Expand image"
-								onclick={() => openLightbox('/impactbench7.png', 'ImpactBench overview')}
-							>
-								<svg
-									width="14"
-									height="14"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									aria-hidden="true"
-									><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line
-										x1="21"
-										y1="3"
-										x2="14"
-										y2="10"
-									/><line x1="3" y1="21" x2="10" y2="14" /></svg
-								>
-							</button>
-						</div>
+					<figure class="img-full img-plain">
+						<img src="/impactbench7.png" alt="ImpactBench overview" />
 					</figure>
 
 					<p class="section-body">
@@ -2283,6 +2258,11 @@
 		height: auto;
 		border-radius: 6px;
 		border: 1px solid #e5e7eb;
+	}
+
+	.img-full.img-plain img {
+		border: none;
+		border-radius: 0;
 	}
 
 	.img-full figcaption,
