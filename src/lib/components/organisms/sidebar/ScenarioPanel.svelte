@@ -45,7 +45,7 @@
 		<div class="mb-4">
 			<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[4px] text-[11px] font-semibold" style="background:#f3f4f6;color:#6b7280">
 				<i class="fa-solid {_metric.behavior_type === 'flourishing' ? 'fa-star' : 'fa-shield'}" style="font-size:8px;color:{_metric.behavior_type === 'flourishing' ? '#93c5fd' : '#c4b5fd'}"></i>
-				{_metric.behavior_type === 'flourishing' ? 'Flourishing' : 'Harm restraint'}
+				{_metric.behavior_type === 'flourishing' ? 'Promoting good behavior' : 'Avoiding bad behavior'}
 			</span>
 		</div>
 	{/if}

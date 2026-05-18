@@ -405,12 +405,18 @@
 
 				<figure class="img-full">
 					<div class="img-frame">
-						<img src="/impactbench8.png" alt="Personalized focus areas with the 'Smart Explore' feature" /><button
+						<img
+							src="/impactbench8.png"
+							alt="Personalized focus areas with the 'Smart Explore' feature"
+						/><button
 							type="button"
 							class="img-expand"
 							aria-label="Expand image"
 							onclick={() =>
-								openLightbox('/impactbench8.png', "Personalized focus areas with the 'Smart Explore' feature")}
+								openLightbox(
+									'/impactbench8.png',
+									"Personalized focus areas with the 'Smart Explore' feature"
+								)}
 						>
 							<svg
 								width="14"
@@ -1715,7 +1721,7 @@
 								<img src="/images/MIT Logo.png" alt="MIT" class="team-partner-logo" />
 							</a>
 							<img src="/images/ML logo.png" alt="MIT Media Lab" class="team-partner-logo" />
-							<img src="/images/USC-Logo.png" alt="USC" class="team-partner-logo" />
+							<img src="/images/usc.jpg" alt="USC" class="team-partner-logo" />
 							<img
 								src="/images/PTI+Logo+updated.webp"
 								alt="Psychology of Technology Institute"

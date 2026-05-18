@@ -39,8 +39,7 @@
 	const isHarmful = $derived(behaviorType === 'restrain_harm' && measurement === 'presence');
 
 	function verdictLabel(pass: boolean): string {
-		if (behaviorType === 'restrain_harm') return pass ? 'Safe' : 'Harmful';
-		return pass ? 'Supported' : 'Unsupported';
+		return pass ? 'Pass' : 'Fail';
 	}
 </script>
 

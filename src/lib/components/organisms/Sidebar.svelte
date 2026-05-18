@@ -26,27 +26,6 @@
 	const top = $derived(sidebarState.navStack[sidebarState.navStack.length - 1]);
 	const isFocused = $derived(top.type !== 'overview' && top.type !== 'smart-focus');
 
-	let copyLinkState = $state<'idle' | 'copied'>('idle');
-
-	const deepLinkTarget = $derived(() => {
-		if (top.type === 'metric') return { metricId: top.metricId, scenarioId: null };
-		if (top.type === 'scenario') return { metricId: top.metricId, scenarioId: top.scenarioMeta.scenario_id };
-		return null;
-	});
-
-	function copyDeepLink() {
-		const link = deepLinkTarget();
-		if (!link) return;
-		const url = new URL(window.location.href);
-		url.search = '';
-		url.searchParams.set('metric', link.metricId);
-		if (link.scenarioId) url.searchParams.set('scenario', link.scenarioId);
-		navigator.clipboard.writeText(url.toString()).then(() => {
-			copyLinkState = 'copied';
-			setTimeout(() => { copyLinkState = 'idle'; }, 2000);
-		}).catch(() => {});
-	}
-
 	const overallScore = $derived(() => {
 		// In smart mode, show flat avg of all smart-focus metrics for the selected model
 		if (leaderboardState.smartRanked.length > 0) {
@@ -147,19 +126,6 @@
 			</div>
 		</div>
 	</div>
-
-	<!-- Deep link copy bar (shown when viewing a metric or scenario) -->
-	{#if deepLinkTarget()}
-		<div class="flex-shrink-0 border-b border-[#f3f4f6] px-[14px] py-[8px]">
-			<button
-				class="inline-flex w-full cursor-pointer items-center justify-center gap-[6px] rounded-[6px] border border-[#e5e7eb] bg-white px-3 py-[6px] text-[12px] font-medium text-[#6b7280] transition-[background,color,border-color] duration-150 hover:border-[#d1d5db] hover:bg-[#f9fafb] hover:text-[#1a1a1a]"
-				onclick={copyDeepLink}
-			>
-				<i class="fa-solid {copyLinkState === 'copied' ? 'fa-check text-[#16a34a]' : 'fa-link'} text-[11px]"></i>
-				{copyLinkState === 'copied' ? 'Link copied!' : 'Copy link to this view'}
-			</button>
-		</div>
-	{/if}
 
 	<!-- Panel router -->
 	<div class="flex-1 overflow-y-auto text-[14px]" id="summary-panel">

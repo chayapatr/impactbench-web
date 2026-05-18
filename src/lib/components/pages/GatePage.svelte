@@ -168,7 +168,11 @@
 			form?.reportValidity();
 			return;
 		}
-		const FORM_TYPE_LABELS: Record<string, string> = { request: 'Access', support: 'Support', feedback: 'Feedback' };
+		const FORM_TYPE_LABELS: Record<string, string> = {
+			request: 'Access',
+			support: 'Support',
+			feedback: 'Feedback'
+		};
 		const data: Record<string, string> = { form_type: FORM_TYPE_LABELS[tabKey] ?? tabKey };
 		for (const el of form.elements) {
 			const input = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -241,7 +245,7 @@
 	const PARTNER_LOGOS = [
 		{ href: 'https://www.mit.edu/', src: '/images/MIT Logo.png', alt: 'MIT' },
 		{ href: null, src: '/images/ML logo.png', alt: 'MIT Media Lab' },
-		{ href: null, src: '/images/USC-Logo.png', alt: 'USC' },
+		{ href: null, src: '/images/usc.jpg', alt: 'USC' },
 		{ href: null, src: '/images/PTI+Logo+updated.webp', alt: 'Psychology of Technology Institute' },
 		{
 			href: null,
@@ -358,9 +362,9 @@
 					spanning physical, psychological, and societal impact. Each construct is contributed by
 					clinicians, educators, legal scholars, and community advocates through an open submission
 					process, then tested through multi-turn adversarial simulation with demographically
-					stratified personas: the way harms actually unfold in real conversations, not in
-					isolated prompts. Every score is paired with reliability checks so users can see not just
-					what we found, but how much to trust it.
+					stratified personas: the way harms actually unfold in real conversations, not in isolated
+					prompts. Every score is paired with reliability checks so users can see not just what we
+					found, but how much to trust it.
 				</p>
 			</div>
 		</div>
@@ -386,8 +390,8 @@
 				<p class="m-0 text-[15px] leading-[1.75] text-[#4b5563]">
 					Tell us who you are: a parent, educator, clinician, or everyday user, and ImpactBench
 					generates a nutrition label calibrated to your context. You see how each individual model
-					performs on your focus area, where the model excels at in human flourishing, and what
-					some blind spots to note might be.
+					performs on your focus area, where the model excels at in human flourishing, and what some
+					blind spots to note might be.
 				</p>
 				<img
 					src="/impactbench10.png"
@@ -947,7 +951,9 @@
 		font-weight: 600;
 		font-family: inherit;
 		cursor: pointer;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.02);
+		box-shadow:
+			0 1px 3px rgba(0, 0, 0, 0.02),
+			0 1px 2px rgba(0, 0, 0, 0.02);
 		transition:
 			color 0.15s,
 			transform 0.1s,
@@ -956,7 +962,9 @@
 	.btn-white:hover {
 		color: #00b3b0;
 		transform: translateY(-1px);
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+		box-shadow:
+			0 2px 6px rgba(0, 0, 0, 0.04),
+			0 1px 2px rgba(0, 0, 0, 0.03);
 	}
 
 	:global(.pw-modal-overlay) {
@@ -977,7 +985,9 @@
 		padding: 28px 28px 24px;
 		width: 100%;
 		max-width: 420px;
-		box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 20px 50px rgba(0, 0, 0, 0.15),
+			0 8px 20px rgba(0, 0, 0, 0.08);
 		position: relative;
 		font-family: inherit;
 	}
@@ -1033,7 +1043,9 @@
 		padding: 12px 18px;
 		font-size: 16px;
 		box-shadow: 0 2px 8px rgba(3, 141, 143, 0.25);
-		transition: filter 0.15s, box-shadow 0.15s;
+		transition:
+			filter 0.15s,
+			box-shadow 0.15s;
 	}
 	:global(.pw-modal-submit:hover) {
 		filter: brightness(1.06);

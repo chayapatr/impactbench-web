@@ -51,7 +51,7 @@
 				<div class="text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase mb-[5px]">Behavioral metric</div>
 				<div class="text-[14px] font-[600] text-white leading-[1.3] mb-[5px]">{d.name}</div>
 				<div class="text-[11px] text-[#9ca3af]">
-					<i class="fa-solid {d.behavior_type === 'restrain_harm' ? 'fa-shield' : 'fa-star'} mr-1"></i>{d.behavior_type === 'restrain_harm' ? 'Harm restraint' : 'Flourishing'}
+					<i class="fa-solid {d.behavior_type === 'restrain_harm' ? 'fa-shield' : 'fa-star'} mr-1"></i>{d.behavior_type === 'restrain_harm' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
 				</div>
 			{/if}
 		{:else}
@@ -114,7 +114,7 @@
 				{/if}
 			{:else if d.type === 'metric'}
 				<div class="text-[11px] text-[#9ca3af]">
-					<i class="fa-solid {d.behavior_type === 'restrain_harm' ? 'fa-shield' : 'fa-star'} mr-1"></i>{d.behavior_type === 'restrain_harm' ? 'Harm restraint' : 'Flourishing'}
+					<i class="fa-solid {d.behavior_type === 'restrain_harm' ? 'fa-shield' : 'fa-star'} mr-1"></i>{d.behavior_type === 'restrain_harm' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
 				</div>
 			{/if}
 		{/if}

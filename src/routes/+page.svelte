@@ -49,9 +49,11 @@
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
 
 	// Deep link params — parsed immediately (browser-only), consumed after auth
-	const _initialParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+	const _initialParams =
+		typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
 	let pendingDeepMetric = $state<string | null>(_initialParams?.get('metric') ?? null);
 	let pendingDeepScenario = $state<string | null>(_initialParams?.get('scenario') ?? null);
+	let pendingDeepTab = $state<string | null>(_initialParams?.get('tab') ?? null);
 
 	let sunburstRef: Sunburst | undefined = $state();
 
@@ -89,7 +91,8 @@
 		if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('aib-auth') === '1') {
 			isAuthenticated = true;
 			showGate = false;
-			activeTab = 'explore';
+			activeTab = pendingDeepTab ?? 'explore';
+			pendingDeepTab = null;
 		}
 
 		try {
@@ -410,7 +413,9 @@
 	// Incremented each time a locked tab is clicked to (re-)trigger the
 	// password modal on the gate page. Seeded to 1 when a deep link is
 	// present so the modal auto-opens on first mount.
-	let gatePasswordRequest = $state(_initialParams?.get('metric') || _initialParams?.get('scenario') ? 1 : 0);
+	let gatePasswordRequest = $state(
+		_initialParams?.get('metric') || _initialParams?.get('scenario') ? 1 : 0
+	);
 
 	function handleTabChange(tab: string) {
 		if (tab === 'home') {
@@ -448,7 +453,8 @@
 		onEnter={() => {
 			isAuthenticated = true;
 			showGate = false;
-			activeTab = 'explore';
+			activeTab = pendingDeepTab ?? 'explore';
+			pendingDeepTab = null;
 			// Navigate to deep link target if present
 			if (pendingDeepMetric && appState.taxonomy) {
 				sidebarNavigateToMetric(pendingDeepMetric, appState.taxonomy);
@@ -458,7 +464,8 @@
 				if (appState.scenarioIndex) {
 					const scenarios = appState.scenarioIndex[pendingDeepMetric] ?? [];
 					const scenarioMeta = scenarios.find((s) => s.scenario_id === pendingDeepScenario);
-					if (scenarioMeta) sidebarPush({ type: 'scenario', metricId: pendingDeepMetric!, scenarioMeta });
+					if (scenarioMeta)
+						sidebarPush({ type: 'scenario', metricId: pendingDeepMetric!, scenarioMeta });
 					pendingDeepScenario = null;
 					pendingDeepMetric = null;
 				}
@@ -557,7 +564,9 @@
 					<div class="w-full max-w-[700px] flex-shrink-0 py-1.5 pb-2">
 						<div class="px-4 pt-1 pb-2">
 							<div class="flex items-center gap-3">
-								<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]">Harm</span>
+								<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]"
+									>Bad behavior</span
+								>
 								<div
 									class="h-[10px] flex-1 rounded-[5px]"
 									style="background:linear-gradient(to right,#dc2626,#e5e7eb)"
@@ -568,7 +577,7 @@
 									style="background:linear-gradient(to right,#e5e7eb,#16a34a)"
 								></div>
 								<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]"
-									>Flourishing</span
+									>Good behavior</span
 								>
 							</div>
 						</div>

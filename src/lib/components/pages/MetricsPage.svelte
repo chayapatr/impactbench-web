@@ -23,6 +23,7 @@
 
 	// ── Selection state ───────────────────────────────────────────
 	let expandedMetricUid: string | null = $state(null);
+	let selectedMetric: FlatMetric | null = $state(null);
 	let selectedScenarioId: string | null = $state(null);
 	let selectedMetricForScenario: FlatMetric | null = $state(null);
 
@@ -32,6 +33,25 @@
 	let conversationDetail: ScenarioDetail | null = $state(null);
 	let conversationLoading = $state(false);
 	let conversationError = $state(false);
+
+	// ── Scroll-to refs ────────────────────────────────────────────
+	let listEl: HTMLElement | undefined = $state();
+	function scrollToRow(id: string) {
+		if (!listEl) return;
+		const el = listEl.querySelector(`[data-rowid="${id}"]`) as HTMLElement | null;
+		if (!el) return;
+		const top = el.offsetTop - listEl.offsetTop;
+		const visible = listEl.clientHeight;
+		const current = listEl.scrollTop;
+		if (top < current || top + el.offsetHeight > current + visible) {
+			listEl.scrollTo({ top: Math.max(0, top - 80), behavior: 'smooth' });
+		}
+	}
+
+	// ── Deep link ─────────────────────────────────────────────────
+	const _initialParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+	const _deepMetric = _initialParams?.get('metric') ?? null;
+	const _deepScenario = _initialParams?.get('scenario') ?? null;
 
 	const allBenchmarks = $derived(() => {
 		const set = new Set<string>();
@@ -128,15 +148,36 @@
 		return filterScenariosByAge(appState, metricId);
 	}
 
-	function toggleMetric(uid: string) {
-		if (expandedMetricUid === uid) {
+	function selectMetric(m: FlatMetric) {
+		if (expandedMetricUid === m.uid) {
 			expandedMetricUid = null;
+			selectedMetric = null;
 		} else {
-			expandedMetricUid = uid;
+			expandedMetricUid = m.uid;
+			selectedMetric = m;
 			selectedScenarioId = null;
+			selectedMetricForScenario = null;
 			conversationDetail = null;
+			setTimeout(() => scrollToRow(m.uid), 50);
 		}
 	}
+
+	// Resolve deep link once allMetrics is populated
+	$effect(() => {
+		if (!_deepMetric || !allMetrics().length) return;
+		const m = allMetrics().find((x) => x.id === _deepMetric);
+		if (!m) return;
+		expandedMetricUid = m.uid;
+		selectedMetric = m;
+		if (_deepScenario) {
+			const scenarios = getScenariosForMetric(m.id);
+			const sc = scenarios.find((s) => s.scenario_id === _deepScenario);
+			if (sc) {
+				selectScenario(m, sc);
+			}
+		}
+		setTimeout(() => scrollToRow(_deepScenario ?? m.uid), 100);
+	});
 
 	function loadConversation(benchmark: string, scenarioId: string, modelId: string) {
 		conversationDetail = null;
@@ -148,11 +189,14 @@
 	}
 
 	function selectScenario(m: FlatMetric, sc: ScenarioMeta) {
+		expandedMetricUid = m.uid;
+		selectedMetric = m;
 		selectedScenarioId = sc.scenario_id;
 		selectedScenarioBenchmark = sc.benchmark;
 		selectedMetricForScenario = m;
 		viewingModelId = appState.filters.model;
 		loadConversation(sc.benchmark, sc.scenario_id, viewingModelId);
+		setTimeout(() => scrollToRow(sc.scenario_id), 50);
 	}
 
 	function switchModel(modelId: string) {
@@ -165,6 +209,20 @@
 	function selectArea(id: string | null) {
 		selectedAreaId = id;
 		selectedSubareaId = null;
+	}
+
+	let copiedId = $state<string | null>(null);
+
+	function copyLink(params: Record<string, string>, id: string, e: MouseEvent) {
+		e.stopPropagation();
+		const url = new URL(window.location.href);
+		url.search = '';
+		url.searchParams.set('tab', 'metrics');
+		for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+		navigator.clipboard.writeText(url.toString()).then(() => {
+			copiedId = id;
+			setTimeout(() => { copiedId = null; }, 2000);
+		}).catch(() => {});
 	}
 
 	function benchmarkLabel(slug: string): string {
@@ -295,7 +353,7 @@
 		</div>
 
 		<!-- List -->
-		<div class="flex-1 overflow-y-auto">
+		<div class="flex-1 overflow-y-auto" bind:this={listEl}>
 			{#if filtered().length === 0}
 				<div class="flex flex-col items-center justify-center h-full gap-2 text-[#9ca3af]">
 					<i class="fa-solid fa-magnifying-glass text-xl opacity-30"></i>
@@ -303,23 +361,44 @@
 				</div>
 			{:else if listMode === 'metrics'}
 				{#each filtered() as m (m.uid)}
-					<div class="border-b border-[#f3f4f6]">
-						<button
-							class="w-full text-left flex items-center gap-[10px] px-4 py-[9px] transition-colors duration-150
-								{expandedMetricUid === m.uid ? 'bg-[#f3f4f6]' : 'hover:bg-[#f9fafb]'}"
-							onclick={() => toggleMetric(m.uid)}
-						>
-							<span
-								class="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] font-[800] flex-shrink-0 leading-none"
-								style={m.harmful ? 'border:1.5px solid #dc2626;color:#dc2626' : 'border:1.5px solid #16a34a;color:#16a34a'}
-							>{m.harmful ? '×' : '+'}</span>
-							<div class="flex-1 min-w-0">
-								<div class="text-[12px] font-medium text-[#1a1a1a] truncate">{m.name}</div>
-								<div class="text-[10px] text-[#9ca3af] truncate mt-[1px]">{m.subareaName}{m.benchmarks.length ? ' · ' + m.benchmarks.map(benchmarkLabel).join(', ') : ''}</div>
+					<div class="border-b border-[#f3f4f6]" data-rowid={m.uid}>
+						<div class="group flex items-center {expandedMetricUid === m.uid ? 'bg-[#f3f4f6]' : 'hover:bg-[#f9fafb]'}">
+							<button
+								class="flex flex-1 min-w-0 items-center gap-[10px] px-4 py-[9px] text-left cursor-pointer border-none bg-transparent"
+								onclick={() => selectMetric(m)}
+							>
+								<span
+									class="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] font-[800] flex-shrink-0 leading-none"
+									style={m.harmful ? 'border:1.5px solid #dc2626;color:#dc2626' : 'border:1.5px solid #16a34a;color:#16a34a'}
+								>{m.harmful ? '×' : '+'}</span>
+								<div class="flex-1 min-w-0">
+									<div class="text-[12px] font-medium text-[#1a1a1a] truncate">{m.name}</div>
+									<div class="text-[10px] text-[#9ca3af] truncate mt-[1px]">{m.subareaName}{m.benchmarks.length ? ' · ' + m.benchmarks.map(benchmarkLabel).join(', ') : ''}</div>
+								</div>
+							</button>
+							<div class="relative flex-shrink-0 pr-1">
+								<button
+									class="flex items-center justify-center rounded p-[3px] text-[#9ca3af] transition-colors duration-150 hover:text-[#00b3b0] cursor-pointer border-none bg-transparent"
+									title="Copy link to this metric"
+									onclick={(e) => copyLink({ metric: m.id }, m.id, e)}
+								>
+									<i class="fa-solid {copiedId === m.id ? 'fa-check text-[#16a34a]' : 'fa-link'} text-[9px]"></i>
+								</button>
+								{#if copiedId === m.id}
+									<div class="absolute bottom-full right-0 mb-[5px] whitespace-nowrap rounded-[5px] bg-[#1a1a1a] px-[8px] py-[4px] text-[11px] font-medium text-white shadow-md pointer-events-none z-50">
+										Link copied!
+										<div class="absolute top-full right-2 border-[4px] border-transparent border-t-[#1a1a1a]"></div>
+									</div>
+								{/if}
 							</div>
 							<ScorePill score={m.avgScore} size="sm" />
-							<i class="fa-solid {expandedMetricUid === m.uid ? 'fa-chevron-up' : 'fa-chevron-down'} text-[8px] text-[#c4c9d1] flex-shrink-0"></i>
-						</button>
+							<button
+								class="flex-shrink-0 pl-2 pr-3 py-[9px] cursor-pointer border-none bg-transparent"
+								onclick={() => selectMetric(m)}
+							>
+								<i class="fa-solid {expandedMetricUid === m.uid ? 'fa-chevron-up' : 'fa-chevron-down'} text-[8px] text-[#c4c9d1]"></i>
+							</button>
+						</div>
 
 						{#if expandedMetricUid === m.uid}
 							{@const scenarios = getScenariosForMetric(m.id)}
@@ -334,16 +413,32 @@
 											const v = verdicts[mo.id];
 											return v !== undefined && (m.harmful ? v === 'no' : v === 'yes');
 										}).length}
-										<button
-											class="w-full text-left flex items-center gap-[8px] pl-[36px] pr-4 py-[7px] transition-colors duration-150
-												{selectedScenarioId === sc.scenario_id ? 'bg-[#e0f7f7]' : 'hover:bg-[#f3f4f6]'}"
-											onclick={() => selectScenario(m, sc)}
-										>
-											<span class="flex-1 text-[11px] text-[#374151] min-w-0 truncate">{sc.title}</span>
-											<span class="text-[11px] font-semibold flex-shrink-0 tabular-nums"
-												style={passed / total >= 0.75 ? 'color:#16a34a' : passed / total >= 0.45 ? 'color:#d97706' : 'color:#dc2626'}
-											>{passed}<span class="font-normal text-[#9ca3af]">/{total}</span></span>
-										</button>
+										<div class="group flex items-center transition-colors duration-150 {selectedScenarioId === sc.scenario_id ? 'bg-[#e0f7f7]' : 'hover:bg-[#f3f4f6]'}" data-rowid={sc.scenario_id}>
+											<button
+												class="flex flex-1 min-w-0 items-center gap-[8px] pl-[36px] py-[7px] text-left cursor-pointer border-none bg-transparent"
+												onclick={() => selectScenario(m, sc)}
+											>
+												<span class="flex-1 text-[11px] text-[#374151] min-w-0 truncate">{sc.title}</span>
+												<span class="text-[11px] font-semibold flex-shrink-0 tabular-nums"
+													style={passed / total >= 0.75 ? 'color:#16a34a' : passed / total >= 0.45 ? 'color:#d97706' : 'color:#dc2626'}
+												>{passed}<span class="font-normal text-[#9ca3af]">/{total}</span></span>
+											</button>
+											<div class="relative flex-shrink-0 px-2">
+												<button
+													class="flex items-center justify-center rounded p-[3px] text-[#9ca3af] transition-colors duration-150 hover:text-[#00b3b0] cursor-pointer border-none bg-transparent"
+													title="Copy link to this scenario"
+													onclick={(e) => copyLink({ metric: m.id, scenario: sc.scenario_id }, sc.scenario_id, e)}
+												>
+													<i class="fa-solid {copiedId === sc.scenario_id ? 'fa-check text-[#16a34a]' : 'fa-link'} text-[9px]"></i>
+												</button>
+												{#if copiedId === sc.scenario_id}
+													<div class="absolute bottom-full right-0 mb-[5px] whitespace-nowrap rounded-[5px] bg-[#1a1a1a] px-[8px] py-[4px] text-[11px] font-medium text-white shadow-md pointer-events-none z-50">
+														Link copied!
+														<div class="absolute top-full right-2 border-[4px] border-transparent border-t-[#1a1a1a]"></div>
+													</div>
+												{/if}
+											</div>
+										</div>
 									{/each}
 								{/if}
 							</div>
@@ -362,53 +457,57 @@
 							const v = verdicts[mo.id];
 							return v !== undefined && (m.harmful ? v === 'no' : v === 'yes');
 						}).length}
-						<button
-							class="w-full text-left flex items-center gap-[8px] px-4 py-[8px] border-b border-[#f3f4f6] transition-colors duration-150
-								{selectedScenarioId === sc.scenario_id && selectedMetricForScenario?.uid === m.uid ? 'bg-[#e0f7f7] border-l-[3px] border-l-[#00b3b0]' : 'border-l-[3px] border-l-transparent hover:bg-[#f3f4f6]'}"
-							onclick={() => selectScenario(m, sc)}
-						>
-							<div class="flex-1 min-w-0">
-								<div class="text-[12px] font-medium text-[#1a1a1a] truncate">{sc.title}</div>
-								<div class="text-[10px] text-[#9ca3af] truncate mt-[1px]">{m.name}</div>
+						<div class="group flex items-center border-b border-[#f3f4f6] transition-colors duration-150
+							{selectedScenarioId === sc.scenario_id && selectedMetricForScenario?.uid === m.uid ? 'bg-[#e0f7f7] border-l-[3px] border-l-[#00b3b0]' : 'border-l-[3px] border-l-transparent hover:bg-[#f3f4f6]'}" data-rowid={sc.scenario_id}>
+							<button
+								class="flex flex-1 min-w-0 items-center gap-[8px] px-4 py-[8px] text-left cursor-pointer border-none bg-transparent"
+								onclick={() => selectScenario(m, sc)}
+							>
+								<div class="flex-1 min-w-0">
+									<div class="text-[12px] font-medium text-[#1a1a1a] truncate">{sc.title}</div>
+									<div class="text-[10px] text-[#9ca3af] truncate mt-[1px]">{m.name}</div>
+								</div>
+								<span class="text-[11px] font-semibold flex-shrink-0 tabular-nums"
+									style={passed / total >= 0.75 ? 'color:#16a34a' : passed / total >= 0.45 ? 'color:#d97706' : 'color:#dc2626'}
+								>{passed}<span class="font-normal text-[#9ca3af]">/{total}</span></span>
+							</button>
+							<div class="relative flex-shrink-0 pr-2">
+								<button
+									class="flex items-center justify-center rounded p-[3px] text-[#9ca3af] transition-colors duration-150 hover:text-[#00b3b0] cursor-pointer border-none bg-transparent"
+									title="Copy link to this scenario"
+									onclick={(e) => copyLink({ metric: m.id, scenario: sc.scenario_id }, sc.scenario_id, e)}
+								>
+									<i class="fa-solid {copiedId === sc.scenario_id ? 'fa-check text-[#16a34a]' : 'fa-link'} text-[9px]"></i>
+								</button>
+								{#if copiedId === sc.scenario_id}
+									<div class="absolute bottom-full right-0 mb-[5px] whitespace-nowrap rounded-[5px] bg-[#1a1a1a] px-[8px] py-[4px] text-[11px] font-medium text-white shadow-md pointer-events-none z-50">
+										Link copied!
+										<div class="absolute top-full right-2 border-[4px] border-transparent border-t-[#1a1a1a]"></div>
+									</div>
+								{/if}
 							</div>
-							<span class="text-[11px] font-semibold flex-shrink-0 tabular-nums"
-								style={passed / total >= 0.75 ? 'color:#16a34a' : passed / total >= 0.45 ? 'color:#d97706' : 'color:#dc2626'}
-							>{passed}<span class="font-normal text-[#9ca3af]">/{total}</span></span>
-						</button>
+						</div>
 					{/each}
 				{/each}
 			{/if}
 		</div>
 	</div>
 
-	<!-- ── COL 3: Conversation viewer ─────────────────────────── -->
+	<!-- ── COL 3: Right panel ────────────────────────────────── -->
 	<div class="flex-1 flex flex-col overflow-hidden min-w-0 bg-white">
-		{#if !selectedScenarioId || !conversationDetail && !conversationLoading && !conversationError}
-			<!-- Empty state -->
-			<div class="flex flex-col items-center justify-center h-full gap-3 text-[#9ca3af]">
-				<i class="fa-solid fa-comments text-3xl opacity-20"></i>
-				<p class="text-[13px] font-medium">Select a scenario to view the conversation</p>
-				<p class="text-[11px] opacity-70">Click a row in the list to load it here</p>
-			</div>
-		{:else}
-			<!-- Conversation header -->
+		{#if selectedScenarioId && (conversationDetail || conversationLoading || conversationError)}
+			<!-- Conversation view -->
 			<div class="flex-shrink-0 border-b border-[#e5e7eb] px-6 pt-[12px] pb-[10px]">
 				{#if selectedMetricForScenario}
 					<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[3px]">
 						{selectedMetricForScenario.subareaName}
 					</div>
 					<div class="text-[14px] font-[700] text-[#1a1a1a] tracking-[-0.01em] leading-[1.3] mb-[3px]">
-						{#if conversationDetail}
-							{conversationDetail.scenario.title}
-						{:else}
-							…
-						{/if}
+						{conversationDetail ? conversationDetail.scenario.title : '…'}
 					</div>
 					<div class="text-[11px] text-[#9ca3af]">{selectedMetricForScenario.name}</div>
 				{/if}
 			</div>
-
-			<!-- Conversation body -->
 			<div class="flex-1 overflow-y-auto px-6 py-4">
 				{#if selectedMetricForScenario}
 					<ConversationViewer
@@ -416,7 +515,7 @@
 						metricName={selectedMetricForScenario.name}
 						subareaName={selectedMetricForScenario.subareaName}
 						behaviorType={selectedMetricForScenario.behavior_type}
-					measurement={selectedMetricForScenario.measurement}
+						measurement={selectedMetricForScenario.measurement}
 						scenarioDetail={conversationDetail}
 						loading={conversationLoading}
 						error={conversationError}
@@ -426,6 +525,83 @@
 						onSwitchModel={switchModel}
 					/>
 				{/if}
+			</div>
+
+		{:else if selectedMetric}
+			<!-- Metric detail view -->
+			{@const mScenarios = getScenariosForMetric(selectedMetric.id)}
+			{@const mCriteria = appState.metricCriteria?.[selectedMetric.id]}
+			<div class="flex-shrink-0 border-b border-[#e5e7eb] px-6 pt-[12px] pb-[10px]">
+				<div class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af] mb-[3px]">
+					{selectedMetric.subareaName} · {selectedMetric.areaName}
+				</div>
+				<div class="flex items-start justify-between gap-3">
+					<div class="text-[15px] font-[700] text-[#1a1a1a] tracking-[-0.01em] leading-[1.3]">
+						{selectedMetric.name}
+					</div>
+					<div class="flex-shrink-0 flex items-center gap-2 pt-[2px]">
+						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold"
+							style={selectedMetric.harmful ? 'background:#fee2e2;color:#dc2626' : 'background:#dcfce7;color:#16a34a'}>
+							<i class="fa-solid {selectedMetric.harmful ? 'fa-shield-halved' : 'fa-star'} text-[9px]"></i>
+							{selectedMetric.harmful ? 'Avoiding bad behavior' : 'Promoting good behavior'}
+						</span>
+						<ScorePill score={selectedMetric.avgScore} />
+					</div>
+				</div>
+				{#if selectedMetric.benchmarks.length}
+					<div class="mt-[6px] text-[11px] text-[#9ca3af]">{selectedMetric.benchmarks.map(benchmarkLabel).join(', ')}</div>
+				{/if}
+			</div>
+			<div class="flex-1 overflow-y-auto px-6 py-4">
+				{#if mCriteria}
+					<div class="mb-5 border-l-[2px] border-[#e5e7eb] pl-[10px] text-[12px] leading-[1.6] whitespace-pre-line text-[#6b7280]">
+						{mCriteria}
+					</div>
+				{/if}
+				{#if mScenarios.length}
+					<div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">
+						Scenarios <span class="font-normal normal-case text-[#c4c9d1]">({mScenarios.length})</span>
+					</div>
+					{#each mScenarios as sc (sc.scenario_id)}
+						{@const verdicts = sc.verdicts ?? {}}
+						{@const total = appState.models.length}
+						{@const passed = appState.models.filter((mo) => {
+							const v = verdicts[mo.id];
+							const harmful = selectedMetric!.harmful;
+							return v !== undefined && (harmful ? v === 'no' : v === 'yes');
+						}).length}
+						{@const rawResult = verdicts[appState.filters.model]}
+						{@const isHarmful = selectedMetric!.behavior_type === 'restrain_harm' && selectedMetric!.measurement === 'presence'}
+						{@const pass = rawResult === undefined ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
+						<button
+							class="flex w-full items-center gap-[8px] border-l-[3px] px-[4px] py-[7px] text-left transition-colors duration-150
+								{selectedScenarioId === sc.scenario_id ? 'border-l-[#00b3b0] bg-[#e0f7f7]' : 'border-l-transparent hover:bg-[#f9fafb]'}"
+							onclick={() => selectScenario(selectedMetric!, sc)}
+						>
+							{#if pass !== null}
+								<span class="inline-flex h-[16px] w-[16px] flex-shrink-0 items-center justify-center rounded-full text-[9px] font-[800] leading-none"
+									style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}>{pass ? '✓' : '✗'}</span>
+							{:else}
+								<span class="h-[16px] w-[16px] flex-shrink-0 rounded-full bg-[#f3f4f6]"></span>
+							{/if}
+							<span class="min-w-0 flex-1 text-[12px] text-ellipsis truncate text-[#374151]">{sc.title}</span>
+							<span class="text-[11px] font-semibold flex-shrink-0 tabular-nums"
+								style={passed / total >= 0.75 ? 'color:#16a34a' : passed / total >= 0.45 ? 'color:#d97706' : 'color:#dc2626'}
+							>{passed}<span class="font-normal text-[#9ca3af]">/{total}</span></span>
+							<i class="fa-solid fa-chevron-right flex-shrink-0 text-[9px] text-[#9ca3af] pr-1"></i>
+						</button>
+					{/each}
+				{:else}
+					<p class="text-[12px] text-[#9ca3af]">No scenarios available for this metric.</p>
+				{/if}
+			</div>
+
+		{:else}
+			<!-- Empty state -->
+			<div class="flex flex-col items-center justify-center h-full gap-3 text-[#9ca3af]">
+				<i class="fa-solid fa-list-check text-3xl opacity-20"></i>
+				<p class="text-[13px] font-medium">Select a metric to explore</p>
+				<p class="text-[11px] opacity-70">Click a row in the list to see details and scenarios</p>
 			</div>
 		{/if}
 	</div>

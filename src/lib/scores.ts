@@ -13,10 +13,6 @@ const colorScaleBright = d3
 	.clamp(true);
 
 
-export function scoreToColor(score: number): string {
-	return colorScale(score);
-}
-
 export function scoreToColorBright(score: number): string {
 	return colorScaleBright(score);
 }
@@ -56,6 +52,10 @@ export function scoreColors(score: number): { color: string; light: string; bord
 	if (score >= 0.55) return { color: '#d97706', light: '#fffbeb', border: '#fcd34d' };
 	if (score < 0.45) return { color: '#dc2626', light: '#fff5f5', border: '#fca5a5' };
 	return { color: '#6b7280', light: '#f9fafb', border: '#e5e7eb' };
+}
+
+export function scoreToColor(score: number): string {
+	return colorScale(score);
 }
 
 export function scorePillStyle(score: number): string {
