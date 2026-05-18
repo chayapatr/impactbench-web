@@ -104,11 +104,13 @@
 						</p>
 						<div class="whitepaper-cta" aria-disabled="true">White paper coming soon</div>
 					</section>
+				</div>
 
-					<figure class="img-full img-plain">
-						<img src="/impactbench7.png" alt="ImpactBench overview" />
-					</figure>
+				<figure class="img-full img-plain img-lift">
+					<img src="/impactbench7.png" alt="ImpactBench overview" />
+				</figure>
 
+				<div class="text-col">
 					<p class="section-body">
 						AI is being rapidly adopted into the systems that people rely on to make decisions about
 						their health, finances, relationships, work, and sense of self. Deployed thoughtfully,
@@ -2263,6 +2265,10 @@
 	.img-full.img-plain img {
 		border: none;
 		border-radius: 0;
+	}
+
+	.img-full.img-lift {
+		margin-top: 32px;
 	}
 
 	.img-full figcaption,
