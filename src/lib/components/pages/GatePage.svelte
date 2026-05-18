@@ -360,6 +360,36 @@
 				</p>
 			</div>
 		</div>
+
+		<div class="mx-auto mt-12 grid max-w-[1100px] grid-cols-2 gap-12">
+			<div class="flex flex-col gap-4">
+				<img
+					src="/impactbench9.png"
+					alt="Explore page showing model comparisons across impact domains"
+					class="block h-auto w-full"
+				/>
+				<p class="m-0 text-[15px] leading-[1.75] text-[#4b5563]">
+					The Explore page lets you move from aggregate scores down to the underlying evidence:
+					compare models across the three impact domains, drill into specific constructs like
+					emotional dependence or cognitive autonomy, and read the actual multi-turn transcripts
+					behind any verdict.
+				</p>
+			</div>
+
+			<div class="flex flex-col gap-4">
+				<img
+					src="/impactbench10.png"
+					alt="Personalized ImpactBench nutrition label"
+					class="block h-auto w-full"
+				/>
+				<p class="m-0 text-[15px] leading-[1.75] text-[#4b5563]">
+					Tell us who you are: a parent, educator, clinician, or everyday user, and ImpactBench
+					generates a nutrition label calibrated to your context. You see how each individual model
+					performs on your focus area, where the model excels at in human flourishing, and what
+					some blind spots to note might be.
+				</p>
+			</div>
+		</div>
 	</section>
 
 	<!-- Tabbed forms -->
