@@ -1169,6 +1169,22 @@
 			opacity 0.2s ease,
 			filter 0.2s ease;
 	}
+	/* Per-logo height tweaks so cap-heights match visually */
+	.partner-logo[alt='MIT'] {
+		height: 36px;
+	}
+	.partner-logo[alt='MIT Media Lab'] {
+		height: 64px;
+	}
+	.partner-logo[alt='USC'] {
+		height: 56px;
+	}
+	.partner-logo[alt='Psychology of Technology Institute'] {
+		height: 52px;
+	}
+	.partner-logo[alt='UC Berkeley Haas'] {
+		height: 44px;
+	}
 	.partner-logo:hover {
 		opacity: 1;
 		filter: grayscale(0%);
