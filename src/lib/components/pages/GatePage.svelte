@@ -223,17 +223,6 @@
 		{ num: '4', label: 'Audience Groups', desc: 'Parents, educators, policymakers, developers.' }
 	];
 
-	const RATIONALE_POINTS = [
-		'AI is being adopted faster than any technology in history, yet trust in AI companies is declining and the evidence base that would justify calibrated trust has not been built.',
-		'Models that perform well on conventional safety benchmarks have still produced harmful user outcomes in over 70% of high-risk scenarios in controlled studies (Archiwaranguprok et al., 2025), and sycophantic dynamics establish preconditions for psychological dependency that single-turn evaluations cannot detect.',
-		'Only 16% of reviewed AI benchmarks include any statistical testing of their measurement properties (Bean et al., 2025), and most operationalize contested constructs without precise definitions. This methodological gap becomes structural when the construct in question is human impact.',
-		'Human-impact harms are relational and unfold over time. The highest-profile real-world cases emerged not from isolated prompts but from patterns developing across weeks of interaction, exactly the dynamics single-turn benchmarks systematically obscure.',
-		'No existing benchmark spans the three domains where impact actually unfolds: physical (health, legal, financial decisions), psychological (emotional dependence, autonomy, character), and societal (cognitive offloading, bias, epistemic independence).',
-		'Those best positioned to identify consequential harms, including clinicians, educators, legal scholars, and affected communities, often lack the technical expertise to build benchmarks, while those with technical expertise lack the domain grounding to identify the right constructs. The field needs infrastructure that decouples construct identification from benchmark construction.',
-		'Developers, policymakers, clinicians, parents, and everyday users need a common signal they can trust, one produced openly and contestably rather than by the companies being evaluated.',
-		'Human flourishing, grounded in eudaimonic psychology and capability theory, is the right north star for responsible AI, not task performance alone.'
-	];
-
 	const SUPPORT_CARDS = [
 		['fa-bullhorn', 'Advocacy', 'Spread the word and champion human-centered AI evaluation'],
 		['fa-microscope', 'Research Collab', 'Co-develop benchmarks or contribute datasets'],
@@ -347,24 +336,15 @@
 	<section class="bg-[#fafaf9] px-7 py-16">
 		<div class="mx-auto grid max-w-[1100px] grid-cols-2 gap-12">
 			<div class="flex flex-col gap-4">
-				<h2 class="section-title">Benchmarking human flourishing with AI</h2>
+				<h2 class="section-title">Measuring AI's impact on people</h2>
 				<p class="m-0 text-[15px] leading-[1.75] text-[#4b5563]">
-					Today's AI benchmarks measure what models can do — accuracy, reasoning, task completion.
+					Today's AI benchmarks measure what models can do: accuracy, reasoning, task completion.
 					They say almost nothing about what AI does to the people who rely on it. Two models with
 					identical capability scores can shape a user's autonomy, mental health, and relationships
 					in completely different ways, and the field has had no shared way to tell them apart.
 					ImpactBench is built to answer a different question: across realistic, multi-turn
 					conversations, does an AI system support or undermine human flourishing?
 				</p>
-				<ul class="m-0 flex list-none flex-col gap-[10px] p-0">
-					{#each RATIONALE_POINTS as point, i (i)}
-						<li class="flex items-start gap-[10px] text-[14px] text-[#374151]">
-							<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-							></span>
-							<span class="leading-[1.75]">{point}</span>
-						</li>
-					{/each}
-				</ul>
 			</div>
 
 			<div class="flex flex-col gap-4">
@@ -374,97 +354,10 @@
 					spanning physical, psychological, and societal impact. Each construct is contributed by
 					clinicians, educators, legal scholars, and community advocates through an open submission
 					process, then tested through multi-turn adversarial simulation with demographically
-					stratified personas — the way harms actually unfold in real conversations, not in
+					stratified personas: the way harms actually unfold in real conversations, not in
 					isolated prompts. Every score is paired with reliability checks so users can see not just
 					what we found, but how much to trust it.
 				</p>
-				<ul class="m-0 flex list-none flex-col gap-[10px] p-0">
-					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
-						<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-						></span>
-						<span class="leading-[1.75]"
-							><strong>Scoring.</strong> Each (scenario, metric) pair receives a binary verdict: 1
-							if the model's behavior reliably
-							<span style="color:#16a34a;font-weight:700">supports</span>
-							human flourishing on the measured dimension, 0 if it reliably
-							<span style="color:#dc2626;font-weight:700">undermines</span> it. Polarity is assigned per
-							metric, so a "1" always means the model resisted the targeted failure mode and a "0" always
-							means it exhibited it, regardless of whether the underlying behavior is framed as protective
-							or harmful.</span
-						>
-					</li>
-					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
-						<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-						></span>
-						<span class="leading-[1.75]"
-							><strong>Adversarial design.</strong> Every metric is paired with scenarios containing a
-							latent adversarial objective: instructions guiding the simulated user to apply social pressure,
-							escalate emotionally, and probe for the target failure across six turns. This mirrors how
-							real harms accumulate organically rather than appearing in a single prompt.</span
-						>
-					</li>
-					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
-						<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-						></span>
-						<span class="leading-[1.75]"
-							><strong>Demographic stratification.</strong> Scenarios are cross-stratified across age
-							(child/teen 6 to 17, adult 18+) and gender (female, male, non-binary), enabling intersectional
-							analysis and surfacing where harms concentrate. This pipeline has already shown that 12
-							of 14 leading models exhibit more emotional-dependence behaviors toward minors than adults,
-							the opposite of what protective design implies.</span
-						>
-					</li>
-					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
-						<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-						></span>
-						<span class="leading-[1.75]"
-							><strong>Multi-turn, dynamic format.</strong> Conversations unfold over multiple turns with
-							persistent user goals, capturing relational, time-extended dynamics (habituation, escalation,
-							dependency formation) that single-prompt benchmarks miss entirely.</span
-						>
-					</li>
-					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
-						<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-						></span>
-						<span class="leading-[1.75]"
-							><strong>Surface-form realism.</strong> A perfunctory mode injects stochastic lower-casing,
-							character transpositions, and deletions to mimic the typos and auto-correct artifacts of
-							authentic conversational texting, so models are tested under realistic input rather than
-							sanitized prose.</span
-						>
-					</li>
-					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
-						<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-						></span>
-						<span class="leading-[1.75]"
-							><strong>Reliability as a first-class output.</strong> The pipeline reports not just scores
-							but their stability: test-retest agreement (Fleiss' κ = 0.64 to 0.78), between-judge ranking
-							correlation (ρ = 0.61 to 1.00 across qualified judges), three-sample conversation agreement
-							(78% unanimous, mean pairwise agreement 0.93), and generator-swap audits that confirm rankings
-							are not artifacts of which model family wrote the metrics.</span
-						>
-					</li>
-					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
-						<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-						></span>
-						<span class="leading-[1.75]"
-							><strong>Open submission.</strong> Constructs are contributed by clinicians, legal scholars,
-							educators, and community advocates through an open submission process, decoupling who identifies
-							what matters from who can implement a benchmark. Each construct is auditable, contestable,
-							and revisable, making the framework learning infrastructure rather than a fixed verdict.</span
-						>
-					</li>
-					<li class="flex items-start gap-[10px] text-[14px] leading-[1.75] text-[#374151]">
-						<span class="mt-[6px] block h-[7px] w-[7px] flex-shrink-0 rounded-full bg-[#00b3b0]"
-						></span>
-						<span class="leading-[1.75]"
-							><strong>Theoretical grounding.</strong> The framework operationalizes flourishing in the
-							tradition of eudaimonic psychology, Sen's capability approach, and VanderWeele's multidimensional
-							flourishing framework, spanning physical, psychological, and societal domains within a single
-							nomological network so constructs can be compared rather than evaluated in isolation.</span
-						>
-					</li>
-				</ul>
 			</div>
 		</div>
 	</section>
