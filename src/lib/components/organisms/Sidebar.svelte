@@ -154,7 +154,12 @@
 	<!-- Site footer -->
 	<div class="flex flex-shrink-0 flex-col gap-1.5 border-t border-[#f3f4f6] px-4 py-3">
 		<p class="text-[11px] leading-[1.5] text-[#9ca3af]">
-			MIT Media Lab · 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307 USA ⋅ <a
+			<a
+				href="https://www.media.mit.edu/"
+				target="_blank"
+				rel="noopener"
+				class="text-[#9ca3af] underline underline-offset-2 hover:text-[#6b7280]">MIT Media Lab</a
+			> · 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307 USA ⋅ <a
 				href="https://accessibility.mit.edu/"
 				target="_blank"
 				rel="noopener"
