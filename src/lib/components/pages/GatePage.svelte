@@ -244,11 +244,19 @@
 
 	const PARTNER_LOGOS = [
 		{ href: 'https://www.mit.edu/', src: '/images/MIT Logo.png', alt: 'MIT' },
-		{ href: null, src: '/images/ML logo.png', alt: 'MIT Media Lab' },
-		{ href: null, src: '/images/usc.jpg', alt: 'USC' },
-		{ href: null, src: '/images/PTI+Logo+updated.webp', alt: 'Psychology of Technology Institute' },
+		{ href: 'https://www.media.mit.edu/', src: '/images/ML logo.png', alt: 'MIT Media Lab' },
 		{
-			href: null,
+			href: 'https://www.marshall.usc.edu/institutes-and-centers/neely-center-for-ethical-leadership-and-decision-making',
+			src: '/images/usc.jpg',
+			alt: 'USC Marshall – Neely Center for Ethical Leadership and Decision Making'
+		},
+		{
+			href: 'https://www.psychoftech.org/',
+			src: '/images/PTI+Logo+updated.webp',
+			alt: 'Psychology of Technology Institute'
+		},
+		{
+			href: 'https://haas.berkeley.edu/',
 			src: '/images/UC-Berkeley-Haas-logo-digital_stacked-blue.png',
 			alt: 'UC Berkeley Haas'
 		}
@@ -730,13 +738,15 @@
 
 	<!-- Footer -->
 	<footer
-		class="mt-auto flex items-center justify-center gap-[10px] bg-white px-7 py-5 text-center text-[12px] text-[#111827]"
+		class="mt-auto flex flex-wrap items-center justify-center gap-x-[10px] gap-y-1 bg-white px-7 py-5 text-center text-[12px] text-[#111827]"
 	>
 		<span>© 2026 <a class="underline" href="https://media.mit.edu"> MIT Media Lab</a></span>
 		<span>·</span>
 		<span><a class="underline" href="https://accessibility.mit.edu/">Accessibility</a></span>
 		<span>·</span>
 		<span>Human-AI Impact Bench</span>
+		<span>·</span>
+		<span>77 Massachusetts Ave, Cambridge, MA 02139, USA</span>
 	</footer>
 </div>
 
@@ -1173,7 +1183,7 @@
 
 	/* Partner logos */
 	.partner-logo {
-		height: 52px;
+		height: 47px;
 		max-width: 180px;
 		width: auto;
 		object-fit: contain;
@@ -1182,22 +1192,6 @@
 		transition:
 			opacity 0.2s ease,
 			filter 0.2s ease;
-	}
-	/* Per-logo height tweaks so cap-heights match visually */
-	.partner-logo[alt='MIT'] {
-		height: 36px;
-	}
-	.partner-logo[alt='MIT Media Lab'] {
-		height: 64px;
-	}
-	.partner-logo[alt='USC'] {
-		height: 56px;
-	}
-	.partner-logo[alt='Psychology of Technology Institute'] {
-		height: 52px;
-	}
-	.partner-logo[alt='UC Berkeley Haas'] {
-		height: 44px;
 	}
 	.partner-logo:hover {
 		opacity: 1;

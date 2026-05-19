@@ -1802,6 +1802,16 @@
 				</div>
 			</div>
 		</div>
+
+		<footer class="about-footer">
+			<span>© 2026 <a href="https://media.mit.edu">MIT Media Lab</a></span>
+			<span aria-hidden="true">·</span>
+			<span><a href="https://accessibility.mit.edu/">Accessibility</a></span>
+			<span aria-hidden="true">·</span>
+			<span>Human-AI Impact Bench</span>
+			<span aria-hidden="true">·</span>
+			<span>77 Massachusetts Ave, Cambridge, MA 02139, USA</span>
+		</footer>
 	</div>
 </div>
 
@@ -2533,6 +2543,25 @@
 	.section-inline-link:hover {
 		color: #00b3b0;
 		border-bottom-color: rgba(0, 179, 176, 0.6);
+	}
+
+	/* About-page footer */
+	.about-footer {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: 6px 10px;
+		padding: 24px 28px 28px;
+		border-top: 1px solid #f3f4f6;
+		background: #ffffff;
+		font-size: 12px;
+		color: #111827;
+		text-align: center;
+	}
+	.about-footer a {
+		color: inherit;
+		text-decoration: underline;
 	}
 
 	/* Team */
