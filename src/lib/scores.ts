@@ -12,6 +12,18 @@ const colorScaleBright = d3
 	.range(['#ef4444', '#f3f4f6', '#22c55e'])
 	.clamp(true);
 
+const pillBgScale = d3
+	.scaleLinear<string>()
+	.domain([0, 0.33, 0.66, 1])
+	.range(['#fee2e2', '#ffedd5', '#fef9c3', '#dcfce7'])
+	.clamp(true);
+
+const pillTextScale = d3
+	.scaleLinear<string>()
+	.domain([0, 0.33, 0.66, 1])
+	.range(['#dc2626', '#ea580c', '#ca8a04', '#16a34a'])
+	.clamp(true);
+
 
 export function scoreToColorBright(score: number): string {
 	return colorScaleBright(score);
@@ -58,9 +70,10 @@ export function scoreToColor(score: number): string {
 	return colorScale(score);
 }
 
+export function scorePillColor(score: number): string {
+	return pillTextScale(score);
+}
+
 export function scorePillStyle(score: number): string {
-	if (score >= 0.75) return 'background:#dcfce7;color:#16a34a';
-	if (score >= 0.55) return 'background:#fef3c7;color:#d97706';
-	if (score >= 0.35) return 'background:#ffedd5;color:#ea580c';
-	return 'background:#fee2e2;color:#dc2626';
+	return `background:${pillBgScale(score)};color:${pillTextScale(score)}`;
 }

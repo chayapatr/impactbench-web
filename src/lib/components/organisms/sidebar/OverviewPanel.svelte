@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { appState, sidebarPush } from '$lib/store.svelte';
 	import { scoreInterpretation } from '$lib/scores';
-	import { computeAreaScore } from '$lib/utils';
+	import { computeAreaScore, areaPassFraction } from '$lib/utils';
 	import ScorePill from '$lib/components/atoms/ScorePill.svelte';
 	import SectionLabel from '$lib/components/atoms/SectionLabel.svelte';
 </script>
@@ -10,6 +10,7 @@
 <div class="flex flex-col gap-[6px] px-[14px] pb-1">
 	{#each appState.taxonomy?.areas ?? [] as area (area.id)}
 		{@const areaScore = computeAreaScore(appState, area.id)}
+		{@const areaFrac = areaPassFraction(appState, area.id)}
 		{@const interp = scoreInterpretation(areaScore)}
 		<button
 			class="flex w-full cursor-pointer flex-col rounded-[10px] border-[1.5px] border-[#e5e7eb] bg-white px-4 py-[10px] text-left transition-[border-color] duration-150 hover:border-[#00b3b0]"
@@ -20,7 +21,7 @@
 					<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
 					<span class="text-[13px] font-semibold text-[#1a1a1a]">{area.name}</span>
 				</div>
-				<ScorePill score={areaScore} />
+				<ScorePill score={areaScore} total={areaFrac.total} />
 			</div>
 			<div class="mt-[5px] text-[11px] leading-[1.35] text-balance text-[#9ca3af]">
 				{interp}

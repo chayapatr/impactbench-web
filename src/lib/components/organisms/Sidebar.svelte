@@ -36,6 +36,11 @@
 		return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
 	});
 
+	const overallTotal = $derived(() => {
+		const scores = getScores(appState);
+		return Object.keys(scores).length;
+	});
+
 	function getAncestorName(): string {
 		const stack = sidebarState.navStack;
 		if (stack.length < 2) return 'Back';
@@ -122,7 +127,7 @@
 						{getModelName(appState)}
 					</div>
 				</div>
-				<ScorePill score={overallScore()} />
+				<ScorePill score={overallScore()} total={overallTotal()} />
 			</div>
 		</div>
 	</div>

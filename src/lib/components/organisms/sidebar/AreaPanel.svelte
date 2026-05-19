@@ -2,7 +2,7 @@
 	import { appState, sidebarBack, sidebarPush } from '$lib/store.svelte';
 	import { scoreColors } from '$lib/scores';
 	import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
-	import { getModelName, computeAreaScore, computeSubareaScore } from '$lib/utils';
+	import { getModelName, computeAreaScore, computeSubareaScore, areaPassFraction, subareaPassFraction } from '$lib/utils';
 	import ScorePill from '$lib/components/atoms/ScorePill.svelte';
 	import SectionLabel from '$lib/components/atoms/SectionLabel.svelte';
 	import StickyHeader from '$lib/components/molecules/StickyHeader.svelte';
@@ -17,6 +17,7 @@
 
 	const area = $derived(appState.taxonomy?.areas.find((a) => a.id === areaId));
 	const areaScore = $derived(area ? computeAreaScore(appState, areaId) : 0);
+	const areaFrac = $derived(areaPassFraction(appState, areaId));
 	const areaColors = $derived(scoreColors(areaScore));
 	const areaDesc = $derived(AREA_DESCRIPTIONS[areaId] ?? '');
 </script>
@@ -33,7 +34,7 @@
 					<div class="flex items-center gap-2">
 						<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
 						<span class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]">{area.name}</span>
-						<ScorePill score={areaScore} />
+						<ScorePill score={areaScore} total={areaFrac.total} />
 					</div>
 				{/snippet}
 			</ColoredBanner>
@@ -50,6 +51,7 @@
 	<div class="flex flex-col gap-[6px] px-[14px] pb-4">
 		{#each area.subareas as sub (sub.id)}
 			{@const subScore = computeSubareaScore(appState, sub.id)}
+			{@const subFrac = subareaPassFraction(appState, sub.id)}
 			{@const subDesc = SUBAREA_DESCRIPTIONS[sub.id] ?? ''}
 			<button
 				class="flex w-full cursor-pointer flex-col rounded-[10px] border-[1.5px] border-[#e5e7eb] bg-white px-4 py-[10px] text-left transition-[border-color] duration-150 hover:border-[#00b3b0]"
@@ -60,7 +62,7 @@
 						<i class="fa-solid {sub.icon} flex-shrink-0 text-[15px]"></i>
 						<span class="truncate text-[13px] font-semibold text-[#1a1a1a]">{sub.name}</span>
 					</div>
-					<ScorePill score={subScore} />
+					<ScorePill score={subScore} total={subFrac.total} />
 				</div>
 				{#if subDesc}
 					<div class="mt-[5px] text-[11px] leading-[1.35] text-balance text-[#9ca3af]">

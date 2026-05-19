@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { appState, sidebarBack, sidebarPush } from '$lib/store.svelte';
 	import { scoreColors } from '$lib/scores';
-	import { getModelName, getScores, filterScenariosByAge, findMetricInTaxonomy } from '$lib/utils';
+	import { getModelName, getScores, filterScenariosByAge, findMetricInTaxonomy, metricPassFraction } from '$lib/utils';
 	import ScorePill from '$lib/components/atoms/ScorePill.svelte';
 	import StickyHeader from '$lib/components/molecules/StickyHeader.svelte';
 	import ColoredBanner from '$lib/components/molecules/ColoredBanner.svelte';
@@ -21,6 +21,7 @@
 		_metric?.behavior_type === 'restrain_harm' && _metric?.measurement === 'presence'
 	);
 	const scenarios = $derived(filterScenariosByAge(appState, metricId));
+	const metricFrac = $derived(metricPassFraction(appState, metricId));
 </script>
 
 <StickyHeader {backLabel} onBack={sidebarBack}>
@@ -28,12 +29,12 @@
 		<span class="truncate text-[11px] font-semibold text-[#9ca3af]">{getModelName(appState)}</span>
 	{/snippet}
 	{#snippet banner()}
-		<ColoredBanner color={metricColors.color} background={metricColors.light} border={metricColors.border} title={metricName} score={score}>
+		<ColoredBanner color={metricColors.color} background={metricColors.light} border={metricColors.border} title={metricName} score={score} total={metricFrac.total}>
 			{#snippet children()}
 				<div class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">{backLabel} ›</div>
 				<div class="flex items-start justify-between gap-2">
 					<span class="flex-1 text-[15px] leading-[1.2] font-[700] tracking-[-0.01em] text-[#1a1a1a]">{metricName}</span>
-					<ScorePill score={score} />
+					<ScorePill score={score} total={metricFrac.total} />
 				</div>
 			{/snippet}
 		</ColoredBanner>

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { appState, sidebarBack, sidebarPush, sidebarState } from '$lib/store.svelte';
-	import { scoreColors, scoreToColor } from '$lib/scores';
+	import { scoreColors, scoreToColor, scorePillStyle } from '$lib/scores';
 	import { SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
-	import { getModelName, getScores, computeSubareaScore, filterScenariosByAge } from '$lib/utils';
+	import { getModelName, getScores, computeSubareaScore, filterScenariosByAge, subareaPassFraction } from '$lib/utils';
 	import type { ScenarioMeta } from '$lib/types';
 	import BadgeIcon from '$lib/components/atoms/BadgeIcon.svelte';
 	import SectionLabel from '$lib/components/atoms/SectionLabel.svelte';
@@ -28,6 +28,7 @@
 	const scores = $derived(getScores(appState));
 	const subareaScore = $derived(computeSubareaScore(appState, subareaId));
 	const subColors = $derived(scoreColors(subareaScore));
+	const subareaFrac = $derived(subareaPassFraction(appState, subareaId));
 
 	let expandedMetricId: string | null = $state(null);
 	let expandedScenarios: ScenarioMeta[] = $state([]);
@@ -90,6 +91,7 @@
 				icon={sub.icon}
 				title={sub.name}
 				score={subareaScore}
+				total={subareaFrac.total}
 			/>
 		{/snippet}
 	</StickyHeader>
@@ -110,15 +112,7 @@
 			<span class="flex items-center gap-[6px]">
 				<span
 					class="rounded-full px-[8px] py-[2px] text-[12px] font-semibold"
-					style="background:{posMetrics.length
-						? posPassed / posMetrics.length >= 0.75
-							? '#dcfce7'
-							: posPassed / posMetrics.length >= 0.55
-								? '#fef9c3'
-								: posPassed / posMetrics.length >= 0.35
-									? '#ffedd5'
-									: '#fee2e2'
-						: '#fee2e2'};color:{stepColor(posMetrics.length ? posPassed / posMetrics.length : 0)}"
+					style={scorePillStyle(posMetrics.length ? posPassed / posMetrics.length : 0)}
 					>{posPassed}/{posMetrics.length}</span
 				>
 				<span class="text-[12px] font-medium text-[#374151]">metrics</span>
@@ -133,15 +127,7 @@
 				<span class="flex items-center gap-[6px]">
 					<span
 						class="rounded-full px-[8px] py-[2px] text-[12px] font-semibold"
-						style="background:{negMetrics.length
-							? negPassed / negMetrics.length >= 0.75
-								? '#dcfce7'
-								: negPassed / negMetrics.length >= 0.55
-									? '#fef9c3'
-									: negPassed / negMetrics.length >= 0.35
-										? '#ffedd5'
-										: '#fee2e2'
-							: '#fee2e2'};color:{stepColor(negMetrics.length ? negPassed / negMetrics.length : 0)}"
+						style={scorePillStyle(negMetrics.length ? negPassed / negMetrics.length : 0)}
 						>{negPassed}/{negMetrics.length}</span
 					>
 					<span class="text-[12px] font-medium text-[#374151]">metrics</span>

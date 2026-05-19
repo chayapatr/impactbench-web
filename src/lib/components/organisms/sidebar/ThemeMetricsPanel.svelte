@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { appState, sidebarBack, sidebarPush } from '$lib/store.svelte';
 	import { scoreColors } from '$lib/scores';
-	import { getModelName, getScores, filterScenariosByAge } from '$lib/utils';
+	import { getModelName, getScores, filterScenariosByAge, metricPassFraction } from '$lib/utils';
 	import type { ThemeMetricItem } from '$lib/store.svelte';
 	import ScorePill from '$lib/components/atoms/ScorePill.svelte';
 	import SectionLabel from '$lib/components/atoms/SectionLabel.svelte';
@@ -56,6 +56,7 @@
 <SectionLabel text="Behaviors" spacing="compact" />
 <div class="flex flex-col pb-4">
 	{#each sorted as m (m.id)}
+		{@const mFrac = metricPassFraction(appState, m.id)}
 		<div>
 			<button
 				class="flex w-full items-center gap-[8px] border-l-[3px] px-[14px] py-[7px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]
@@ -63,7 +64,7 @@
 				onclick={() => toggleMetric(m.id)}
 			>
 				<span class="min-w-0 flex-1 overflow-hidden text-[12px] text-ellipsis whitespace-nowrap text-[#374151]">{m.name}</span>
-				<ScorePill score={m.score} />
+				<ScorePill score={m.score} total={mFrac.total} />
 				<i class="fa-solid {expandedMetricId === m.id ? 'fa-chevron-up' : 'fa-chevron-down'} flex-shrink-0 text-[9px] text-[#9ca3af]"></i>
 			</button>
 			{#if expandedMetricId === m.id}
