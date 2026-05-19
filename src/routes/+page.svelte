@@ -93,6 +93,10 @@
 			showGate = false;
 			activeTab = pendingDeepTab ?? 'explore';
 			pendingDeepTab = null;
+		} else if (pendingDeepTab === 'about') {
+			showGate = false;
+			activeTab = 'about';
+			pendingDeepTab = null;
 		}
 
 		try {
