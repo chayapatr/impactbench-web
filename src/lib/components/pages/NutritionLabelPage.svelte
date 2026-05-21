@@ -64,15 +64,15 @@
 		return false;
 	}
 
-	// Build the per-area / per-subarea label data for the selected model
-	const labelData = $derived(() => {
+	// Build per-area / per-subarea label data for a given model
+	function buildLabelData(modelId: string, age: 'adult' | 'child') {
 		const tax = appState.taxonomy;
 		if (!tax) return null;
-		const scores = getScores(appState, currentModelId, currentAge);
+		const scores = getScores(appState, modelId, age);
 		const areas = tax.areas.map((area) => {
-			const areaScore = computeAreaScore(appState, area.id, currentModelId, currentAge);
+			const areaScore = computeAreaScore(appState, area.id, modelId, age);
 			const subareas = area.subareas.map((sub) => {
-				const subScore = computeSubareaScore(appState, sub.id, currentModelId, currentAge);
+				const subScore = computeSubareaScore(appState, sub.id, modelId, age);
 				const vals = sub.metrics
 					.map((m) => scores[m.id])
 					.filter((v): v is number => v !== undefined);
@@ -96,7 +96,49 @@
 			.slice(0, 3)
 			.map((a) => ({ name: a.name, score: a.score }));
 		return { areas, overall, totalIndicators: allVals.length, worstAreas: worst };
+	}
+
+	// Carousel: all models, sorted by overall impact (descending)
+	type Card = {
+		id: string;
+		name: string;
+		provider: string;
+		data: NonNullable<ReturnType<typeof buildLabelData>>;
+	};
+	const carouselCards = $derived<Card[]>(() => {
+		if (!appState.taxonomy) return [];
+		const cards: Card[] = [];
+		for (const m of appState.models) {
+			const d = buildLabelData(m.id, currentAge);
+			if (!d || d.totalIndicators === 0) continue;
+			cards.push({ id: m.id, name: m.name, provider: m.provider ?? '', data: d });
+		}
+		cards.sort((a, b) => b.data.overall - a.data.overall);
+		return cards;
 	});
+
+	const focusIndex = $derived(() => {
+		const cards = carouselCards();
+		const idx = cards.findIndex((c) => c.id === currentModelId);
+		return idx >= 0 ? idx : 0;
+	});
+
+	const labelData = $derived(() => {
+		const cards = carouselCards();
+		return cards[focusIndex()]?.data ?? null;
+	});
+
+	function gotoCard(idx: number) {
+		const cards = carouselCards();
+		if (cards.length === 0) return;
+		const clamped = ((idx % cards.length) + cards.length) % cards.length;
+		const target = cards[clamped];
+		if (!target || target.id === currentModelId) return;
+		setFilters({ ...appState.filters, model: target.id });
+		onModelSelect?.(target.id);
+	}
+	function nextCard() { gotoCard(focusIndex() + 1); }
+	function prevCard() { gotoCard(focusIndex() - 1); }
 
 	// ───── Mitigation tips (right column) ─────
 	type Tip = { area: string; tip: string };
@@ -200,6 +242,12 @@
 	// ───── PDF export of the center label ─────
 	let saving = $state(false);
 	let labelEl: HTMLElement | undefined = $state();
+	const cardRefs: Record<string, HTMLElement | undefined> = $state({});
+	$effect(() => {
+		const cards = carouselCards();
+		const focused = cards[focusIndex()];
+		labelEl = focused ? cardRefs[focused.id] : undefined;
+	});
 	async function savePdf() {
 		if (!labelEl) return;
 		saving = true;
@@ -289,127 +337,173 @@
 		<Leaderboard onModelSelect={handleLocalModelSelect} />
 	</aside>
 
-	<!-- CENTER: Nutritional Label for selected model -->
+	<!-- CENTER: Nutritional Label carousel -->
 	<div class="nl-center">
-		{#if appState.loading || !labelData()}
+		{#if appState.loading || carouselCards().length === 0}
 			<div class="nl-center-loading">
 				<div class="nl-spinner" aria-hidden="true"></div>
 				<p>Loading taxonomy…</p>
 			</div>
 		{:else}
-			{@const ld = labelData()!}
-			{@const overallPct = Math.max(0, Math.min(100, ((ld.overall + 1) / 2) * 100))}
-			<div class="nl-label-wrap">
-				<div bind:this={labelEl} class="nutrition-label">
-					<div class="nutrition-headline">AI Nutrition Label</div>
-					<div class="nutrition-subline">
-						{ageLabel} · {ld.totalIndicators} indicators evaluated
-					</div>
+			{@const cards = carouselCards()}
+			{@const fIdx = focusIndex()}
+			<div class="nl-carousel-wrap">
+				<button
+					class="nl-nav nl-nav--prev"
+					onclick={prevCard}
+					aria-label="Previous model"
+					disabled={cards.length < 2}
+				>
+					<i class="fa-solid fa-chevron-left"></i>
+				</button>
 
-					<div class="nutrition-model-block">
-						<div class="nutrition-model-kicker">Selected model</div>
-						<div class="nutrition-model-name">{currentModelName}</div>
-						<div class="smart-nl-provider">{currentModelProvider}</div>
-					</div>
-
-					<div class="nutrition-thick-rule"></div>
-
-					<div class="nutrition-score-row">
-						<div class="nutrition-score-label">Overall Impact</div>
+				<div class="nl-carousel" role="region" aria-label="Model nutrition labels">
+					{#each cards as card, i (card.id)}
+						{@const offset = i - fIdx}
+						{@const abs = Math.abs(offset)}
+						{@const hidden = abs > 2}
+						{@const ld = card.data}
+						{@const overallPct = Math.max(0, Math.min(100, ((ld.overall + 1) / 2) * 100))}
 						<div
-							class="nutrition-score-value"
-							style="color:{scoreColor(ld.overall)}"
+							class="nl-carousel-card"
+							class:nl-carousel-card--focus={offset === 0}
+							class:nl-carousel-card--hidden={hidden}
+							style="--offset:{offset};--abs:{abs};z-index:{100 - abs};"
+							aria-hidden={offset !== 0}
+							onclick={() => offset !== 0 && gotoCard(i)}
+							role={offset !== 0 ? 'button' : undefined}
+							tabindex={offset !== 0 ? 0 : -1}
+							onkeydown={(e) => {
+								if (offset !== 0 && (e.key === 'Enter' || e.key === ' ')) {
+									e.preventDefault();
+									gotoCard(i);
+								}
+							}}
 						>
-							{fmtScore(ld.overall)}
-						</div>
-					</div>
-					<div class="smart-nl-overall-track" aria-hidden="true">
-						<div class="smart-nl-overall-zero"></div>
-						<div
-							class="smart-nl-overall-marker"
-							style="left:{overallPct}%;background:{scoreColor(ld.overall)}"
-						></div>
-					</div>
-
-					<div class="nutrition-thick-rule"></div>
-
-					<div class="smart-nl-section-title">
-						Performance by area
-						<span class="smart-nl-section-sub"
-							>Averaged across subareas and indicators</span
-						>
-					</div>
-
-					<div class="nl-areas">
-						{#each ld.areas as area (area.id)}
-							{@const focused = isFocus(area.name)}
-							{@const aPct = Math.max(0, Math.min(100, ((area.score + 1) / 2) * 100))}
-							<div class="nl-area-card" class:nl-area-card--focus={focused}>
-								<div class="smart-nl-area-top">
-									<span class="smart-nl-area-name">
-										{area.name}
-										{#if focused}
-											<span class="nl-focus-tag" title="Relevant to your focus area">
-												<i class="fa-solid fa-bullseye"></i> focus
-											</span>
-										{/if}
-									</span>
-									<span
-										class="smart-nl-area-score"
-										style="color:{scoreColor(area.score)}"
-										>{fmtScore(area.score)}</span
-									>
+							<div
+								class="nutrition-label"
+								bind:this={cardRefs[card.id]}
+							>
+								<div class="nutrition-headline">AI Nutrition Label</div>
+								<div class="nutrition-subline">
+									{ageLabel} · {ld.totalIndicators} indicators evaluated
 								</div>
-								<div class="smart-nl-area-track">
-									<div class="smart-nl-area-zero"></div>
+
+								<div class="nutrition-model-block">
+									<div class="nutrition-model-kicker">Model</div>
+									<div class="nutrition-model-name">{card.name}</div>
+									<div class="smart-nl-provider">{card.provider}</div>
+								</div>
+
+								<div class="nutrition-thick-rule"></div>
+
+								<div class="nutrition-score-row">
+									<div class="nutrition-score-label">Overall Impact</div>
 									<div
-										class="smart-nl-area-marker"
-										style="left:{aPct}%;background:{scoreColor(area.score)}"
+										class="nutrition-score-value"
+										style="color:{scoreColor(ld.overall)}"
+									>
+										{fmtScore(ld.overall)}
+									</div>
+								</div>
+								<div class="smart-nl-overall-track" aria-hidden="true">
+									<div class="smart-nl-overall-zero"></div>
+									<div
+										class="smart-nl-overall-marker"
+										style="left:{overallPct}%;background:{scoreColor(ld.overall)}"
 									></div>
 								</div>
 
-								<ul class="nl-sub-list">
-									{#each area.subareas as sub (sub.id)}
-										{@const subFocused = isFocus(sub.name)}
-										<li class="nl-sub-row" class:nl-sub-row--focus={subFocused}>
-											<span class="nl-sub-name">
-												{sub.name}
-												{#if sub.evaluated < sub.total}
-													<span class="nl-sub-meta"
-														>({sub.evaluated}/{sub.total})</span
-													>
-												{/if}
-											</span>
-											{#if sub.evaluated > 0}
+								<div class="nutrition-thick-rule"></div>
+
+								<div class="smart-nl-section-title">
+									Performance by area
+									<span class="smart-nl-section-sub">Averaged across subareas</span>
+								</div>
+
+								<div class="nl-areas">
+									{#each ld.areas as area (area.id)}
+										{@const focused = isFocus(area.name)}
+										{@const aPct = Math.max(0, Math.min(100, ((area.score + 1) / 2) * 100))}
+										<div class="nl-area-card" class:nl-area-card--focus={focused}>
+											<div class="smart-nl-area-top">
+												<span class="smart-nl-area-name">
+													{area.name}
+													{#if focused}
+														<span class="nl-focus-tag" title="Relevant to your focus area">
+															<i class="fa-solid fa-bullseye"></i> focus
+														</span>
+													{/if}
+												</span>
 												<span
-													class="nl-sub-score"
-													style="color:{scoreColor(sub.score)}"
-													>{fmtScore(sub.score)}</span
+													class="smart-nl-area-score"
+													style="color:{scoreColor(area.score)}"
+													>{fmtScore(area.score)}</span
 												>
-											{:else}
-												<span class="nl-sub-score nl-sub-score--empty"
-													>—</span
-												>
-											{/if}
-										</li>
+											</div>
+											<div class="smart-nl-area-track">
+												<div class="smart-nl-area-zero"></div>
+												<div
+													class="smart-nl-area-marker"
+													style="left:{aPct}%;background:{scoreColor(area.score)}"
+												></div>
+											</div>
+
+											<ul class="nl-sub-list">
+												{#each area.subareas as sub (sub.id)}
+													{@const subFocused = isFocus(sub.name)}
+													<li class="nl-sub-row" class:nl-sub-row--focus={subFocused}>
+														<span class="nl-sub-name">
+															{sub.name}
+															{#if sub.evaluated < sub.total}
+																<span class="nl-sub-meta">({sub.evaluated}/{sub.total})</span>
+															{/if}
+														</span>
+														{#if sub.evaluated > 0}
+															<span
+																class="nl-sub-score"
+																style="color:{scoreColor(sub.score)}"
+																>{fmtScore(sub.score)}</span
+															>
+														{:else}
+															<span class="nl-sub-score nl-sub-score--empty">—</span>
+														{/if}
+													</li>
+												{/each}
+											</ul>
+										</div>
 									{/each}
-								</ul>
+								</div>
+
+								<div class="nutrition-thick-rule"></div>
+
+								<div class="nutrition-footnote">
+									Scores derive from scenario evaluations across {ld.totalIndicators} indicators
+									for the {ageLabel.toLowerCase()} age group, on a scale from −1.00 (most
+									harmful) to +1.00 (most beneficial).
+									{#if smartUserText}
+										Highlighted rows are most relevant to your focus: "{smartUserText}".
+									{/if}
+								</div>
 							</div>
-						{/each}
-					</div>
-
-					<div class="nutrition-thick-rule"></div>
-
-					<div class="nutrition-footnote">
-						Scores derive from scenario evaluations across {ld.totalIndicators} indicators
-						for the {ageLabel.toLowerCase()} age group, on a scale from −1.00 (most harmful)
-						to +1.00 (most beneficial).
-						{#if smartUserText}
-							Highlighted rows are most relevant to your focus: "{smartUserText}".
-						{/if}
-					</div>
+						</div>
+					{/each}
 				</div>
 
+				<button
+					class="nl-nav nl-nav--next"
+					onclick={nextCard}
+					aria-label="Next model"
+					disabled={cards.length < 2}
+				>
+					<i class="fa-solid fa-chevron-right"></i>
+				</button>
+			</div>
+
+			<div class="nl-carousel-footer">
+				<div class="nl-carousel-counter">
+					{fIdx + 1} <span>/ {cards.length}</span>
+				</div>
 				<button class="nl-pdf-btn" disabled={saving} onclick={savePdf}>
 					<i class="fa-solid fa-file-pdf"></i>
 					{saving ? 'Saving…' : 'Save label as PDF'}
@@ -568,9 +662,9 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		overflow-y: auto;
-		overflow-x: hidden;
-		padding: 28px 32px 40px;
+		justify-content: center;
+		overflow: hidden;
+		padding: 20px 24px 24px;
 		background: #f8fafc;
 	}
 
@@ -596,33 +690,151 @@
 		background: #fafaf9;
 	}
 
-	/* ───── Center label card (matches SmartNutritionLabel style) ───── */
-	.nl-label-wrap {
+	/* ───── Carousel ───── */
+	.nl-carousel-wrap {
+		position: relative;
 		width: 100%;
-		max-width: 640px;
+		flex: 1;
+		min-height: 0;
 		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		gap: 16px;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
 	}
 
+	.nl-carousel {
+		position: relative;
+		flex: 1;
+		height: 100%;
+		min-height: 0;
+		max-width: 520px;
+		perspective: 1400px;
+	}
+
+	.nl-carousel-card {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 100%;
+		max-width: 440px;
+		transform-origin: center center;
+		transform: translateX(calc(-50% + var(--offset) * 70px))
+			rotate(calc(var(--offset) * -5deg))
+			scale(calc(1 - var(--abs) * 0.07));
+		opacity: calc(1 - var(--abs) * 0.55);
+		transition:
+			transform 480ms cubic-bezier(0.22, 0.61, 0.36, 1),
+			opacity 380ms ease,
+			filter 380ms ease;
+		cursor: pointer;
+		display: flex;
+		flex-direction: column;
+		filter: blur(0);
+		overflow: hidden;
+	}
+	.nl-carousel-card--focus {
+		cursor: default;
+		filter: blur(0);
+		opacity: 1;
+	}
+	.nl-carousel-card:not(.nl-carousel-card--focus) {
+		filter: blur(0.6px);
+	}
+	.nl-carousel-card--hidden {
+		opacity: 0;
+		pointer-events: none;
+	}
+	.nl-carousel-card:focus-visible {
+		outline: 2px solid #00b3b0;
+		outline-offset: 4px;
+		border-radius: 4px;
+	}
+
+	.nl-carousel-card > .nutrition-label {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		box-shadow: 0 18px 38px -22px rgba(15, 23, 42, 0.45);
+	}
+	.nl-carousel-card--focus > .nutrition-label {
+		box-shadow: 0 24px 46px -20px rgba(15, 23, 42, 0.55);
+	}
+
+	/* hide scrollbar on label */
+	.nl-carousel-card > .nutrition-label::-webkit-scrollbar {
+		width: 6px;
+	}
+	.nl-carousel-card > .nutrition-label::-webkit-scrollbar-thumb {
+		background: rgba(0, 0, 0, 0.18);
+		border-radius: 3px;
+	}
+
+	.nl-nav {
+		flex-shrink: 0;
+		width: 38px;
+		height: 38px;
+		border-radius: 50%;
+		border: 1px solid #d1d5db;
+		background: #ffffff;
+		color: #111827;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 13px;
+		transition: all 150ms ease;
+		z-index: 200;
+		box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.25);
+	}
+	.nl-nav:hover:not(:disabled) {
+		background: #111827;
+		color: #ffffff;
+		border-color: #111827;
+		transform: scale(1.06);
+	}
+	.nl-nav:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
+	.nl-carousel-footer {
+		flex-shrink: 0;
+		margin-top: 14px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+	}
+	.nl-carousel-counter {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 15px;
+		color: #111827;
+	}
+	.nl-carousel-counter span {
+		color: #9ca3af;
+		font-weight: 400;
+		margin-left: 2px;
+	}
+
+	/* ───── Nutrition label card (compact, matches SmartNutritionLabel style) ───── */
 	.nutrition-label {
 		background: #ffffff;
 		border: 3px solid #000000;
 		color: #111111;
 		font-family: 'Arial Black', Arial, sans-serif;
-		padding: 14px 16px 16px;
+		padding: 12px 14px 14px;
 	}
 
 	.nutrition-headline {
-		font-size: 58px;
+		font-size: 40px;
 		line-height: 0.9;
 		font-weight: 900;
 		letter-spacing: -0.03em;
 	}
 	.nutrition-subline {
-		margin-top: 6px;
-		font-size: 13px;
+		margin-top: 5px;
+		font-size: 11px;
 		font-family: Arial, sans-serif;
 		font-weight: 700;
 		text-transform: uppercase;
@@ -631,34 +843,34 @@
 	}
 
 	.nutrition-model-block {
-		margin-top: 10px;
+		margin-top: 8px;
 	}
 	.nutrition-model-kicker {
 		font-family: Arial, sans-serif;
-		font-size: 12px;
+		font-size: 10px;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.1em;
 		color: #4b5563;
 		font-weight: 700;
 	}
 	.nutrition-model-name {
-		margin-top: 3px;
-		font-size: 34px;
+		margin-top: 2px;
+		font-size: 24px;
 		font-weight: 900;
 		line-height: 1.02;
 		letter-spacing: -0.02em;
 	}
 	.smart-nl-provider {
 		font-family: Arial, sans-serif;
-		font-size: 13px;
+		font-size: 11px;
 		color: #4b5563;
-		margin-top: 2px;
+		margin-top: 1px;
 	}
 
 	.nutrition-thick-rule {
-		height: 10px;
+		height: 7px;
 		background: #000000;
-		margin: 10px 0;
+		margin: 8px 0;
 	}
 
 	.nutrition-score-row {
@@ -669,12 +881,12 @@
 	}
 	.nutrition-score-label {
 		font-family: Arial, sans-serif;
-		font-size: 38px;
+		font-size: 26px;
 		line-height: 0.95;
 		font-weight: 900;
 	}
 	.nutrition-score-value {
-		font-size: 52px;
+		font-size: 36px;
 		line-height: 0.9;
 		font-weight: 900;
 		letter-spacing: -0.02em;
@@ -682,10 +894,10 @@
 
 	.smart-nl-overall-track {
 		position: relative;
-		height: 6px;
+		height: 5px;
 		border-radius: 999px;
 		background: #e5e7eb;
-		margin: 10px 0 4px;
+		margin: 8px 0 4px;
 	}
 	.smart-nl-overall-zero {
 		position: absolute;
@@ -698,8 +910,8 @@
 	.smart-nl-overall-marker {
 		position: absolute;
 		top: 50%;
-		width: 14px;
-		height: 14px;
+		width: 12px;
+		height: 12px;
 		border-radius: 50%;
 		transform: translate(-50%, -50%);
 		border: 2px solid #ffffff;
@@ -708,17 +920,19 @@
 
 	.smart-nl-section-title {
 		font-family: Arial, sans-serif;
-		font-size: 14px;
+		font-size: 12px;
 		font-weight: 800;
 		color: #111827;
-		margin: 4px 0 10px;
+		margin: 4px 0 8px;
 		display: flex;
 		align-items: baseline;
 		gap: 8px;
 		flex-wrap: wrap;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
 	}
 	.smart-nl-section-sub {
-		font-size: 11px;
+		font-size: 10px;
 		font-weight: 500;
 		color: #6b7280;
 		text-transform: none;
@@ -728,12 +942,12 @@
 	.nl-areas {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 8px;
 	}
 	.nl-area-card {
-		padding: 10px 12px 12px;
+		padding: 8px 10px 10px;
 		border: 1px solid #e5e7eb;
-		border-radius: 10px;
+		border-radius: 8px;
 		background: #ffffff;
 	}
 	.nl-area-card--focus {
@@ -751,7 +965,7 @@
 		align-items: center;
 		gap: 8px;
 		font-family: Arial, sans-serif;
-		font-size: 13px;
+		font-size: 12px;
 	}
 	.smart-nl-area-name {
 		flex: 1;
@@ -763,14 +977,14 @@
 	}
 	.smart-nl-area-score {
 		font-weight: 900;
-		font-size: 14px;
+		font-size: 13px;
 		letter-spacing: -0.01em;
 	}
 
 	.smart-nl-area-track {
 		position: relative;
-		margin: 8px 0 10px;
-		height: 5px;
+		margin: 6px 0 8px;
+		height: 4px;
 		background: #f3f4f6;
 		border-radius: 999px;
 	}
@@ -785,8 +999,8 @@
 	.smart-nl-area-marker {
 		position: absolute;
 		top: 50%;
-		width: 10px;
-		height: 10px;
+		width: 8px;
+		height: 8px;
 		border-radius: 50%;
 		transform: translate(-50%, -50%);
 		border: 2px solid #ffffff;
@@ -798,13 +1012,13 @@
 		align-items: center;
 		gap: 4px;
 		font-family: Arial, sans-serif;
-		font-size: 10px;
+		font-size: 9px;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 		font-weight: 700;
 		color: #00807e;
 		background: rgba(0, 179, 176, 0.12);
-		padding: 2px 7px;
+		padding: 2px 6px;
 		border-radius: 999px;
 	}
 
@@ -818,8 +1032,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
-		padding: 6px 0;
+		gap: 10px;
+		padding: 4px 0;
 		border-bottom: 1px dashed #f1f5f9;
 		font-family: Arial, sans-serif;
 	}
@@ -829,23 +1043,23 @@
 	.nl-sub-row--focus {
 		background: rgba(0, 179, 176, 0.05);
 		border-radius: 6px;
-		padding: 6px 8px;
+		padding: 4px 8px;
 		margin: 0 -8px;
 	}
 	.nl-sub-name {
-		font-size: 12.5px;
+		font-size: 11.5px;
 		color: #374151;
 		line-height: 1.35;
 		font-weight: 600;
 	}
 	.nl-sub-meta {
-		font-size: 11px;
+		font-size: 10px;
 		color: #9ca3af;
 		font-weight: 500;
 		margin-left: 4px;
 	}
 	.nl-sub-score {
-		font-size: 12.5px;
+		font-size: 11.5px;
 		font-weight: 800;
 		flex-shrink: 0;
 		letter-spacing: -0.01em;
@@ -857,21 +1071,20 @@
 
 	.nutrition-footnote {
 		font-family: Arial, sans-serif;
-		font-size: 11px;
+		font-size: 10px;
 		line-height: 1.4;
 		color: #374151;
 	}
 
 	.nl-pdf-btn {
-		align-self: center;
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		padding: 9px 18px;
+		padding: 8px 16px;
 		border-radius: 999px;
 		background: #111827;
 		color: #ffffff;
-		font-size: 13px;
+		font-size: 12px;
 		font-weight: 700;
 		border: 1.5px solid #111827;
 		cursor: pointer;
