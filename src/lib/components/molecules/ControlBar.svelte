@@ -12,6 +12,7 @@
 
 	const TABS = [
 		{ id: 'home', label: 'Home', icon: 'fa-house', locked: false },
+		{ id: 'nutrition', label: 'Nutritional Label', icon: 'fa-clipboard-list', locked: true },
 		{ id: 'explore', label: 'Explore', icon: 'fa-chart-pie', locked: true },
 		{ id: 'metrics', label: 'Metrics', icon: 'fa-list-check', locked: true },
 		{ id: 'about', label: 'About', icon: 'fa-seedling', locked: false }
@@ -24,14 +25,6 @@
 	<div class="h-full px-6 flex items-center gap-4">
 		<!-- Main nav (left side, margin-right auto pushes right side to end) -->
 		<nav class="flex items-center gap-0.5 mr-auto">
-			<a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" aria-label="MIT">
-				<img
-					src="/mit.svg"
-					alt="MIT"
-					class="h-5 w-auto mr-2 flex-shrink-0 pointer-events-none select-none"
-					aria-hidden="true"
-				/>
-			</a>
 			{#each TABS as tab (tab.id)}
 				{@const locked = tab.locked && !isAuthenticated}
 				<button
@@ -55,7 +48,7 @@
 		</nav>
 
 		<!-- Right side -->
-		<div class="flex items-center gap-2 ml-auto">
+		<div class="flex items-center gap-3 ml-auto">
 			{#if activeTab === 'explore' && !isSmartMode}
 				<button
 					disabled={smartExploreLoading}
@@ -75,6 +68,20 @@
 					{/if}
 				</button>
 			{/if}
+			<a
+				href="https://www.mit.edu/"
+				target="_blank"
+				rel="noopener noreferrer"
+				aria-label="MIT"
+				class="flex-shrink-0"
+			>
+				<img
+					src="/mit.svg"
+					alt="MIT"
+					class="h-5 w-auto pointer-events-none select-none"
+					aria-hidden="true"
+				/>
+			</a>
 		</div>
 	</div>
 </header>

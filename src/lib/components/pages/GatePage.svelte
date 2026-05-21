@@ -5,7 +5,7 @@
 	import ControlBar from '../molecules/ControlBar.svelte';
 
 	interface Props {
-		onEnter: () => void;
+		onEnter: (smartText?: string) => void;
 		onTabChange?: (tab: string) => void;
 		isAuthenticated?: boolean;
 		showPasswordOnMount?: boolean;
@@ -38,6 +38,14 @@
 	let pwVisible = $state(showPasswordOnMount);
 	let pwValue = $state('');
 	let pwError = $state(false);
+	let pendingSmartText = $state('');
+
+	function tryGenerateLabel() {
+		const text = promptText.trim();
+		if (!text) return;
+		pendingSmartText = text;
+		openPwModal();
+	}
 
 	// React to external requests to open the password modal (e.g. user clicks
 	// a locked tab in the header while already on the gate page). The parent
@@ -54,78 +62,36 @@
 	});
 
 	const ROTATOR_PHRASES = [
-		'as a therapist impact mental health',
-		'for emotional support shape loneliness',
-		'as a daily companion affect anxiety',
-		'in friendships change how teens connect',
-		'in dating apps reshape relationships',
-		'in family conversations affect trust',
-		"in the classroom impact students' learning",
-		'in hiring affect equal opportunity',
-		'in journalism shape what we believe'
+		"I'm a teacher concerned about how AI impacts cognitive skills in my students.",
+		"I'm a psychologist concerned about AI's impact on people forming real-world relationships.",
+		"I'm a parent worried about how AI chatbots affect my teenager's emotional wellbeing.",
+		"I'm a clinician worried about patients using AI for mental health support.",
+		"I'm a journalist studying how AI shapes what people believe.",
+		"I'm a designer wondering how my product's AI shapes user autonomy.",
+		"I'm a policy researcher tracking AI's effect on equal opportunity in hiring."
 	];
 
-	const TYPE_MS = 38;
-	const ERASE_MS = 18;
-	const HOLD_MS = 1800;
+	const ROTATE_MS = 2200;
 
-	let rotatorText = $state('');
+	let rotatorIdx = $state(0);
+	let promptText = $state('');
+	let promptFocused = $state(false);
 
 	$effect(() => {
-		let cancelled = false;
-		let idx = 0;
-
-		function typeIn(text: string, done: () => void) {
-			let i = 0;
-			(function step() {
-				if (cancelled) return;
-				if (i <= text.length) {
-					rotatorText = text.slice(0, i);
-					i++;
-					setTimeout(step, TYPE_MS);
-				} else {
-					setTimeout(done, HOLD_MS);
-				}
-			})();
-		}
-
-		function eraseOut(done: () => void) {
-			if (cancelled) return;
-			const snapshot = rotatorText;
-			let i = snapshot.length;
-			(function step() {
-				if (cancelled) return;
-				if (i >= 0) {
-					rotatorText = snapshot.slice(0, i);
-					i--;
-					setTimeout(step, ERASE_MS);
-				} else {
-					done();
-				}
-			})();
-		}
-
-		function loop() {
-			if (cancelled) return;
-			typeIn(ROTATOR_PHRASES[idx], () => {
-				eraseOut(() => {
-					idx = (idx + 1) % ROTATOR_PHRASES.length;
-					loop();
-				});
-			});
-		}
-
-		loop();
-		return () => {
-			cancelled = true;
-		};
+		if (promptFocused || promptText.length > 0) return; // pause rotation while user types
+		const id = setInterval(() => {
+			rotatorIdx = (rotatorIdx + 1) % ROTATOR_PHRASES.length;
+		}, ROTATE_MS);
+		return () => clearInterval(id);
 	});
 
 	function tryUnlock() {
 		if (pwValue === 'flourishing') {
 			if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('aib-auth', '1');
 			pwVisible = false;
-			onEnter();
+			const text = pendingSmartText;
+			pendingSmartText = '';
+			onEnter(text || undefined);
 		} else {
 			pwError = true;
 			pwValue = '';
@@ -279,37 +245,64 @@
 
 	<!-- Hero -->
 	<section
-		class="relative m-0 flex w-full max-w-full flex-col items-center px-7 pt-7 pb-4 text-center"
+		class="relative m-0 flex w-full max-w-full flex-col items-center justify-start px-7 pb-6 text-center"
+		style="min-height: calc(100vh - 260px); padding-top: calc(50vh - 260px);"
 	>
 		<div class="relative z-[2] mx-auto w-full max-w-[820px] text-center">
-			<h1 class="hero-title">
-				Open Benchmark of<br />AI Impact on Humans
-			</h1>
+			<h1 class="hero-title">Open Benchmark of AI Impact on Humans</h1>
 
 			<p
-				class="mx-auto mb-2 min-h-[1.6em] max-w-[820px] text-[clamp(0.925rem,1.5vw,1.125rem)] leading-[1.55] font-medium text-[#374151]"
+				class="mx-auto mb-6 max-w-none text-center text-[15px] leading-[1.47] whitespace-nowrap text-[#4b5563]"
 			>
-				How does using AI
-				<span class="inline-block font-semibold whitespace-nowrap text-[#111827]">
-					<span aria-live="polite">{rotatorText}</span><span class="caret"></span>
-				</span>?
+				Measuring AI's physical, psychological and societal impact on human wellbeing.
 			</p>
 
-			<p
-				class="max-w-[780px mx-auto mb-10 text-center text-[15px] leading-[1.47] text-balance text-[#4b5563]"
-			>
-				The first open benchmark measuring AI's impact on human well-being across physical,
-				psychological, and societal dimensions.
-			</p>
+			<!-- Prompt box (ChatGPT-style) -->
+			<div class="prompt-box">
+				<div class="prompt-text-wrap">
+					<textarea
+						class="prompt-textarea"
+						bind:value={promptText}
+						onfocus={() => (promptFocused = true)}
+						onblur={() => (promptFocused = false)}
+						onkeydown={(e) => {
+							if (e.key === 'Enter' && !e.shiftKey) {
+								e.preventDefault();
+								tryGenerateLabel();
+							}
+						}}
+						rows="2"
+						aria-label="Describe your focus area"
+					></textarea>
+					{#if promptText.length === 0 && !promptFocused}
+						<div class="prompt-placeholder" aria-hidden="true">
+							{#key rotatorIdx}
+								<span class="prompt-rotator-line">{ROTATOR_PHRASES[rotatorIdx]}</span>
+							{/key}
+						</div>
+					{/if}
+				</div>
+				<div class="prompt-actions">
+					<button
+						type="button"
+						class="prompt-submit"
+						onclick={tryGenerateLabel}
+						disabled={promptText.trim().length === 0}
+					>
+						<i class="fa-solid fa-wand-magic-sparkles"></i>
+						Generate Nutritional Label
+					</button>
+				</div>
+			</div>
 
-			<div class="mb-3 flex flex-wrap items-center justify-center gap-3">
-				<button class="btn-primary" onclick={() => openTab('request')}>
+			<div class="mt-5 mb-3 flex flex-wrap items-center justify-center gap-2">
+				<button class="btn-chip btn-chip-primary" onclick={() => openTab('request')}>
 					<i class="fa-solid fa-key"></i> Request Access
 				</button>
-				<button class="btn-white" onclick={openPwModal}>
+				<button class="btn-chip" onclick={openPwModal}>
 					<i class="fa-solid fa-chart-pie"></i> Explore
 				</button>
-				<button class="btn-white" onclick={() => onTabChange('about')}>
+				<button class="btn-chip" onclick={() => onTabChange?.('about')}>
 					<i class="fa-solid fa-file-lines"></i> About
 				</button>
 			</div>
@@ -799,34 +792,145 @@
 	.hero-title {
 		font-family:
 			'Source Serif Pro', 'Cormorant Garamond', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
-		font-size: clamp(2.6rem, 4.6vw, 3.6rem);
+		font-size: clamp(1.6rem, 2.6vw, 2.1rem);
 		font-weight: 550;
-		line-height: 1.04;
+		line-height: 1.15;
 		color: #111827;
-		margin: 28px auto;
-		letter-spacing: -0.015em;
+		margin: 12px auto 6px;
+		letter-spacing: -0.012em;
 		text-align: center;
+		white-space: nowrap;
 	}
 
-	/* Blinking caret */
-	.caret {
-		display: inline-block;
-		width: 2px;
-		height: 1.05em;
-		margin-left: 2px;
-		vertical-align: text-bottom;
-		background: #111827;
-		animation: caretBlink 1s steps(2) infinite;
+	/* Prompt box (ChatGPT-style) */
+	.prompt-box {
+		position: relative;
+		margin: 6px auto 0;
+		width: 100%;
+		max-width: 720px;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
+		border-radius: 18px;
+		padding: 16px 18px 12px;
+		box-shadow:
+			0 1px 2px rgba(15, 23, 42, 0.04),
+			0 8px 24px rgba(15, 23, 42, 0.06);
+		transition: border-color 0.15s, box-shadow 0.15s;
+		text-align: left;
 	}
-	@keyframes caretBlink {
-		0%,
-		49% {
-			opacity: 1;
-		}
-		50%,
-		100% {
+	.prompt-box:focus-within {
+		border-color: #00b3b0;
+		box-shadow:
+			0 1px 2px rgba(15, 23, 42, 0.04),
+			0 0 0 3px rgba(0, 179, 176, 0.12),
+			0 10px 28px rgba(15, 23, 42, 0.08);
+	}
+	.prompt-text-wrap {
+		position: relative;
+	}
+	.prompt-textarea {
+		display: block;
+		width: 100%;
+		min-height: 56px;
+		max-height: 200px;
+		border: none;
+		outline: none;
+		resize: none;
+		background: transparent;
+		font-family: inherit;
+		font-size: 16px;
+		line-height: 1.5;
+		color: #111827;
+		padding: 2px 0;
+	}
+	.prompt-placeholder {
+		position: absolute;
+		top: 2px;
+		left: 0;
+		right: 0;
+		pointer-events: none;
+		font-size: 16px;
+		line-height: 1.5;
+		color: #9ca3af;
+		overflow: hidden;
+		min-height: 1.5em;
+	}
+	.prompt-rotator-line {
+		display: inline-block;
+		animation: rotatorIn 420ms ease-out;
+	}
+	@keyframes rotatorIn {
+		from {
 			opacity: 0;
+			transform: translateY(10px);
 		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	.prompt-actions {
+		display: flex;
+		justify-content: flex-end;
+		align-items: center;
+		margin-top: 8px;
+	}
+	.prompt-submit {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 16px;
+		border: none;
+		border-radius: 10px;
+		font-family: inherit;
+		font-size: 13.5px;
+		font-weight: 600;
+		color: #ffffff;
+		background: linear-gradient(135deg, #00b3b0, #038d8f);
+		cursor: pointer;
+		box-shadow: 0 2px 8px rgba(3, 141, 143, 0.25);
+		transition: filter 0.15s, transform 0.1s, box-shadow 0.15s, opacity 0.15s;
+	}
+	.prompt-submit:hover:not(:disabled) {
+		filter: brightness(1.06);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 14px rgba(3, 141, 143, 0.35);
+	}
+	.prompt-submit:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	/* Small subtle chip-style CTAs */
+	.btn-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 14px;
+		background: #ffffff;
+		color: #4b5563;
+		border: 1px solid #e5e7eb;
+		border-radius: 999px;
+		font-size: 13px;
+		font-weight: 500;
+		font-family: inherit;
+		cursor: pointer;
+		transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.1s;
+	}
+	.btn-chip:hover {
+		color: #00b3b0;
+		border-color: #cbd5e1;
+		transform: translateY(-1px);
+	}
+	.btn-chip-primary {
+		color: #038d8f;
+		border-color: #b9ebea;
+		background: #f0fbfb;
+	}
+	.btn-chip-primary:hover {
+		color: #038d8f;
+		border-color: #00b3b0;
+		background: #e0f7f7;
 	}
 
 	/* Sunburst visual bubble */
