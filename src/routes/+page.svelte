@@ -45,6 +45,7 @@
 	let activeTab = $state('home');
 	let smartExploreOpen = $state(false);
 	let smartExploreLoading = $state(false);
+	let nutritionCustomizeOpen = $state(false);
 	let smartExploreInitialText = $state('');
 	let smartNutritionOpen = $state(false);
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
@@ -504,6 +505,9 @@
 				smartExploreInitialText = '';
 				smartExploreOpen = true;
 			}}
+			onCustomizeLabel={() => {
+				nutritionCustomizeOpen = true;
+			}}
 		/>
 
 		<!-- Beta banner (below navbar) -->
@@ -629,10 +633,8 @@
 					loading={smartExploreLoading}
 					onTabChange={handleTabChange}
 					onGenerate={(text) => handleSmartExploreSubmit(text)}
-					onEditFocus={() => {
-						smartExploreInitialText = smartNutritionState.opts?.userText ?? '';
-						smartExploreOpen = true;
-					}}
+					onModelSelect={handleLeaderboardModelSelect}
+					bind:customizeOpen={nutritionCustomizeOpen}
 				/>
 			</div>
 		{/if}
