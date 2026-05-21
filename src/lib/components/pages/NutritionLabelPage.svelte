@@ -272,14 +272,6 @@
 		if (s >= -0.7) return '#ea580c';
 		return '#dc2626';
 	}
-	function scoreBg(s: number): string {
-		if (s >= 0.5) return '#dcfce7';
-		if (s >= 0.15) return '#ecfccb';
-		if (s >= -0.15) return '#f3f4f6';
-		if (s >= -0.4) return '#fef3c7';
-		if (s >= -0.7) return '#ffedd5';
-		return '#fee2e2';
-	}
 
 	const isLoading = $derived(loading);
 </script>
@@ -306,89 +298,116 @@
 			</div>
 		{:else}
 			{@const ld = labelData()!}
+			{@const overallPct = Math.max(0, Math.min(100, ((ld.overall + 1) / 2) * 100))}
 			<div class="nl-label-wrap">
-				<div bind:this={labelEl} class="nl-label-card">
-					<header class="nl-label-header">
-						<div class="nl-label-eyebrow">AI Nutrition Label</div>
-						<h1 class="nl-label-title">{currentModelName}</h1>
-						<div class="nl-label-meta">
-							<span>{currentModelProvider}</span>
-							<span class="nl-dot">•</span>
-							<span>{ageLabel}</span>
-							<span class="nl-dot">•</span>
-							<span>{ld.totalIndicators} indicators evaluated</span>
+				<div bind:this={labelEl} class="nutrition-label">
+					<div class="nutrition-headline">AI Nutrition Label</div>
+					<div class="nutrition-subline">
+						{ageLabel} · {ld.totalIndicators} indicators evaluated
+					</div>
+
+					<div class="nutrition-model-block">
+						<div class="nutrition-model-kicker">Selected model</div>
+						<div class="nutrition-model-name">{currentModelName}</div>
+						<div class="smart-nl-provider">{currentModelProvider}</div>
+					</div>
+
+					<div class="nutrition-thick-rule"></div>
+
+					<div class="nutrition-score-row">
+						<div class="nutrition-score-label">Overall Impact</div>
+						<div
+							class="nutrition-score-value"
+							style="color:{scoreColor(ld.overall)}"
+						>
+							{fmtScore(ld.overall)}
 						</div>
+					</div>
+					<div class="smart-nl-overall-track" aria-hidden="true">
+						<div class="smart-nl-overall-zero"></div>
+						<div
+							class="smart-nl-overall-marker"
+							style="left:{overallPct}%;background:{scoreColor(ld.overall)}"
+						></div>
+					</div>
 
-						<div class="nl-overall-row">
-							<div class="nl-overall-label">Overall impact score</div>
-							<div
-								class="nl-overall-score"
-								style="color:{scoreColor(ld.overall)}"
-							>
-								{fmtScore(ld.overall)}
-							</div>
-						</div>
-					</header>
+					<div class="nutrition-thick-rule"></div>
 
-					<div class="nl-thick-rule"></div>
+					<div class="smart-nl-section-title">
+						Performance by area
+						<span class="smart-nl-section-sub"
+							>Averaged across subareas and indicators</span
+						>
+					</div>
 
-					{#each ld.areas as area (area.id)}
-						{@const focused = isFocus(area.name)}
-						<section class="nl-area" class:nl-area--focus={focused}>
-							<div class="nl-area-head">
-								<div class="nl-area-name">
-									{area.name}
-									{#if focused}
-										<span class="nl-focus-tag" title="Relevant to your focus area">
-											<i class="fa-solid fa-bullseye"></i> focus
-										</span>
-									{/if}
+					<div class="nl-areas">
+						{#each ld.areas as area (area.id)}
+							{@const focused = isFocus(area.name)}
+							{@const aPct = Math.max(0, Math.min(100, ((area.score + 1) / 2) * 100))}
+							<div class="nl-area-card" class:nl-area-card--focus={focused}>
+								<div class="smart-nl-area-top">
+									<span class="smart-nl-area-name">
+										{area.name}
+										{#if focused}
+											<span class="nl-focus-tag" title="Relevant to your focus area">
+												<i class="fa-solid fa-bullseye"></i> focus
+											</span>
+										{/if}
+									</span>
+									<span
+										class="smart-nl-area-score"
+										style="color:{scoreColor(area.score)}"
+										>{fmtScore(area.score)}</span
+									>
 								</div>
-								<div
-									class="nl-area-pill"
-									style="background:{scoreBg(area.score)};color:{scoreColor(area.score)}"
-								>
-									{fmtScore(area.score)}
+								<div class="smart-nl-area-track">
+									<div class="smart-nl-area-zero"></div>
+									<div
+										class="smart-nl-area-marker"
+										style="left:{aPct}%;background:{scoreColor(area.score)}"
+									></div>
 								</div>
-							</div>
 
-							<ul class="nl-sub-list">
-								{#each area.subareas as sub (sub.id)}
-									{@const subFocused = isFocus(sub.name)}
-									<li class="nl-sub-row" class:nl-sub-row--focus={subFocused}>
-										<div class="nl-sub-name">
-											{sub.name}
-											{#if sub.evaluated < sub.total}
-												<span class="nl-sub-meta"
-													>({sub.evaluated}/{sub.total} evaluated)</span
+								<ul class="nl-sub-list">
+									{#each area.subareas as sub (sub.id)}
+										{@const subFocused = isFocus(sub.name)}
+										<li class="nl-sub-row" class:nl-sub-row--focus={subFocused}>
+											<span class="nl-sub-name">
+												{sub.name}
+												{#if sub.evaluated < sub.total}
+													<span class="nl-sub-meta"
+														>({sub.evaluated}/{sub.total})</span
+													>
+												{/if}
+											</span>
+											{#if sub.evaluated > 0}
+												<span
+													class="nl-sub-score"
+													style="color:{scoreColor(sub.score)}"
+													>{fmtScore(sub.score)}</span
+												>
+											{:else}
+												<span class="nl-sub-score nl-sub-score--empty"
+													>—</span
 												>
 											{/if}
-										</div>
-										{#if sub.evaluated > 0}
-											<div
-												class="nl-sub-pill"
-												style="background:{scoreBg(sub.score)};color:{scoreColor(sub.score)}"
-											>
-												{fmtScore(sub.score)}
-											</div>
-										{:else}
-											<div class="nl-sub-pill nl-sub-pill--empty">no data</div>
-										{/if}
-									</li>
-								{/each}
-							</ul>
-						</section>
-					{/each}
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/each}
+					</div>
 
-					<div class="nl-thick-rule"></div>
+					<div class="nutrition-thick-rule"></div>
 
-					<footer class="nl-label-footer">
-						Scores range from −1.0 (most harmful) to +1.0 (most beneficial), averaged
-						across evaluated indicators for the selected age group.
+					<div class="nutrition-footnote">
+						Scores derive from scenario evaluations across {ld.totalIndicators} indicators
+						for the {ageLabel.toLowerCase()} age group, on a scale from −1.00 (most harmful)
+						to +1.00 (most beneficial).
 						{#if smartUserText}
-							Highlighted rows are most relevant to your focus area.
+							Highlighted rows are most relevant to your focus: "{smartUserText}".
 						{/if}
-					</footer>
+					</div>
 				</div>
 
 				<button class="nl-pdf-btn" disabled={saving} onclick={savePdf}>
@@ -577,7 +596,7 @@
 		background: #fafaf9;
 	}
 
-	/* ───── Center label card ───── */
+	/* ───── Center label card (matches SmartNutritionLabel style) ───── */
 	.nl-label-wrap {
 		width: 100%;
 		max-width: 640px;
@@ -587,113 +606,198 @@
 		gap: 16px;
 	}
 
-	.nl-label-card {
+	.nutrition-label {
 		background: #ffffff;
-		border: 1px solid #e5e7eb;
-		border-radius: 14px;
-		padding: 26px 28px 24px;
-		box-shadow: 0 8px 24px -16px rgba(15, 23, 42, 0.18);
-		font-family:
-			ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-		color: #111827;
+		border: 3px solid #000000;
+		color: #111111;
+		font-family: 'Arial Black', Arial, sans-serif;
+		padding: 14px 16px 16px;
 	}
 
-	.nl-label-header {
-		padding-bottom: 10px;
+	.nutrition-headline {
+		font-size: 58px;
+		line-height: 0.9;
+		font-weight: 900;
+		letter-spacing: -0.03em;
 	}
-	.nl-label-eyebrow {
-		font-size: 11px;
+	.nutrition-subline {
+		margin-top: 6px;
+		font-size: 13px;
+		font-family: Arial, sans-serif;
+		font-weight: 700;
 		text-transform: uppercase;
-		letter-spacing: 0.14em;
-		color: #6b7280;
-		font-weight: 600;
-		margin-bottom: 4px;
-	}
-	.nl-label-title {
-		font-family:
-			'Source Serif Pro', 'Source Serif 4', Georgia, 'Times New Roman', serif;
-		font-size: clamp(1.4rem, 2.2vw, 1.85rem);
-		font-weight: 600;
-		letter-spacing: -0.01em;
-		color: #0f172a;
-		margin: 0 0 6px;
-	}
-	.nl-label-meta {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 6px;
-		font-size: 12px;
-		color: #6b7280;
-	}
-	.nl-dot {
-		opacity: 0.5;
+		letter-spacing: 0.04em;
+		color: #1f2937;
 	}
 
-	.nl-overall-row {
+	.nutrition-model-block {
+		margin-top: 10px;
+	}
+	.nutrition-model-kicker {
+		font-family: Arial, sans-serif;
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #4b5563;
+		font-weight: 700;
+	}
+	.nutrition-model-name {
+		margin-top: 3px;
+		font-size: 34px;
+		font-weight: 900;
+		line-height: 1.02;
+		letter-spacing: -0.02em;
+	}
+	.smart-nl-provider {
+		font-family: Arial, sans-serif;
+		font-size: 13px;
+		color: #4b5563;
+		margin-top: 2px;
+	}
+
+	.nutrition-thick-rule {
+		height: 10px;
+		background: #000000;
+		margin: 10px 0;
+	}
+
+	.nutrition-score-row {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
-		margin-top: 12px;
+		gap: 10px;
 	}
-	.nl-overall-label {
-		font-size: 12px;
-		font-weight: 600;
-		color: #374151;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
+	.nutrition-score-label {
+		font-family: Arial, sans-serif;
+		font-size: 38px;
+		line-height: 0.95;
+		font-weight: 900;
 	}
-	.nl-overall-score {
-		font-size: clamp(1.6rem, 2.6vw, 2rem);
-		font-weight: 800;
+	.nutrition-score-value {
+		font-size: 52px;
+		line-height: 0.9;
+		font-weight: 900;
 		letter-spacing: -0.02em;
 	}
 
-	.nl-thick-rule {
-		height: 4px;
-		background: #0f172a;
-		margin: 10px 0 14px;
+	.smart-nl-overall-track {
+		position: relative;
+		height: 6px;
+		border-radius: 999px;
+		background: #e5e7eb;
+		margin: 10px 0 4px;
+	}
+	.smart-nl-overall-zero {
+		position: absolute;
+		left: 50%;
+		top: -3px;
+		bottom: -3px;
+		width: 1px;
+		background: #6b7280;
+	}
+	.smart-nl-overall-marker {
+		position: absolute;
+		top: 50%;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+		border: 2px solid #ffffff;
+		box-shadow: 0 0 0 1px #111827;
 	}
 
-	/* Area sections */
-	.nl-area {
-		padding: 6px 0 10px;
-		border-bottom: 1px solid #e5e7eb;
-	}
-	.nl-area:last-of-type {
-		border-bottom: none;
-	}
-	.nl-area--focus {
-		background: linear-gradient(
-			to right,
-			rgba(0, 179, 176, 0.06),
-			rgba(0, 179, 176, 0)
-		);
-		border-radius: 8px;
-		padding: 8px 10px 10px;
-		margin: 0 -10px;
-	}
-
-	.nl-area-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		margin-bottom: 6px;
-	}
-	.nl-area-name {
+	.smart-nl-section-title {
+		font-family: Arial, sans-serif;
 		font-size: 14px;
-		font-weight: 700;
-		letter-spacing: 0.01em;
-		color: #0f172a;
+		font-weight: 800;
+		color: #111827;
+		margin: 4px 0 10px;
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+	.smart-nl-section-sub {
+		font-size: 11px;
+		font-weight: 500;
+		color: #6b7280;
+		text-transform: none;
+		letter-spacing: 0;
+	}
+
+	.nl-areas {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.nl-area-card {
+		padding: 10px 12px 12px;
+		border: 1px solid #e5e7eb;
+		border-radius: 10px;
+		background: #ffffff;
+	}
+	.nl-area-card--focus {
+		border-color: rgba(0, 179, 176, 0.55);
+		background: linear-gradient(
+			135deg,
+			rgba(0, 179, 176, 0.06),
+			rgba(3, 141, 143, 0.04)
+		);
+		box-shadow: 0 1px 4px rgba(0, 179, 176, 0.14);
+	}
+
+	.smart-nl-area-top {
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		font-family: Arial, sans-serif;
+		font-size: 13px;
 	}
+	.smart-nl-area-name {
+		flex: 1;
+		font-weight: 800;
+		color: #111827;
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.smart-nl-area-score {
+		font-weight: 900;
+		font-size: 14px;
+		letter-spacing: -0.01em;
+	}
+
+	.smart-nl-area-track {
+		position: relative;
+		margin: 8px 0 10px;
+		height: 5px;
+		background: #f3f4f6;
+		border-radius: 999px;
+	}
+	.smart-nl-area-zero {
+		position: absolute;
+		left: 50%;
+		top: -2px;
+		bottom: -2px;
+		width: 1px;
+		background: #9ca3af;
+	}
+	.smart-nl-area-marker {
+		position: absolute;
+		top: 50%;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+		border: 2px solid #ffffff;
+		box-shadow: 0 0 0 1px #111827;
+	}
+
 	.nl-focus-tag {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
+		font-family: Arial, sans-serif;
 		font-size: 10px;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
@@ -704,71 +808,58 @@
 		border-radius: 999px;
 	}
 
-	.nl-area-pill {
-		font-size: 13px;
-		font-weight: 700;
-		padding: 4px 12px;
-		border-radius: 999px;
-		min-width: 60px;
-		text-align: center;
-		letter-spacing: -0.01em;
-	}
-
 	.nl-sub-list {
 		list-style: none;
 		margin: 0;
 		padding: 0;
+		border-top: 1px solid #e5e7eb;
 	}
 	.nl-sub-row {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		padding: 5px 0;
-		border-top: 1px dashed #f1f5f9;
+		padding: 6px 0;
+		border-bottom: 1px dashed #f1f5f9;
+		font-family: Arial, sans-serif;
 	}
-	.nl-sub-row:first-child {
-		border-top: none;
+	.nl-sub-row:last-child {
+		border-bottom: none;
 	}
 	.nl-sub-row--focus {
 		background: rgba(0, 179, 176, 0.05);
 		border-radius: 6px;
-		padding: 5px 8px;
+		padding: 6px 8px;
 		margin: 0 -8px;
 	}
 	.nl-sub-name {
 		font-size: 12.5px;
 		color: #374151;
 		line-height: 1.35;
+		font-weight: 600;
 	}
 	.nl-sub-meta {
 		font-size: 11px;
 		color: #9ca3af;
+		font-weight: 500;
 		margin-left: 4px;
 	}
-	.nl-sub-pill {
-		font-size: 11.5px;
-		font-weight: 700;
-		padding: 2px 9px;
-		border-radius: 999px;
-		min-width: 52px;
-		text-align: center;
+	.nl-sub-score {
+		font-size: 12.5px;
+		font-weight: 800;
 		flex-shrink: 0;
+		letter-spacing: -0.01em;
 	}
-	.nl-sub-pill--empty {
-		background: #f3f4f6;
+	.nl-sub-score--empty {
 		color: #9ca3af;
 		font-weight: 500;
 	}
 
-	.nl-label-footer {
-		font-family:
-			-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
-			sans-serif;
+	.nutrition-footnote {
+		font-family: Arial, sans-serif;
 		font-size: 11px;
-		line-height: 1.5;
-		color: #6b7280;
-		margin-top: 2px;
+		line-height: 1.4;
+		color: #374151;
 	}
 
 	.nl-pdf-btn {
@@ -776,21 +867,23 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		padding: 10px 18px;
-		border-radius: 10px;
-		background: #0f172a;
+		padding: 9px 18px;
+		border-radius: 999px;
+		background: #111827;
 		color: #ffffff;
 		font-size: 13px;
-		font-weight: 600;
-		border: none;
+		font-weight: 700;
+		border: 1.5px solid #111827;
 		cursor: pointer;
 		transition: background 150ms;
+		font-family: inherit;
 	}
 	.nl-pdf-btn:hover:not(:disabled) {
-		background: #1e293b;
+		background: #1f2937;
+		border-color: #1f2937;
 	}
 	.nl-pdf-btn:disabled {
-		opacity: 0.6;
+		opacity: 0.7;
 		cursor: wait;
 	}
 
