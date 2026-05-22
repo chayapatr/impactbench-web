@@ -654,7 +654,7 @@
 			{@const fIdx = focusIndex()}
 			{@const focusedCard = cards[fIdx]}
 
-			{#if !customizeOpen}
+			{#if !customizeOpen && !isLoading}
 				<button
 					class="nl-pdf-btn nl-pdf-btn--corner"
 					disabled={saving}
@@ -666,7 +666,7 @@
 				</button>
 			{/if}
 
-			{#if !customizeOpen && focusedCard}
+			{#if !customizeOpen && !isLoading && focusedCard}
 				<label
 					class="nl-select-checkbox nl-select-checkbox--corner"
 					title={isSelected(focusedCard.id) ? 'Remove from comparison' : 'Add to comparison'}
@@ -684,7 +684,7 @@
 			{/if}
 
 			<div class="nl-carousel-wrap">
-				{#if !customizeOpen}
+				{#if !customizeOpen && !isLoading}
 					<button
 						class="nl-nav nl-nav--prev"
 						onclick={prevCard}
@@ -819,7 +819,7 @@
 					{/each}
 				</div>
 
-				{#if !customizeOpen}
+				{#if !customizeOpen && !isLoading}
 					<button
 						class="nl-nav nl-nav--next"
 						onclick={nextCard}
@@ -832,7 +832,7 @@
 			</div>
 
 			<!-- Bottom strip: selected thumbnails + Compare button (only when something selected) -->
-			{#if !customizeOpen && selectedIds.length > 0}
+			{#if !customizeOpen && !isLoading && selectedIds.length > 0}
 				<div class="nl-strip">
 					<div class="nl-strip-thumbs" role="list" aria-label="Selected for comparison">
 						{#each selectedCards() as card (card.id)}
@@ -1073,7 +1073,7 @@
 		flex-direction: column;
 		overflow: hidden;
 		border-left: 1px solid #e5e7eb;
-		background: #fafaf9;
+		background: #f9fafb;
 	}
 
 	/* ───── Carousel ───── */
