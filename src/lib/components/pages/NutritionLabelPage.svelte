@@ -8,6 +8,7 @@
 		getModelProvider
 	} from '$lib/utils';
 	import { STATIC_MITIGATION_TIPS } from '$lib/model-tips';
+	import { STATIC_WEAK_POINTS } from '$lib/model-weak-points';
 	import type { Metric, Subarea as TaxonomySubarea } from '$lib/types';
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
@@ -342,14 +343,20 @@
 			weakPointCache = { ...weakPointCache, [key]: {} };
 			return;
 		}
-		weakPointLoading = true;
 		const fallback = Object.fromEntries(
 			subareas.map((sub) => [sub.id, sub.weakPoint?.fallback ?? sub.name])
 		);
 		const userText = smartUserText.trim();
-		const userContext = userText
-			? `${userText}\n\nFor each subdomain, return one short weak-point phrase based on the weakest scenario. No advice. No quotation marks. Max 9 words.`
-			: 'General benchmark view. For each subdomain, return one short plain-English weak-point phrase based on the weakest scenario. No advice. No quotation marks. Max 9 words.';
+		if (!userText) {
+			const staticMap = STATIC_WEAK_POINTS[`${currentModelId}|${currentAge}`];
+			weakPointCache = {
+				...weakPointCache,
+				[key]: staticMap ? { ...fallback, ...staticMap } : fallback
+			};
+			return;
+		}
+		weakPointLoading = true;
+		const userContext = `${userText}\n\nFor each subdomain, return one short weak-point phrase based on the weakest scenario. No advice. No quotation marks. Max 9 words.`;
 		(async () => {
 			try {
 				const resp = await fetch(CASPER_API + '/tips', {
@@ -647,17 +654,19 @@
 			{@const fIdx = focusIndex()}
 			{@const focusedCard = cards[fIdx]}
 
-			<button
-				class="nl-pdf-btn nl-pdf-btn--corner"
-				disabled={saving}
-				onclick={savePdf}
-				title="Save current label as PDF"
-			>
-				<i class="fa-solid fa-file-pdf"></i>
-				{saving ? 'Saving…' : 'Save PDF'}
-			</button>
+			{#if !customizeOpen}
+				<button
+					class="nl-pdf-btn nl-pdf-btn--corner"
+					disabled={saving}
+					onclick={savePdf}
+					title="Save current label as PDF"
+				>
+					<i class="fa-solid fa-file-pdf"></i>
+					{saving ? 'Saving…' : 'Save PDF'}
+				</button>
+			{/if}
 
-			{#if focusedCard}
+			{#if !customizeOpen && focusedCard}
 				<label
 					class="nl-select-checkbox nl-select-checkbox--corner"
 					title={isSelected(focusedCard.id) ? 'Remove from comparison' : 'Add to comparison'}
@@ -675,14 +684,16 @@
 			{/if}
 
 			<div class="nl-carousel-wrap">
-				<button
-					class="nl-nav nl-nav--prev"
-					onclick={prevCard}
-					aria-label="Previous model"
-					disabled={cards.length < 2}
-				>
-					<i class="fa-solid fa-chevron-left"></i>
-				</button>
+				{#if !customizeOpen}
+					<button
+						class="nl-nav nl-nav--prev"
+						onclick={prevCard}
+						aria-label="Previous model"
+						disabled={cards.length < 2}
+					>
+						<i class="fa-solid fa-chevron-left"></i>
+					</button>
+				{/if}
 
 				<div class="nl-carousel" role="region" aria-label="Model nutrition labels">
 					{#each cards as card, i (card.id)}
@@ -784,6 +795,7 @@
 														class:nl-sub-row--focus={subFocused}
 														title={sub.weakPoint?.scenarioTitles[0] ?? sub.name}
 													>
+														<span class="nl-sub-dot" aria-hidden="true"></span>
 														<span class="nl-sub-name">{weakPoint}</span>
 													</li>
 												{/each}
@@ -807,18 +819,20 @@
 					{/each}
 				</div>
 
-				<button
-					class="nl-nav nl-nav--next"
-					onclick={nextCard}
-					aria-label="Next model"
-					disabled={cards.length < 2}
-				>
-					<i class="fa-solid fa-chevron-right"></i>
-				</button>
+				{#if !customizeOpen}
+					<button
+						class="nl-nav nl-nav--next"
+						onclick={nextCard}
+						aria-label="Next model"
+						disabled={cards.length < 2}
+					>
+						<i class="fa-solid fa-chevron-right"></i>
+					</button>
+				{/if}
 			</div>
 
 			<!-- Bottom strip: selected thumbnails + Compare button (only when something selected) -->
-			{#if selectedIds.length > 0}
+			{#if !customizeOpen && selectedIds.length > 0}
 				<div class="nl-strip">
 					<div class="nl-strip-thumbs" role="list" aria-label="Selected for comparison">
 						{#each selectedCards() as card (card.id)}
@@ -1669,17 +1683,17 @@
 		border: 3px solid #000000;
 		color: #111111;
 		font-family: 'Arial Black', Arial, sans-serif;
-		padding: 10px 12px 12px;
+		padding: 8px 11px 10px;
 	}
 
 	.nutrition-headline {
-		font-size: 36px;
+		font-size: 32px;
 		line-height: 0.9;
 		font-weight: 900;
 		letter-spacing: -0.03em;
 	}
 	.nutrition-subline {
-		margin-top: 4px;
+		margin-top: 3px;
 		font-size: 10px;
 		font-family: Arial, sans-serif;
 		font-weight: 700;
@@ -1689,7 +1703,7 @@
 	}
 
 	.nutrition-model-block {
-		margin-top: 6px;
+		margin-top: 4px;
 	}
 	.nutrition-model-kicker {
 		font-family: Arial, sans-serif;
@@ -1701,7 +1715,7 @@
 	}
 	.nutrition-model-name {
 		margin-top: 2px;
-		font-size: 22px;
+		font-size: 20px;
 		font-weight: 900;
 		line-height: 1.02;
 		letter-spacing: -0.02em;
@@ -1714,9 +1728,9 @@
 	}
 
 	.nutrition-thick-rule {
-		height: 6px;
+		height: 5px;
 		background: #000000;
-		margin: 6px 0;
+		margin: 5px 0;
 	}
 
 	.nutrition-score-row {
@@ -1727,7 +1741,7 @@
 	}
 	.nutrition-score-label {
 		font-family: Arial, sans-serif;
-		font-size: 24px;
+		font-size: 21px;
 		line-height: 0.95;
 		font-weight: 900;
 	}
@@ -1738,13 +1752,13 @@
 		gap: 3px;
 	}
 	.nutrition-grade-value {
-		font-size: 32px;
+		font-size: 28px;
 		line-height: 0.9;
 		font-weight: 900;
 		letter-spacing: -0.02em;
 	}
 	.nutrition-score-numeric {
-		font-size: 13px;
+		font-size: 12px;
 		line-height: 1;
 		font-weight: 500;
 		letter-spacing: 0;
@@ -1756,7 +1770,7 @@
 		height: 5px;
 		border-radius: 999px;
 		background: #e5e7eb;
-		margin: 6px 0 2px;
+		margin: 5px 0 1px;
 	}
 	.smart-nl-overall-zero {
 		position: absolute;
@@ -1782,10 +1796,10 @@
 		font-size: 12px;
 		font-weight: 800;
 		color: #111827;
-		margin: 2px 0 6px;
+		margin: 1px 0 5px;
 		display: flex;
 		align-items: baseline;
-		gap: 8px;
+		gap: 6px;
 		flex-wrap: wrap;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
@@ -1801,10 +1815,10 @@
 	.nl-areas {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 5px;
 	}
 	.nl-area-card {
-		padding: 7px 9px 8px;
+		padding: 6px 8px 7px;
 		border: 1px solid #e5e7eb;
 		border-radius: 8px;
 		background: #ffffff;
@@ -1818,9 +1832,9 @@
 	.smart-nl-area-top {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 6px;
 		font-family: Arial, sans-serif;
-		font-size: 12px;
+		font-size: 11.5px;
 	}
 	.smart-nl-area-name {
 		flex: 1;
@@ -1850,7 +1864,7 @@
 
 	.smart-nl-area-track {
 		position: relative;
-		margin: 5px 0 6px;
+		margin: 4px 0 5px;
 		height: 4px;
 		background: #f3f4f6;
 		border-radius: 999px;
@@ -1899,7 +1913,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 3px 0;
+		padding: 4px 0;
 		border-bottom: 1px dashed #f1f5f9;
 		font-family: Arial, sans-serif;
 	}
@@ -1912,19 +1926,29 @@
 		padding: 3px 8px;
 		margin: 0 -8px;
 	}
+	.nl-sub-dot {
+		width: 9px;
+		height: 9px;
+		flex-shrink: 0;
+		border-radius: 999px;
+		background: linear-gradient(180deg, #f6a63b 0%, #ea7a1a 100%);
+		box-shadow:
+			0 0 0 2px rgba(246, 166, 59, 0.18),
+			0 2px 4px rgba(180, 83, 9, 0.18);
+	}
 	.nl-sub-name {
 		display: block;
-		font-size: 11px;
+		font-size: 10.5px;
 		color: #374151;
-		line-height: 1.25;
-		font-weight: 600;
+		line-height: 1.2;
+		font-weight: 400;
 		text-wrap: balance;
 	}
 
 	.nutrition-footnote {
 		font-family: Arial, sans-serif;
-		font-size: 9.5px;
-		line-height: 1.3;
+		font-size: 9px;
+		line-height: 1.25;
 		color: #374151;
 	}
 
