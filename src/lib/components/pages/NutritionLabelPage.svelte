@@ -1,9 +1,5 @@
 <script lang="ts">
-	import {
-		appState,
-		smartNutritionState,
-		setFilters
-	} from '$lib/store.svelte';
+	import { appState, smartNutritionState, setFilters } from '$lib/store.svelte';
 	import {
 		getScores,
 		computeAreaScore,
@@ -11,6 +7,8 @@
 		getModelName,
 		getModelProvider
 	} from '$lib/utils';
+	import { STATIC_MITIGATION_TIPS } from '$lib/model-tips';
+	import type { Metric, Subarea as TaxonomySubarea } from '$lib/types';
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
@@ -38,13 +36,41 @@
 	const currentModelName = $derived(getModelName(appState, currentModelId));
 	const currentModelProvider = $derived(getModelProvider(appState, currentModelId));
 	const currentAge = $derived(appState.filters.age);
-	const ageLabel = $derived(
-		currentAge === 'child' ? 'Child / Teenager (6–17)' : 'Adult (18+)'
-	);
+	const ageLabel = $derived(currentAge === 'child' ? 'Child / Teenager (6–17)' : 'Adult (18+)');
 
 	// Smart-explore opts (present after Customize Label submission)
 	const smartOpts = $derived(smartNutritionState.opts);
 	const smartUserText = $derived(smartOpts?.userText ?? '');
+
+	type WeakPointContext = {
+		metricName: string;
+		scenarioTitles: string[];
+		criteria: string;
+		fallback: string;
+	};
+
+	type LabelSubarea = {
+		id: string;
+		name: string;
+		score: number;
+		evaluated: number;
+		total: number;
+		weakPoint: WeakPointContext | null;
+	};
+
+	type LabelArea = {
+		id: string;
+		name: string;
+		score: number;
+		subareas: LabelSubarea[];
+	};
+
+	type LabelData = {
+		areas: LabelArea[];
+		overall: number;
+		totalIndicators: number;
+		worstAreas: { name: string; score: number }[];
+	};
 
 	// Names of areas/subareas that match the user's focus, for subtle highlight
 	const focusNames = $derived<Set<string>>(() => {
@@ -65,14 +91,57 @@
 		return false;
 	}
 
+	function shortenCriteria(criteria: string): string {
+		return criteria.split('Examples:')[0].replace(/\s+/g, ' ').trim().slice(0, 220);
+	}
+
+	function buildWeakPointContext(
+		sub: TaxonomySubarea,
+		scores: Record<string, number>,
+		age: 'adult' | 'child'
+	): WeakPointContext | null {
+		const weakestMetric = [...sub.metrics]
+			.filter((metric) => scores[metric.id] !== undefined)
+			.sort((left, right) => (scores[left.id] ?? 1) - (scores[right.id] ?? 1))[0];
+		if (!weakestMetric) return null;
+		const scenarioTitles = (appState.scenarioIndex?.[weakestMetric.id] ?? [])
+			.filter((scenario) => scenario.age === age)
+			.map((scenario) => scenario.title)
+			.slice(0, 2);
+		const criteria = shortenCriteria(appState.metricCriteria[weakestMetric.id] ?? '');
+		return {
+			metricName: weakestMetric.name,
+			scenarioTitles,
+			criteria,
+			fallback: scenarioTitles[0] || weakestMetric.name || sub.name
+		};
+	}
+
+	function normalizeWeakPointText(text: string, fallback: string): string {
+		const cleaned = text
+			.replace(/^\s*(weak point|risk|issue|highlight)\s*:\s*/i, '')
+			.replace(/\s+/g, ' ')
+			.trim();
+		return cleaned || fallback;
+	}
+
+	function weakPointPromptName(sub: LabelSubarea): string {
+		const parts = [`Subdomain: ${sub.name}`];
+		if (sub.weakPoint?.metricName) parts.push(`Weak metric: ${sub.weakPoint.metricName}`);
+		if (sub.weakPoint?.scenarioTitles.length)
+			parts.push(`Weak scenarios: ${sub.weakPoint.scenarioTitles.join('; ')}`);
+		if (sub.weakPoint?.criteria) parts.push(`Criterion: ${sub.weakPoint.criteria}`);
+		return parts.join(' | ');
+	}
+
 	// Build per-area / per-subarea label data for a given model
 	function buildLabelData(modelId: string, age: 'adult' | 'child') {
 		const tax = appState.taxonomy;
 		if (!tax) return null;
 		const scores = getScores(appState, modelId, age);
-		const areas = tax.areas.map((area) => {
+		const areas: LabelArea[] = tax.areas.map((area) => {
 			const areaScore = computeAreaScore(appState, area.id, modelId, age);
-			const subareas = area.subareas.map((sub) => {
+			const subareas: LabelSubarea[] = area.subareas.map((sub) => {
 				const subScore = computeSubareaScore(appState, sub.id, modelId, age);
 				const vals = sub.metrics
 					.map((m) => scores[m.id])
@@ -82,21 +151,25 @@
 					name: sub.name,
 					score: subScore,
 					evaluated: vals.length,
-					total: sub.metrics.length
+					total: sub.metrics.length,
+					weakPoint: buildWeakPointContext(sub, scores, age)
 				};
 			});
 			return { id: area.id, name: area.name, score: areaScore, subareas };
 		});
 		const allVals = Object.values(scores);
-		const overall = allVals.length
-			? allVals.reduce((a, b) => a + b, 0) / allVals.length
-			: 0;
+		const overall = allVals.length ? allVals.reduce((a, b) => a + b, 0) / allVals.length : 0;
 		const worst = [...areas]
 			.filter((a) => a.subareas.some((s) => s.evaluated > 0))
 			.sort((a, b) => a.score - b.score)
 			.slice(0, 3)
 			.map((a) => ({ name: a.name, score: a.score }));
-		return { areas, overall, totalIndicators: allVals.length, worstAreas: worst };
+		return {
+			areas,
+			overall,
+			totalIndicators: allVals.length,
+			worstAreas: worst
+		} satisfies LabelData;
 	}
 
 	// Carousel: all models, sorted by overall impact (descending)
@@ -138,8 +211,12 @@
 		setFilters({ ...appState.filters, model: target.id });
 		onModelSelect?.(target.id);
 	}
-	function nextCard() { gotoCard(focusIndex() + 1); }
-	function prevCard() { gotoCard(focusIndex() - 1); }
+	function nextCard() {
+		gotoCard(focusIndex() + 1);
+	}
+	function prevCard() {
+		gotoCard(focusIndex() - 1);
+	}
 
 	// ───── Compare selection ─────
 	let selectedIds = $state<string[]>([]);
@@ -168,9 +245,7 @@
 	const selectedCards = $derived<Card[]>(() => {
 		const cards = carouselCards();
 		const byId = new Map(cards.map((c) => [c.id, c]));
-		return selectedIds
-			.map((id) => byId.get(id))
-			.filter((c): c is Card => Boolean(c));
+		return selectedIds.map((id) => byId.get(id)).filter((c): c is Card => Boolean(c));
 	});
 
 	// ───── Mitigation tips (right column) ─────
@@ -178,9 +253,12 @@
 	let tipsCache = $state<Record<string, Tip[]>>({});
 	let tipsLoading = $state(false);
 	let tipsError = $state(false);
+	let weakPointCache = $state<Record<string, Record<string, string>>>({});
+	let weakPointLoading = $state(false);
 
 	const tipsKey = $derived(`${currentModelId}::${currentAge}::${smartUserText}`);
 	const tips = $derived<Tip[] | null>(tipsCache[tipsKey] ?? null);
+	const subdomainWeakPoints = $derived<Record<string, string>>(weakPointCache[tipsKey] ?? {});
 
 	$effect(() => {
 		const ld = labelData();
@@ -194,14 +272,18 @@
 		}
 		const userText = smartUserText.trim();
 		if (!userText) {
+			const staticTips = STATIC_MITIGATION_TIPS[`${currentModelId}|${currentAge}`] ?? [];
 			tipsError = false;
 			tipsLoading = false;
 			tipsCache = {
 				...tipsCache,
-				[key]: worst.map((w) => ({
-					area: w.name,
-					tip: makeFallbackTip(w.name, '')
-				}))
+				[key]:
+					staticTips.length > 0
+						? staticTips
+						: worst.map((w) => ({
+								area: w.name,
+								tip: makeFallbackTip(w.name, '')
+							}))
 			};
 			return;
 		}
@@ -244,6 +326,68 @@
 				tipsError = true;
 			} finally {
 				tipsLoading = false;
+			}
+		})();
+	});
+
+	$effect(() => {
+		const ld = labelData();
+		if (!ld) return;
+		const key = tipsKey;
+		if (weakPointCache[key]) return;
+		const subareas = ld.areas.flatMap((area) =>
+			area.subareas.filter((sub) => sub.evaluated > 0 && sub.weakPoint)
+		);
+		if (subareas.length === 0) {
+			weakPointCache = { ...weakPointCache, [key]: {} };
+			return;
+		}
+		weakPointLoading = true;
+		const fallback = Object.fromEntries(
+			subareas.map((sub) => [sub.id, sub.weakPoint?.fallback ?? sub.name])
+		);
+		const userText = smartUserText.trim();
+		const userContext = userText
+			? `${userText}\n\nFor each subdomain, return one short weak-point phrase based on the weakest scenario. No advice. No quotation marks. Max 9 words.`
+			: 'General benchmark view. For each subdomain, return one short plain-English weak-point phrase based on the weakest scenario. No advice. No quotation marks. Max 9 words.';
+		(async () => {
+			try {
+				const resp = await fetch(CASPER_API + '/tips', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						user_context: userContext,
+						model_name: currentModelName,
+						model_provider: currentModelProvider,
+						worst_areas: subareas.map((sub) => ({
+							name: weakPointPromptName(sub),
+							score: sub.score
+						}))
+					})
+				});
+				if (!resp.ok) throw new Error('weak-point api ' + resp.status);
+				const data = await resp.json();
+				const tipsList: string[] = Array.isArray(data?.tips)
+					? data.tips.map((item: unknown) => {
+							if (typeof item === 'string') return item;
+							const out = item as { tip?: string };
+							return out.tip ?? '';
+						})
+					: [];
+				weakPointCache = {
+					...weakPointCache,
+					[key]: Object.fromEntries(
+						subareas.map((sub, index) => [
+							sub.id,
+							normalizeWeakPointText(tipsList[index] ?? '', sub.weakPoint?.fallback ?? sub.name)
+						])
+					)
+				};
+			} catch (err) {
+				console.warn('Weak-point highlights failed, using fallback:', err);
+				weakPointCache = { ...weakPointCache, [key]: fallback };
+			} finally {
+				weakPointLoading = false;
 			}
 		})();
 	});
@@ -306,10 +450,7 @@
 			const pw = pdf.internal.pageSize.getWidth();
 			const ph = pdf.internal.pageSize.getHeight();
 			const margin = 28;
-			const ratio = Math.min(
-				(pw - margin * 2) / canvas.width,
-				(ph - margin * 2) / canvas.height
-			);
+			const ratio = Math.min((pw - margin * 2) / canvas.width, (ph - margin * 2) / canvas.height);
 			const w = canvas.width * ratio;
 			const h = canvas.height * ratio;
 			pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pw - w) / 2, (ph - h) / 2, w, h);
@@ -401,7 +542,9 @@
 						Back to labels
 					</button>
 					<h1 class="nl-compare-title">Compare {sel.length} models</h1>
-					<div class="nl-compare-meta">{ageLabel} · per-area scores · best in each row highlighted</div>
+					<div class="nl-compare-meta">
+						{ageLabel} · per-area scores · best in each row highlighted
+					</div>
 				</header>
 
 				<div class="nl-compare-scroll">
@@ -453,11 +596,13 @@
 												class="nl-compare-cell nl-compare-cell--area"
 												class:nl-compare-cell--best={areaScores[ci] === bestArea && sel.length > 1}
 											>
-													<span class="nl-compare-score nl-compare-score--graded nl-compare-score--graded-sm">
-														<span class="nl-compare-grade" style="color:{scoreColor(areaScores[ci])}">
-															{scoreToLetterGrade(areaScores[ci])}
-														</span>
-														<span class="nl-compare-numeric">{fmtScore(areaScores[ci])}</span>
+												<span
+													class="nl-compare-score nl-compare-score--graded nl-compare-score--graded-sm"
+												>
+													<span class="nl-compare-grade" style="color:{scoreColor(areaScores[ci])}">
+														{scoreToLetterGrade(areaScores[ci])}
+													</span>
+													<span class="nl-compare-numeric">{fmtScore(areaScores[ci])}</span>
 												</span>
 											</td>
 										{/each}
@@ -481,7 +626,10 @@
 													class="nl-compare-cell nl-compare-cell--sub"
 													class:nl-compare-cell--best={subScores[ci] === bestSub && sel.length > 1}
 												>
-													<span class="nl-compare-score nl-compare-score--sm" style="color:{scoreColor(subScores[ci])}">
+													<span
+														class="nl-compare-score nl-compare-score--sm"
+														style="color:{scoreColor(subScores[ci])}"
+													>
 														{fmtScore(subScores[ci])}
 													</span>
 												</td>
@@ -559,10 +707,7 @@
 								}
 							}}
 						>
-							<div
-								class="nutrition-label"
-								bind:this={cardRefs[card.id]}
-							>
+							<div class="nutrition-label" bind:this={cardRefs[card.id]}>
 								<div class="nutrition-headline">AI Nutrition Label</div>
 								<div class="nutrition-subline">
 									{ageLabel} · {ld.totalIndicators} indicators evaluated
@@ -632,22 +777,14 @@
 											<ul class="nl-sub-list">
 												{#each area.subareas as sub (sub.id)}
 													{@const subFocused = isFocus(sub.name)}
-													<li class="nl-sub-row" class:nl-sub-row--focus={subFocused}>
-														<span class="nl-sub-name">
-															{sub.name}
-															{#if sub.evaluated < sub.total}
-																<span class="nl-sub-meta">({sub.evaluated}/{sub.total})</span>
-															{/if}
-														</span>
-														{#if sub.evaluated > 0}
-															<span
-																class="nl-sub-score"
-																style="color:{scoreColor(sub.score)}"
-																>{fmtScore(sub.score)}</span
-															>
-														{:else}
-															<span class="nl-sub-score nl-sub-score--empty">—</span>
-														{/if}
+													{@const weakPoint =
+														subdomainWeakPoints[sub.id] ?? sub.weakPoint?.fallback ?? sub.name}
+													<li
+														class="nl-sub-row"
+														class:nl-sub-row--focus={subFocused}
+														title={sub.weakPoint?.scenarioTitles[0] ?? sub.name}
+													>
+														<span class="nl-sub-name">{weakPoint}</span>
 													</li>
 												{/each}
 											</ul>
@@ -658,9 +795,9 @@
 								<div class="nutrition-thick-rule"></div>
 
 								<div class="nutrition-footnote">
-									Scores derive from scenario evaluations across {ld.totalIndicators} indicators
-									for the {ageLabel.toLowerCase()} age group, on a scale from −1.00 (most
-									harmful) to +1.00 (most beneficial).
+									Scores derive from scenario evaluations across {ld.totalIndicators} indicators for the
+									{ageLabel.toLowerCase()} age group, on a scale from −1.00 (most harmful) to +1.00 (most
+									beneficial).
 									{#if smartUserText}
 										Highlighted rows are most relevant to your focus: "{smartUserText}".
 									{/if}
@@ -726,7 +863,9 @@
 							class="nl-strip-compare"
 							onclick={openCompare}
 							disabled={selectedIds.length < 2}
-							title={selectedIds.length < 2 ? 'Select at least 2 models' : 'Compare selected models'}
+							title={selectedIds.length < 2
+								? 'Select at least 2 models'
+								: 'Compare selected models'}
 						>
 							<i class="fa-solid fa-table-columns"></i>
 							Compare ({selectedIds.length})
@@ -745,7 +884,7 @@
 				{#if smartUserText}
 					Tailored for: <em>"{smartUserText}"</em>
 				{:else}
-					General guidance for the worst-performing areas. Use
+					Built-in model-specific guidance for the worst-performing areas. Use
 					<strong>Customize Label</strong> for personalized tips.
 				{/if}
 			</p>
@@ -781,15 +920,20 @@
 
 	<!-- Customize Label composer (overlays the page when open) -->
 	{#if customizeOpen}
-		<div class="nl-composer" role="dialog" aria-modal="true" aria-label="Customize nutritional label">
+		<div
+			class="nl-composer"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Customize nutritional label"
+		>
 			<button class="nl-composer-close" aria-label="Close" onclick={closeComposer}>
 				<i class="fa-solid fa-xmark"></i>
 			</button>
 			<div class="nl-composer-inner">
 				<h2 class="nl-composer-title">Customize your nutritional label</h2>
 				<p class="nl-composer-sub">
-					Describe your role, focus area, or use-case. We'll re-rank models and
-					filter the label to what matters most to you.
+					Describe your role, focus area, or use-case. We'll re-rank models and filter the label to
+					what matters most to you.
 				</p>
 				<div class="nl-composer-box">
 					<textarea
@@ -817,7 +961,9 @@
 						<i class="fa-solid fa-arrow-up"></i>
 					</button>
 				</div>
-				<div class="nl-composer-hint">Press <kbd>Enter</kbd> to submit · <kbd>Esc</kbd> to close</div>
+				<div class="nl-composer-hint">
+					Press <kbd>Enter</kbd> to submit · <kbd>Esc</kbd> to close
+				</div>
 			</div>
 		</div>
 	{/if}
@@ -945,8 +1091,7 @@
 		width: 100%;
 		max-width: 440px;
 		transform-origin: center bottom;
-		transform: translateX(calc(-50% + var(--offset) * 70px))
-			rotate(calc(var(--offset) * 5deg))
+		transform: translateX(calc(-50% + var(--offset) * 70px)) rotate(calc(var(--offset) * 5deg))
 			scale(calc(1 - var(--abs) * 0.07));
 		opacity: calc(1 - var(--abs) * 0.55);
 		transition:
@@ -1160,7 +1305,9 @@
 		border-radius: 8px;
 		overflow: hidden;
 		font-family: 'Arial Black', Arial, sans-serif;
-		transition: transform 150ms ease, box-shadow 150ms ease;
+		transition:
+			transform 150ms ease,
+			box-shadow 150ms ease;
 	}
 	.nl-thumb:hover {
 		transform: translateY(-1px);
@@ -1301,11 +1448,19 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
-		font-family: 'Inter', system-ui, -apple-system, sans-serif;
+		font-family:
+			'Inter',
+			system-ui,
+			-apple-system,
+			sans-serif;
 	}
 	.nl-compare,
 	.nl-compare * {
-		font-family: 'Inter', system-ui, -apple-system, sans-serif;
+		font-family:
+			'Inter',
+			system-ui,
+			-apple-system,
+			sans-serif;
 	}
 	.nl-compare-head {
 		flex-shrink: 0;
@@ -1514,18 +1669,18 @@
 		border: 3px solid #000000;
 		color: #111111;
 		font-family: 'Arial Black', Arial, sans-serif;
-		padding: 12px 14px 14px;
+		padding: 10px 12px 12px;
 	}
 
 	.nutrition-headline {
-		font-size: 40px;
+		font-size: 36px;
 		line-height: 0.9;
 		font-weight: 900;
 		letter-spacing: -0.03em;
 	}
 	.nutrition-subline {
-		margin-top: 5px;
-		font-size: 11px;
+		margin-top: 4px;
+		font-size: 10px;
 		font-family: Arial, sans-serif;
 		font-weight: 700;
 		text-transform: uppercase;
@@ -1534,7 +1689,7 @@
 	}
 
 	.nutrition-model-block {
-		margin-top: 8px;
+		margin-top: 6px;
 	}
 	.nutrition-model-kicker {
 		font-family: Arial, sans-serif;
@@ -1546,7 +1701,7 @@
 	}
 	.nutrition-model-name {
 		margin-top: 2px;
-		font-size: 24px;
+		font-size: 22px;
 		font-weight: 900;
 		line-height: 1.02;
 		letter-spacing: -0.02em;
@@ -1559,9 +1714,9 @@
 	}
 
 	.nutrition-thick-rule {
-		height: 7px;
+		height: 6px;
 		background: #000000;
-		margin: 8px 0;
+		margin: 6px 0;
 	}
 
 	.nutrition-score-row {
@@ -1572,7 +1727,7 @@
 	}
 	.nutrition-score-label {
 		font-family: Arial, sans-serif;
-		font-size: 26px;
+		font-size: 24px;
 		line-height: 0.95;
 		font-weight: 900;
 	}
@@ -1583,7 +1738,7 @@
 		gap: 3px;
 	}
 	.nutrition-grade-value {
-		font-size: 36px;
+		font-size: 32px;
 		line-height: 0.9;
 		font-weight: 900;
 		letter-spacing: -0.02em;
@@ -1601,7 +1756,7 @@
 		height: 5px;
 		border-radius: 999px;
 		background: #e5e7eb;
-		margin: 8px 0 4px;
+		margin: 6px 0 2px;
 	}
 	.smart-nl-overall-zero {
 		position: absolute;
@@ -1627,7 +1782,7 @@
 		font-size: 12px;
 		font-weight: 800;
 		color: #111827;
-		margin: 4px 0 8px;
+		margin: 2px 0 6px;
 		display: flex;
 		align-items: baseline;
 		gap: 8px;
@@ -1646,21 +1801,17 @@
 	.nl-areas {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 6px;
 	}
 	.nl-area-card {
-		padding: 8px 10px 10px;
+		padding: 7px 9px 8px;
 		border: 1px solid #e5e7eb;
 		border-radius: 8px;
 		background: #ffffff;
 	}
 	.nl-area-card--focus {
 		border-color: rgba(0, 179, 176, 0.55);
-		background: linear-gradient(
-			135deg,
-			rgba(0, 179, 176, 0.06),
-			rgba(3, 141, 143, 0.04)
-		);
+		background: linear-gradient(135deg, rgba(0, 179, 176, 0.06), rgba(3, 141, 143, 0.04));
 		box-shadow: 0 1px 4px rgba(0, 179, 176, 0.14);
 	}
 
@@ -1699,7 +1850,7 @@
 
 	.smart-nl-area-track {
 		position: relative;
-		margin: 6px 0 8px;
+		margin: 5px 0 6px;
 		height: 4px;
 		background: #f3f4f6;
 		border-radius: 999px;
@@ -1747,9 +1898,8 @@
 	.nl-sub-row {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-		padding: 4px 0;
+		gap: 8px;
+		padding: 3px 0;
 		border-bottom: 1px dashed #f1f5f9;
 		font-family: Arial, sans-serif;
 	}
@@ -1759,36 +1909,22 @@
 	.nl-sub-row--focus {
 		background: rgba(0, 179, 176, 0.05);
 		border-radius: 6px;
-		padding: 4px 8px;
+		padding: 3px 8px;
 		margin: 0 -8px;
 	}
 	.nl-sub-name {
-		font-size: 11.5px;
+		display: block;
+		font-size: 11px;
 		color: #374151;
-		line-height: 1.35;
+		line-height: 1.25;
 		font-weight: 600;
-	}
-	.nl-sub-meta {
-		font-size: 10px;
-		color: #9ca3af;
-		font-weight: 500;
-		margin-left: 4px;
-	}
-	.nl-sub-score {
-		font-size: 11.5px;
-		font-weight: 800;
-		flex-shrink: 0;
-		letter-spacing: -0.01em;
-	}
-	.nl-sub-score--empty {
-		color: #9ca3af;
-		font-weight: 500;
+		text-wrap: balance;
 	}
 
 	.nutrition-footnote {
 		font-family: Arial, sans-serif;
-		font-size: 10px;
-		line-height: 1.4;
+		font-size: 9.5px;
+		line-height: 1.3;
 		color: #374151;
 	}
 
@@ -1822,8 +1958,7 @@
 		border-bottom: 1px solid #e5e7eb;
 	}
 	.nl-tips-title {
-		font-family:
-			'Source Serif Pro', 'Source Serif 4', Georgia, serif;
+		font-family: 'Source Serif Pro', 'Source Serif 4', Georgia, serif;
 		font-size: 18px;
 		font-weight: 600;
 		color: #0f172a;
@@ -1911,12 +2046,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: radial-gradient(
-			120% 80% at 50% 0%,
-			#142036 0%,
-			#0b1224 60%,
-			#070b16 100%
-		);
+		background: radial-gradient(120% 80% at 50% 0%, #fffdf7 0%, #f7f3e8 58%, #efe8d6 100%);
 		animation: nlComposerIn 0.28s ease-out;
 	}
 	@keyframes nlComposerIn {
@@ -1935,9 +2065,9 @@
 		right: 22px;
 		width: 36px;
 		height: 36px;
-		border: 1px solid rgba(255, 255, 255, 0.14);
-		background: rgba(255, 255, 255, 0.06);
-		color: #f9fafb;
+		border: 1px solid rgba(17, 24, 39, 0.12);
+		background: rgba(255, 255, 255, 0.78);
+		color: #111827;
 		border-radius: 999px;
 		cursor: pointer;
 		font-size: 14px;
@@ -1947,7 +2077,7 @@
 		transition: background 150ms;
 	}
 	.nl-composer-close:hover {
-		background: rgba(255, 255, 255, 0.12);
+		background: rgba(255, 255, 255, 0.98);
 	}
 	.nl-composer-inner {
 		width: 100%;
@@ -1970,23 +2100,24 @@
 		font-family: 'Source Serif Pro', 'Source Serif 4', Georgia, serif;
 		font-size: clamp(1.5rem, 2.4vw, 2rem);
 		font-weight: 550;
-		color: #f9fafb;
+		color: #111827;
 		margin: 0 0 10px;
 		letter-spacing: -0.01em;
 	}
 	.nl-composer-sub {
 		font-size: 14px;
 		line-height: 1.55;
-		color: #cbd5e1;
+		color: #475569;
 		max-width: 480px;
 		margin: 0 auto 22px;
 	}
 	.nl-composer-box {
 		position: relative;
-		background: rgba(255, 255, 255, 0.05);
-		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(255, 255, 255, 0.92);
+		border: 1px solid rgba(148, 163, 184, 0.34);
 		border-radius: 16px;
 		padding: 14px 60px 14px 18px;
+		box-shadow: 0 18px 40px -24px rgba(15, 23, 42, 0.28);
 		transition:
 			border-color 150ms,
 			box-shadow 150ms;
@@ -2003,14 +2134,14 @@
 		background: transparent;
 		border: none;
 		outline: none;
-		color: #f9fafb;
+		color: #111827;
 		font-size: 15px;
 		line-height: 1.5;
 		font-family: inherit;
 		caret-color: #00d4d1;
 	}
 	.nl-composer-textarea::placeholder {
-		color: #64748b;
+		color: #94a3b8;
 	}
 	.nl-composer-submit {
 		position: absolute;
@@ -2044,20 +2175,18 @@
 	.nl-composer-hint {
 		margin-top: 14px;
 		font-size: 12px;
-		color: #94a3b8;
+		color: #64748b;
 	}
 	.nl-composer-hint kbd {
 		font-family: ui-monospace, SFMono-Regular, monospace;
 		font-size: 11px;
-		padding: 1px 6px;
+		color: #64748b;
 		border-radius: 4px;
-		background: rgba(255, 255, 255, 0.08);
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		color: #e5e7eb;
+		background: rgba(255, 255, 255, 0.9);
+		border: 1px solid rgba(148, 163, 184, 0.28);
 		margin: 0 2px;
 	}
-
-	@media (max-width: 900px) {
+	@media (max-width: 1200px) {
 		.nl-left,
 		.nl-right {
 			display: none;
