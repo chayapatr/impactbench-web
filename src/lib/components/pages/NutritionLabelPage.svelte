@@ -379,6 +379,8 @@
 		{:else if compareMode}
 			{@const sel = selectedCards()}
 			{@const tax = appState.taxonomy}
+			{@const overalls = sel.map((c) => c.data.overall)}
+			{@const bestOverall = overalls.length ? Math.max(...overalls) : 0}
 			<div class="nl-compare">
 				<header class="nl-compare-head">
 					<button class="nl-compare-back" onclick={closeCompare}>
@@ -403,8 +405,6 @@
 							</tr>
 							<tr>
 								<td class="nl-compare-row-label nl-compare-overall-label">Overall Impact</td>
-								{@const overalls = sel.map((c) => c.data.overall)}
-								{@const bestOverall = Math.max(...overalls)}
 								{#each sel as card, ci (card.id)}
 									<td
 										class="nl-compare-cell nl-compare-cell--overall"
