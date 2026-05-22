@@ -140,6 +140,38 @@
 	function nextCard() { gotoCard(focusIndex() + 1); }
 	function prevCard() { gotoCard(focusIndex() - 1); }
 
+	// ───── Compare selection ─────
+	let selectedIds = $state<string[]>([]);
+	let compareMode = $state(false);
+
+	const isSelected = $derived((id: string) => selectedIds.includes(id));
+
+	function toggleSelect(id: string) {
+		if (selectedIds.includes(id)) {
+			selectedIds = selectedIds.filter((x) => x !== id);
+		} else {
+			selectedIds = [...selectedIds, id];
+		}
+	}
+	function clearSelection() {
+		selectedIds = [];
+	}
+	function openCompare() {
+		if (selectedIds.length < 2) return;
+		compareMode = true;
+	}
+	function closeCompare() {
+		compareMode = false;
+	}
+
+	const selectedCards = $derived<Card[]>(() => {
+		const cards = carouselCards();
+		const byId = new Map(cards.map((c) => [c.id, c]));
+		return selectedIds
+			.map((id) => byId.get(id))
+			.filter((c): c is Card => Boolean(c));
+	});
+
 	// ───── Mitigation tips (right column) ─────
 	type Tip = { area: string; tip: string };
 	let tipsCache = $state<Record<string, Tip[]>>({});
@@ -337,16 +369,127 @@
 		<Leaderboard onModelSelect={handleLocalModelSelect} />
 	</aside>
 
-	<!-- CENTER: Nutritional Label carousel -->
+	<!-- CENTER: Nutritional Label carousel or compare view -->
 	<div class="nl-center">
 		{#if appState.loading || carouselCards().length === 0}
 			<div class="nl-center-loading">
 				<div class="nl-spinner" aria-hidden="true"></div>
 				<p>Loading taxonomy…</p>
 			</div>
+		{:else if compareMode}
+			{@const sel = selectedCards()}
+			{@const tax = appState.taxonomy}
+			<div class="nl-compare">
+				<header class="nl-compare-head">
+					<button class="nl-compare-back" onclick={closeCompare}>
+						<i class="fa-solid fa-arrow-left"></i>
+						Back to labels
+					</button>
+					<h1 class="nl-compare-title">Compare {sel.length} models</h1>
+					<div class="nl-compare-meta">{ageLabel} · per-area scores · best in each row highlighted</div>
+				</header>
+
+				<div class="nl-compare-scroll">
+					<table class="nl-compare-table">
+						<thead>
+							<tr>
+								<th class="nl-compare-row-label">Area / Subarea</th>
+								{#each sel as card (card.id)}
+									<th class="nl-compare-col-head">
+										<div class="nl-compare-col-name">{card.name}</div>
+										<div class="nl-compare-col-provider">{card.provider}</div>
+									</th>
+								{/each}
+							</tr>
+							<tr>
+								<td class="nl-compare-row-label nl-compare-overall-label">Overall Impact</td>
+								{@const overalls = sel.map((c) => c.data.overall)}
+								{@const bestOverall = Math.max(...overalls)}
+								{#each sel as card, ci (card.id)}
+									<td
+										class="nl-compare-cell nl-compare-cell--overall"
+										class:nl-compare-cell--best={overalls[ci] === bestOverall && sel.length > 1}
+									>
+										<span class="nl-compare-score" style="color:{scoreColor(card.data.overall)}">
+											{fmtScore(card.data.overall)}
+										</span>
+									</td>
+								{/each}
+							</tr>
+						</thead>
+						<tbody>
+							{#if tax}
+								{#each tax.areas as area (area.id)}
+									{@const focused = isFocus(area.name)}
+									{@const areaScores = sel.map(
+										(c) => c.data.areas.find((a) => a.id === area.id)?.score ?? 0
+									)}
+									{@const bestArea = Math.max(...areaScores)}
+									<tr class="nl-compare-area-row" class:nl-compare-row--focus={focused}>
+										<td class="nl-compare-row-label nl-compare-area-label">
+											{area.name}
+											{#if focused}
+												<span class="nl-focus-tag"><i class="fa-solid fa-bullseye"></i> focus</span>
+											{/if}
+										</td>
+										{#each sel as card, ci (card.id)}
+											<td
+												class="nl-compare-cell nl-compare-cell--area"
+												class:nl-compare-cell--best={areaScores[ci] === bestArea && sel.length > 1}
+											>
+												<span class="nl-compare-score" style="color:{scoreColor(areaScores[ci])}">
+													{fmtScore(areaScores[ci])}
+												</span>
+											</td>
+										{/each}
+									</tr>
+									{#each area.subareas as sub (sub.id)}
+										{@const subFocused = isFocus(sub.name)}
+										{@const subScores = sel.map((c) => {
+											const a = c.data.areas.find((aa) => aa.id === area.id);
+											return a?.subareas.find((s) => s.id === sub.id)?.score ?? 0;
+										})}
+										{@const bestSub = Math.max(...subScores)}
+										<tr class="nl-compare-sub-row" class:nl-compare-row--focus={subFocused}>
+											<td class="nl-compare-row-label nl-compare-sub-label">
+												{sub.name}
+												{#if subFocused}
+													<span class="nl-focus-tag nl-focus-tag--sm">focus</span>
+												{/if}
+											</td>
+											{#each sel as card, ci (card.id)}
+												<td
+													class="nl-compare-cell nl-compare-cell--sub"
+													class:nl-compare-cell--best={subScores[ci] === bestSub && sel.length > 1}
+												>
+													<span class="nl-compare-score nl-compare-score--sm" style="color:{scoreColor(subScores[ci])}">
+														{fmtScore(subScores[ci])}
+													</span>
+												</td>
+											{/each}
+										</tr>
+									{/each}
+								{/each}
+							{/if}
+						</tbody>
+					</table>
+				</div>
+			</div>
 		{:else}
 			{@const cards = carouselCards()}
 			{@const fIdx = focusIndex()}
+			{@const focusedCard = cards[fIdx]}
+
+			<button
+				class="nl-pdf-btn nl-pdf-btn--corner"
+				disabled={saving}
+				onclick={savePdf}
+				title="Save current label as PDF"
+			>
+				<i class="fa-solid fa-file-pdf"></i>
+				{saving ? 'Saving…' : 'Save PDF'}
+			</button>
+
 			<div class="nl-carousel-wrap">
 				<button
 					class="nl-nav nl-nav--prev"
@@ -380,6 +523,23 @@
 								}
 							}}
 						>
+							{#if offset === 0}
+								<label
+									class="nl-select-checkbox"
+									title={isSelected(card.id) ? 'Remove from comparison' : 'Add to comparison'}
+									onclick={(e) => e.stopPropagation()}
+								>
+									<input
+										type="checkbox"
+										checked={isSelected(card.id)}
+										onchange={() => toggleSelect(card.id)}
+									/>
+									<span class="nl-select-box" aria-hidden="true">
+										<i class="fa-solid fa-check"></i>
+									</span>
+									<span class="nl-select-label">Compare</span>
+								</label>
+							{/if}
 							<div
 								class="nutrition-label"
 								bind:this={cardRefs[card.id]}
@@ -500,14 +660,66 @@
 				</button>
 			</div>
 
-			<div class="nl-carousel-footer">
-				<div class="nl-carousel-counter">
-					{fIdx + 1} <span>/ {cards.length}</span>
+			<!-- Bottom strip: selected thumbnails + Compare button -->
+			<div class="nl-strip">
+				<div class="nl-strip-thumbs" role="list" aria-label="Selected for comparison">
+					{#if selectedCards().length === 0}
+						<div class="nl-strip-empty">
+							<i class="fa-regular fa-square-check"></i>
+							Tick the checkbox on a label to add it for comparison
+						</div>
+					{:else}
+						{#each selectedCards() as card (card.id)}
+							<div class="nl-thumb" role="listitem">
+								<button
+									class="nl-thumb-main"
+									onclick={() => {
+										if (card.id !== focusedCard?.id) {
+											const idx = carouselCards().findIndex((c) => c.id === card.id);
+											if (idx >= 0) gotoCard(idx);
+										}
+									}}
+									title="Focus this model"
+								>
+									<div class="nl-thumb-mini" aria-hidden="true">
+										<div class="nl-thumb-mini-rule"></div>
+										<div class="nl-thumb-mini-score" style="color:{scoreColor(card.data.overall)}">
+											{fmtScore(card.data.overall)}
+										</div>
+									</div>
+									<div class="nl-thumb-text">
+										<div class="nl-thumb-name">{card.name}</div>
+										<div class="nl-thumb-prov">{card.provider}</div>
+									</div>
+								</button>
+								<button
+									class="nl-thumb-remove"
+									onclick={() => toggleSelect(card.id)}
+									aria-label="Remove from comparison"
+									title="Remove"
+								>
+									<i class="fa-solid fa-xmark"></i>
+								</button>
+							</div>
+						{/each}
+					{/if}
 				</div>
-				<button class="nl-pdf-btn" disabled={saving} onclick={savePdf}>
-					<i class="fa-solid fa-file-pdf"></i>
-					{saving ? 'Saving…' : 'Save label as PDF'}
-				</button>
+				<div class="nl-strip-actions">
+					{#if selectedIds.length > 0}
+						<button class="nl-strip-clear" onclick={clearSelection} title="Clear all">
+							Clear
+						</button>
+					{/if}
+					<button
+						class="nl-strip-compare"
+						onclick={openCompare}
+						disabled={selectedIds.length < 2}
+						title={selectedIds.length < 2 ? 'Select at least 2 models' : 'Compare selected models'}
+					>
+						<i class="fa-solid fa-table-columns"></i>
+						Compare ({selectedIds.length})
+					</button>
+				</div>
 			</div>
 		{/if}
 	</div>
@@ -664,8 +876,9 @@
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
-		padding: 20px 24px 24px;
+		padding: 20px 24px 16px;
 		background: #f8fafc;
+		position: relative;
 	}
 
 	.nl-center-loading {
@@ -718,9 +931,9 @@
 		left: 50%;
 		width: 100%;
 		max-width: 440px;
-		transform-origin: center center;
+		transform-origin: center bottom;
 		transform: translateX(calc(-50% + var(--offset) * 70px))
-			rotate(calc(var(--offset) * -5deg))
+			rotate(calc(var(--offset) * 5deg))
 			scale(calc(1 - var(--abs) * 0.07));
 		opacity: calc(1 - var(--abs) * 0.55);
 		transition:
@@ -815,6 +1028,440 @@
 		color: #9ca3af;
 		font-weight: 400;
 		margin-left: 2px;
+	}
+
+	/* ───── Corner PDF button ───── */
+	.nl-pdf-btn--corner {
+		position: absolute;
+		top: 16px;
+		left: 16px;
+		z-index: 250;
+		padding: 7px 14px;
+		font-size: 11.5px;
+	}
+
+	/* ───── Compare checkbox on focused card ───── */
+	.nl-select-checkbox {
+		position: absolute;
+		top: -14px;
+		right: -14px;
+		z-index: 220;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		background: #ffffff;
+		border: 2px solid #000000;
+		padding: 4px 10px 4px 6px;
+		border-radius: 999px;
+		cursor: pointer;
+		user-select: none;
+		font-family: Arial, sans-serif;
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: #111827;
+		box-shadow: 0 6px 14px -8px rgba(15, 23, 42, 0.4);
+		transition: all 150ms ease;
+	}
+	.nl-select-checkbox:hover {
+		background: #f9fafb;
+	}
+	.nl-select-checkbox input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+	.nl-select-box {
+		width: 18px;
+		height: 18px;
+		border-radius: 4px;
+		border: 1.5px solid #111827;
+		background: #ffffff;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: transparent;
+		font-size: 10px;
+		transition: all 120ms ease;
+	}
+	.nl-select-checkbox input:checked + .nl-select-box {
+		background: #00b3b0;
+		border-color: #00b3b0;
+		color: #ffffff;
+	}
+	.nl-select-checkbox input:focus-visible + .nl-select-box {
+		outline: 2px solid #00b3b0;
+		outline-offset: 2px;
+	}
+
+	/* ───── Bottom strip ───── */
+	.nl-strip {
+		flex-shrink: 0;
+		margin-top: 14px;
+		width: 100%;
+		max-width: 880px;
+		min-height: 64px;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 8px 12px;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
+		box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.18);
+	}
+	.nl-strip-thumbs {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		overflow-x: auto;
+		min-height: 48px;
+	}
+	.nl-strip-thumbs::-webkit-scrollbar {
+		height: 4px;
+	}
+	.nl-strip-thumbs::-webkit-scrollbar-thumb {
+		background: rgba(0, 0, 0, 0.15);
+		border-radius: 2px;
+	}
+	.nl-strip-empty {
+		font-family: Arial, sans-serif;
+		font-size: 12px;
+		color: #6b7280;
+		padding: 6px 8px;
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-style: italic;
+	}
+
+	.nl-thumb {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: stretch;
+		background: #ffffff;
+		border: 1.5px solid #000000;
+		border-radius: 8px;
+		overflow: hidden;
+		font-family: 'Arial Black', Arial, sans-serif;
+		transition: transform 150ms ease, box-shadow 150ms ease;
+	}
+	.nl-thumb:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 14px -10px rgba(0, 0, 0, 0.4);
+	}
+	.nl-thumb-main {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 5px 6px 5px 5px;
+		border: none;
+		background: transparent;
+		cursor: pointer;
+		font: inherit;
+		color: inherit;
+	}
+	.nl-thumb-mini {
+		width: 34px;
+		height: 38px;
+		flex-shrink: 0;
+		border: 1.5px solid #000000;
+		background: #ffffff;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		padding: 3px 4px 3px;
+		position: relative;
+	}
+	.nl-thumb-mini-rule {
+		position: absolute;
+		top: 10px;
+		left: 3px;
+		right: 3px;
+		height: 2px;
+		background: #000000;
+	}
+	.nl-thumb-mini-score {
+		font-size: 10px;
+		line-height: 1;
+		font-weight: 900;
+		text-align: center;
+	}
+	.nl-thumb-text {
+		text-align: left;
+		max-width: 140px;
+	}
+	.nl-thumb-name {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 12px;
+		font-weight: 900;
+		color: #111827;
+		line-height: 1.1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.nl-thumb-prov {
+		font-family: Arial, sans-serif;
+		font-size: 10px;
+		font-weight: 400;
+		color: #6b7280;
+		line-height: 1.1;
+		margin-top: 1px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.nl-thumb-remove {
+		border: none;
+		border-left: 1px solid #e5e7eb;
+		background: #fafafa;
+		color: #6b7280;
+		padding: 0 8px;
+		cursor: pointer;
+		font-size: 11px;
+		transition: all 120ms ease;
+	}
+	.nl-thumb-remove:hover {
+		background: #fee2e2;
+		color: #b91c1c;
+	}
+
+	.nl-strip-actions {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.nl-strip-clear {
+		padding: 7px 12px;
+		font-family: Arial, sans-serif;
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: #6b7280;
+		background: transparent;
+		border: 1px solid #d1d5db;
+		border-radius: 999px;
+		cursor: pointer;
+		transition: all 120ms ease;
+	}
+	.nl-strip-clear:hover {
+		color: #111827;
+		border-color: #111827;
+	}
+	.nl-strip-compare {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 18px;
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 12px;
+		letter-spacing: 0.02em;
+		background: #00b3b0;
+		color: #ffffff;
+		border: 2px solid #00b3b0;
+		border-radius: 999px;
+		cursor: pointer;
+		transition: all 150ms ease;
+		box-shadow: 0 4px 12px -6px rgba(0, 179, 176, 0.5);
+	}
+	.nl-strip-compare:hover:not(:disabled) {
+		background: #00807e;
+		border-color: #00807e;
+		transform: translateY(-1px);
+	}
+	.nl-strip-compare:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+		box-shadow: none;
+	}
+
+	/* ───── Compare view ───── */
+	.nl-compare {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+	}
+	.nl-compare-head {
+		flex-shrink: 0;
+		padding: 4px 4px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.nl-compare-back {
+		align-self: flex-start;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		border: 1px solid #d1d5db;
+		background: #ffffff;
+		border-radius: 999px;
+		font-family: Arial, sans-serif;
+		font-size: 12px;
+		font-weight: 600;
+		color: #374151;
+		cursor: pointer;
+		transition: all 120ms ease;
+	}
+	.nl-compare-back:hover {
+		background: #111827;
+		color: #ffffff;
+		border-color: #111827;
+	}
+	.nl-compare-title {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 32px;
+		font-weight: 900;
+		letter-spacing: -0.02em;
+		margin: 6px 0 0;
+		color: #111827;
+	}
+	.nl-compare-meta {
+		font-family: Arial, sans-serif;
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: #6b7280;
+		font-weight: 600;
+	}
+
+	.nl-compare-scroll {
+		flex: 1;
+		min-height: 0;
+		overflow: auto;
+		border: 3px solid #000000;
+		background: #ffffff;
+	}
+
+	.nl-compare-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-family: Arial, sans-serif;
+	}
+	.nl-compare-table th,
+	.nl-compare-table td {
+		padding: 10px 12px;
+		text-align: center;
+		vertical-align: middle;
+		border-bottom: 1px solid #f1f5f9;
+	}
+	.nl-compare-table thead {
+		position: sticky;
+		top: 0;
+		background: #ffffff;
+		z-index: 5;
+	}
+	.nl-compare-row-label {
+		text-align: left;
+		font-weight: 700;
+		color: #111827;
+		min-width: 200px;
+		max-width: 280px;
+		position: sticky;
+		left: 0;
+		background: #ffffff;
+		z-index: 3;
+		border-right: 2px solid #000000;
+	}
+	.nl-compare-col-head {
+		min-width: 140px;
+		border-bottom: 4px solid #000000;
+		padding-bottom: 12px;
+	}
+	.nl-compare-col-name {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 14px;
+		font-weight: 900;
+		color: #111827;
+		line-height: 1.1;
+	}
+	.nl-compare-col-provider {
+		font-size: 11px;
+		color: #6b7280;
+		margin-top: 2px;
+	}
+	.nl-compare-overall-label {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 18px;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		padding-top: 14px;
+		padding-bottom: 14px;
+	}
+	.nl-compare-cell--overall {
+		padding-top: 14px;
+		padding-bottom: 14px;
+	}
+	.nl-compare-cell--overall .nl-compare-score {
+		font-size: 26px;
+	}
+	.nl-compare-area-row {
+		background: #fafafa;
+	}
+	.nl-compare-area-row .nl-compare-row-label {
+		background: #fafafa;
+	}
+	.nl-compare-area-label {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 13px;
+		font-weight: 900;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		padding-top: 12px;
+		padding-bottom: 12px;
+	}
+	.nl-compare-cell--area .nl-compare-score {
+		font-size: 16px;
+		font-weight: 900;
+	}
+	.nl-compare-sub-row .nl-compare-row-label {
+		padding-left: 24px;
+		font-weight: 500;
+		font-size: 12px;
+	}
+	.nl-compare-sub-label {
+		font-weight: 500;
+	}
+	.nl-compare-score {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-weight: 900;
+		font-size: 14px;
+		letter-spacing: -0.01em;
+	}
+	.nl-compare-score--sm {
+		font-size: 12px;
+	}
+	.nl-compare-cell--best {
+		background: rgba(0, 179, 176, 0.1);
+		position: relative;
+	}
+	.nl-compare-cell--best::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border: 2px solid #00b3b0;
+		pointer-events: none;
+	}
+	.nl-compare-row--focus .nl-compare-row-label {
+		color: #00807e;
+	}
+	.nl-compare-row--focus .nl-compare-row-label,
+	.nl-compare-row--focus.nl-compare-area-row,
+	.nl-compare-row--focus.nl-compare-area-row .nl-compare-row-label {
+		background: linear-gradient(135deg, rgba(0, 179, 176, 0.08), rgba(0, 179, 176, 0.02));
+	}
+	.nl-focus-tag--sm {
+		font-size: 8px;
+		padding: 1px 5px;
+		margin-left: 6px;
 	}
 
 	/* ───── Nutrition label card (compact, matches SmartNutritionLabel style) ───── */

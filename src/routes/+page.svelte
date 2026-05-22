@@ -428,6 +428,9 @@
 			showGate = true;
 		} else if (LOCKED_TABS.has(tab) && !isAuthenticated) {
 			showGate = true;
+			// Remember which locked tab the user wanted so we can land them
+			// there (not on the default Explore) after they enter the password.
+			pendingDeepTab = tab;
 			gatePasswordRequest += 1;
 		} else {
 			activeTab = tab;
