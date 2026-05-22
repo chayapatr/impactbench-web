@@ -490,6 +490,23 @@
 				{saving ? 'Saving…' : 'Save PDF'}
 			</button>
 
+			{#if focusedCard}
+				<label
+					class="nl-select-checkbox nl-select-checkbox--corner"
+					title={isSelected(focusedCard.id) ? 'Remove from comparison' : 'Add to comparison'}
+				>
+					<input
+						type="checkbox"
+						checked={isSelected(focusedCard.id)}
+						onchange={() => toggleSelect(focusedCard.id)}
+					/>
+					<span class="nl-select-box" aria-hidden="true">
+						<i class="fa-solid fa-check"></i>
+					</span>
+					<span class="nl-select-label">Compare</span>
+				</label>
+			{/if}
+
 			<div class="nl-carousel-wrap">
 				<button
 					class="nl-nav nl-nav--prev"
@@ -523,23 +540,6 @@
 								}
 							}}
 						>
-							{#if offset === 0}
-								<label
-									class="nl-select-checkbox"
-									title={isSelected(card.id) ? 'Remove from comparison' : 'Add to comparison'}
-									onclick={(e) => e.stopPropagation()}
-								>
-									<input
-										type="checkbox"
-										checked={isSelected(card.id)}
-										onchange={() => toggleSelect(card.id)}
-									/>
-									<span class="nl-select-box" aria-hidden="true">
-										<i class="fa-solid fa-check"></i>
-									</span>
-									<span class="nl-select-label">Compare</span>
-								</label>
-							{/if}
 							<div
 								class="nutrition-label"
 								bind:this={cardRefs[card.id]}
@@ -1040,29 +1040,30 @@
 		font-size: 11.5px;
 	}
 
-	/* ───── Compare checkbox on focused card ───── */
+	/* ───── Compare checkbox (sticky top-right of center panel) ───── */
 	.nl-select-checkbox {
-		position: absolute;
-		top: -14px;
-		right: -14px;
-		z-index: 220;
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
 		background: #ffffff;
-		border: 2px solid #000000;
-		padding: 4px 10px 4px 6px;
+		border: 1px solid #e5e7eb;
+		padding: 7px 14px 7px 10px;
 		border-radius: 999px;
 		cursor: pointer;
 		user-select: none;
 		font-family: Arial, sans-serif;
-		font-size: 11px;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: #111827;
-		box-shadow: 0 6px 14px -8px rgba(15, 23, 42, 0.4);
+		font-size: 11.5px;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		color: #374151;
+		box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.18);
 		transition: all 150ms ease;
+	}
+	.nl-select-checkbox--corner {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		z-index: 250;
 	}
 	.nl-select-checkbox:hover {
 		background: #f9fafb;
@@ -1317,28 +1318,28 @@
 		border-color: #111827;
 	}
 	.nl-compare-title {
-		font-family: 'Arial Black', Arial, sans-serif;
-		font-size: 32px;
-		font-weight: 900;
-		letter-spacing: -0.02em;
+		font-family: Arial, sans-serif;
+		font-size: 22px;
+		font-weight: 700;
+		letter-spacing: -0.01em;
 		margin: 6px 0 0;
 		color: #111827;
 	}
 	.nl-compare-meta {
 		font-family: Arial, sans-serif;
 		font-size: 12px;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
 		color: #6b7280;
-		font-weight: 600;
+		font-weight: 400;
 	}
 
 	.nl-compare-scroll {
 		flex: 1;
 		min-height: 0;
 		overflow: auto;
-		border: 3px solid #000000;
+		border: 1px solid #e5e7eb;
+		border-radius: 14px;
 		background: #ffffff;
+		box-shadow: 0 6px 20px -14px rgba(15, 23, 42, 0.18);
 	}
 
 	.nl-compare-table {
@@ -1361,27 +1362,28 @@
 	}
 	.nl-compare-row-label {
 		text-align: left;
-		font-weight: 700;
-		color: #111827;
+		font-weight: 500;
+		color: #374151;
 		min-width: 200px;
 		max-width: 280px;
 		position: sticky;
 		left: 0;
 		background: #ffffff;
 		z-index: 3;
-		border-right: 2px solid #000000;
+		border-right: 1px solid #f1f5f9;
 	}
 	.nl-compare-col-head {
 		min-width: 140px;
-		border-bottom: 4px solid #000000;
+		border-bottom: 1px solid #e5e7eb;
 		padding-bottom: 12px;
+		background: #fafafa;
 	}
 	.nl-compare-col-name {
-		font-family: 'Arial Black', Arial, sans-serif;
-		font-size: 14px;
-		font-weight: 900;
+		font-family: Arial, sans-serif;
+		font-size: 13px;
+		font-weight: 700;
 		color: #111827;
-		line-height: 1.1;
+		line-height: 1.2;
 	}
 	.nl-compare-col-provider {
 		font-size: 11px;
@@ -1389,10 +1391,12 @@
 		margin-top: 2px;
 	}
 	.nl-compare-overall-label {
-		font-family: 'Arial Black', Arial, sans-serif;
-		font-size: 18px;
+		font-family: Arial, sans-serif;
+		font-size: 13px;
+		font-weight: 700;
 		text-transform: uppercase;
-		letter-spacing: 0.02em;
+		letter-spacing: 0.06em;
+		color: #6b7280;
 		padding-top: 14px;
 		padding-bottom: 14px;
 	}
@@ -1401,7 +1405,7 @@
 		padding-bottom: 14px;
 	}
 	.nl-compare-cell--overall .nl-compare-score {
-		font-size: 26px;
+		font-size: 22px;
 	}
 	.nl-compare-area-row {
 		background: #fafafa;
@@ -1410,44 +1414,47 @@
 		background: #fafafa;
 	}
 	.nl-compare-area-label {
-		font-family: 'Arial Black', Arial, sans-serif;
-		font-size: 13px;
-		font-weight: 900;
+		font-family: Arial, sans-serif;
+		font-size: 12px;
+		font-weight: 700;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.05em;
+		color: #374151;
 		padding-top: 12px;
 		padding-bottom: 12px;
 	}
 	.nl-compare-cell--area .nl-compare-score {
-		font-size: 16px;
-		font-weight: 900;
+		font-size: 15px;
+		font-weight: 700;
 	}
 	.nl-compare-sub-row .nl-compare-row-label {
 		padding-left: 24px;
-		font-weight: 500;
+		font-weight: 400;
 		font-size: 12px;
+		color: #4b5563;
 	}
 	.nl-compare-sub-label {
-		font-weight: 500;
+		font-weight: 400;
 	}
 	.nl-compare-score {
-		font-family: 'Arial Black', Arial, sans-serif;
-		font-weight: 900;
-		font-size: 14px;
+		font-family: Arial, sans-serif;
+		font-weight: 700;
+		font-size: 13px;
 		letter-spacing: -0.01em;
 	}
 	.nl-compare-score--sm {
 		font-size: 12px;
 	}
 	.nl-compare-cell--best {
-		background: rgba(0, 179, 176, 0.1);
+		background: rgba(0, 179, 176, 0.08);
 		position: relative;
 	}
 	.nl-compare-cell--best::after {
 		content: '';
 		position: absolute;
 		inset: 0;
-		border: 2px solid #00b3b0;
+		border: 1px solid rgba(0, 179, 176, 0.5);
+		border-radius: 2px;
 		pointer-events: none;
 	}
 	.nl-compare-row--focus .nl-compare-row-label {
