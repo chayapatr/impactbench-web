@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
+/* cache-bust: force new asset hash on Cloudflare CDN */
+
 @layer base {
   *, *::before, *::after {
     line-height: 1.35;
