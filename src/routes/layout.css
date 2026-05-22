@@ -2,6 +2,9 @@
 @plugin '@tailwindcss/typography';
 
 /* cache-bust: force new asset hash on Cloudflare CDN */
+:root {
+  --cf-bust: 1;
+}
 
 @layer base {
   *, *::before, *::after {
