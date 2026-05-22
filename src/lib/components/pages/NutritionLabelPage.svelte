@@ -14,6 +14,7 @@
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
+	import { scoreToLetterGrade } from '$lib/scores';
 
 	interface Props {
 		onTabChange?: (tab: string) => void;
@@ -191,11 +192,23 @@
 			tipsCache = { ...tipsCache, [key]: [] };
 			return;
 		}
+		const userText = smartUserText.trim();
+		if (!userText) {
+			tipsError = false;
+			tipsLoading = false;
+			tipsCache = {
+				...tipsCache,
+				[key]: worst.map((w) => ({
+					area: w.name,
+					tip: makeFallbackTip(w.name, '')
+				}))
+			};
+			return;
+		}
 		tipsLoading = true;
 		tipsError = false;
 		const modelName = currentModelName;
 		const modelProvider = currentModelProvider;
-		const userText = smartUserText;
 		(async () => {
 			try {
 				const resp = await fetch(CASPER_API + '/tips', {
@@ -410,8 +423,11 @@
 										class="nl-compare-cell nl-compare-cell--overall"
 										class:nl-compare-cell--best={overalls[ci] === bestOverall && sel.length > 1}
 									>
-										<span class="nl-compare-score" style="color:{scoreColor(card.data.overall)}">
-											{fmtScore(card.data.overall)}
+										<span class="nl-compare-score nl-compare-score--graded">
+											<span class="nl-compare-grade" style="color:{scoreColor(card.data.overall)}">
+												{scoreToLetterGrade(card.data.overall)}
+											</span>
+											<span class="nl-compare-numeric">{fmtScore(card.data.overall)}</span>
 										</span>
 									</td>
 								{/each}
@@ -437,8 +453,11 @@
 												class="nl-compare-cell nl-compare-cell--area"
 												class:nl-compare-cell--best={areaScores[ci] === bestArea && sel.length > 1}
 											>
-												<span class="nl-compare-score" style="color:{scoreColor(areaScores[ci])}">
-													{fmtScore(areaScores[ci])}
+													<span class="nl-compare-score nl-compare-score--graded nl-compare-score--graded-sm">
+														<span class="nl-compare-grade" style="color:{scoreColor(areaScores[ci])}">
+															{scoreToLetterGrade(areaScores[ci])}
+														</span>
+														<span class="nl-compare-numeric">{fmtScore(areaScores[ci])}</span>
 												</span>
 											</td>
 										{/each}
@@ -559,11 +578,11 @@
 
 								<div class="nutrition-score-row">
 									<div class="nutrition-score-label">Overall Impact</div>
-									<div
-										class="nutrition-score-value"
-										style="color:{scoreColor(ld.overall)}"
-									>
-										{fmtScore(ld.overall)}
+									<div class="nutrition-score-value">
+										<span class="nutrition-grade-value" style="color:{scoreColor(ld.overall)}">
+											{scoreToLetterGrade(ld.overall)}
+										</span>
+										<span class="nutrition-score-numeric">{fmtScore(ld.overall)}</span>
 									</div>
 								</div>
 								<div class="smart-nl-overall-track" aria-hidden="true">
@@ -595,11 +614,12 @@
 														</span>
 													{/if}
 												</span>
-												<span
-													class="smart-nl-area-score"
-													style="color:{scoreColor(area.score)}"
-													>{fmtScore(area.score)}</span
-												>
+												<span class="smart-nl-area-score">
+													<span class="smart-nl-area-grade" style="color:{scoreColor(area.score)}">
+														{scoreToLetterGrade(area.score)}
+													</span>
+													<span class="smart-nl-area-numeric">{fmtScore(area.score)}</span>
+												</span>
 											</div>
 											<div class="smart-nl-area-track">
 												<div class="smart-nl-area-zero"></div>
@@ -1440,6 +1460,25 @@
 		font-size: 13px;
 		letter-spacing: -0.01em;
 	}
+	.nl-compare-score--graded {
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+	}
+	.nl-compare-score--graded-sm {
+		gap: 1px;
+	}
+	.nl-compare-grade {
+		font-weight: 800;
+		letter-spacing: -0.01em;
+	}
+	.nl-compare-numeric {
+		font-size: 11px;
+		font-weight: 500;
+		letter-spacing: 0;
+		color: #6b7280;
+	}
 	.nl-compare-score--sm {
 		font-size: 12px;
 	}
@@ -1538,10 +1577,23 @@
 		font-weight: 900;
 	}
 	.nutrition-score-value {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 3px;
+	}
+	.nutrition-grade-value {
 		font-size: 36px;
 		line-height: 0.9;
 		font-weight: 900;
 		letter-spacing: -0.02em;
+	}
+	.nutrition-score-numeric {
+		font-size: 13px;
+		line-height: 1;
+		font-weight: 500;
+		letter-spacing: 0;
+		color: #6b7280;
 	}
 
 	.smart-nl-overall-track {
@@ -1628,9 +1680,21 @@
 		gap: 8px;
 	}
 	.smart-nl-area-score {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 2px;
+	}
+	.smart-nl-area-grade {
 		font-weight: 900;
 		font-size: 13px;
 		letter-spacing: -0.01em;
+	}
+	.smart-nl-area-numeric {
+		font-size: 10px;
+		font-weight: 500;
+		letter-spacing: 0;
+		color: #6b7280;
 	}
 
 	.smart-nl-area-track {
