@@ -660,15 +660,10 @@
 				</button>
 			</div>
 
-			<!-- Bottom strip: selected thumbnails + Compare button -->
-			<div class="nl-strip">
-				<div class="nl-strip-thumbs" role="list" aria-label="Selected for comparison">
-					{#if selectedCards().length === 0}
-						<div class="nl-strip-empty">
-							<i class="fa-regular fa-square-check"></i>
-							Tick the checkbox on a label to add it for comparison
-						</div>
-					{:else}
+			<!-- Bottom strip: selected thumbnails + Compare button (only when something selected) -->
+			{#if selectedIds.length > 0}
+				<div class="nl-strip">
+					<div class="nl-strip-thumbs" role="list" aria-label="Selected for comparison">
 						{#each selectedCards() as card (card.id)}
 							<div class="nl-thumb" role="listitem">
 								<button
@@ -702,25 +697,23 @@
 								</button>
 							</div>
 						{/each}
-					{/if}
-				</div>
-				<div class="nl-strip-actions">
-					{#if selectedIds.length > 0}
+					</div>
+					<div class="nl-strip-actions">
 						<button class="nl-strip-clear" onclick={clearSelection} title="Clear all">
 							Clear
 						</button>
-					{/if}
-					<button
-						class="nl-strip-compare"
-						onclick={openCompare}
-						disabled={selectedIds.length < 2}
-						title={selectedIds.length < 2 ? 'Select at least 2 models' : 'Compare selected models'}
-					>
-						<i class="fa-solid fa-table-columns"></i>
-						Compare ({selectedIds.length})
-					</button>
+						<button
+							class="nl-strip-compare"
+							onclick={openCompare}
+							disabled={selectedIds.length < 2}
+							title={selectedIds.length < 2 ? 'Select at least 2 models' : 'Compare selected models'}
+						>
+							<i class="fa-solid fa-table-columns"></i>
+							Compare ({selectedIds.length})
+						</button>
+					</div>
 				</div>
-			</div>
+			{/if}
 		{/if}
 	</div>
 
@@ -1288,6 +1281,11 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
+		font-family: 'Inter', system-ui, -apple-system, sans-serif;
+	}
+	.nl-compare,
+	.nl-compare * {
+		font-family: 'Inter', system-ui, -apple-system, sans-serif;
 	}
 	.nl-compare-head {
 		flex-shrink: 0;
