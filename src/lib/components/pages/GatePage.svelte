@@ -3,6 +3,7 @@
 	import { buildHierarchy, getScoresForFilter } from '$lib/data';
 	import Sunburst from '../organisms/Sunburst.svelte';
 	import ControlBar from '../molecules/ControlBar.svelte';
+	import FeedbackSurveyModal from '../organisms/FeedbackSurveyModal.svelte';
 
 	interface Props {
 		onEnter: () => void;
@@ -162,6 +163,11 @@
 		string
 	>);
 
+	let surveyVisible = $state(false);
+	function openSurvey() {
+		surveyVisible = true;
+	}
+
 	async function submitForm(formId: string, tabKey: 'request' | 'support' | 'feedback') {
 		const form = document.getElementById(formId) as HTMLFormElement | null;
 		if (!form || !form.checkValidity()) {
@@ -202,7 +208,8 @@
 	const HASH_TAB_MAP: Record<string, 'request' | 'support' | 'feedback'> = {
 		'#access': 'request',
 		'#support': 'support',
-		'#feedback': 'feedback'
+		'#feedback': 'feedback',
+		'#survey': 'feedback'
 	};
 
 	$effect(() => {
@@ -211,10 +218,12 @@
 		// Open the right tab if URL has a hash
 		const hash = window.location.hash;
 		if (hash && HASH_TAB_MAP[hash]) openTab(HASH_TAB_MAP[hash]);
+		if (hash === '#survey') openSurvey();
 
 		function onHashChange() {
 			const h = window.location.hash;
 			if (h && HASH_TAB_MAP[h]) openTab(HASH_TAB_MAP[h]);
+			if (h === '#survey') openSurvey();
 		}
 		window.addEventListener('hashchange', onHashChange);
 		return () => window.removeEventListener('hashchange', onHashChange);
@@ -646,7 +655,20 @@
 			{:else}
 				<div>
 					<h2 class="form-section-title">Feedback</h2>
-					<p class="form-section-desc">Help us improve our benchmarking project.</p>
+					<div
+						class="mb-7 flex flex-wrap items-center justify-between gap-4 rounded-[12px] border border-[#99e7e5] bg-[#e6f9f8] px-5 py-4"
+					>
+						<p class="m-0 text-[15px] leading-[1.5] text-[#0f4f50]">
+							Help us learn what information's most helpful for you.
+						</p>
+						<button
+							type="button"
+							class="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-[10px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 py-2 text-[14px] font-semibold text-white shadow-[0_2px_8px_rgba(3,141,143,0.25)] transition-[filter,box-shadow] duration-150 hover:brightness-105"
+							onclick={openSurvey}
+						>
+							<i class="fa-solid fa-clipboard-list"></i> Take survey
+						</button>
+					</div>
 					<div class="form-card">
 						{#if formStates.feedback === 'success'}
 							<div class="px-5 py-10 text-center">
@@ -793,6 +815,8 @@
 		</div>
 	</div>
 {/if}
+
+<FeedbackSurveyModal bind:open={surveyVisible} onClose={() => (surveyVisible = false)} />
 
 <style>
 	/* Serif title for hero — font-weight 550 not a Tailwind token */

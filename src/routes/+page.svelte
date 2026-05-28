@@ -38,6 +38,7 @@
 	import GatePage from '$lib/components/pages/GatePage.svelte';
 	import AboutPage from '$lib/components/pages/AboutPage.svelte';
 	import MetricsPage from '$lib/components/pages/MetricsPage.svelte';
+	import FeedbackSurveyModal from '$lib/components/organisms/FeedbackSurveyModal.svelte';
 
 	let showGate = $state(true);
 	let isAuthenticated = $state(false);
@@ -46,6 +47,7 @@
 	let smartExploreLoading = $state(false);
 	let smartExploreInitialText = $state('');
 	let smartNutritionOpen = $state(false);
+	let surveyOpen = $state(false);
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
 
 	// Deep link params — parsed immediately (browser-only), consumed after auth
@@ -513,7 +515,15 @@
 					handleTabChange('home');
 				}}
 			>
-				Add feedback
+				Share feedback
+			</button>
+			<span class="mx-1 text-[#a16207]">|</span>
+			<button
+				type="button"
+				class="cursor-pointer border-none bg-transparent p-0 font-semibold text-[#713f12] underline hover:opacity-80"
+				onclick={() => (surveyOpen = true)}
+			>
+				Help us learn
 			</button>
 		</div>
 
@@ -634,3 +644,4 @@
 		smartNutritionOpen = false;
 	}}
 />
+<FeedbackSurveyModal bind:open={surveyOpen} onClose={() => (surveyOpen = false)} />
