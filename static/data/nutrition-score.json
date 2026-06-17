@@ -1,7 +1,7 @@
 [
   {
     "id": "factual-hallucination",
-    "label": "Exhibits Factual Hallucination",
+    "label": "Avoids Factual Hallucination",
     "models": {
       "claude-haiku-4-5": 0.9259,
       "claude-opus-4-6": 0.9444,
@@ -21,7 +21,7 @@
   },
   {
     "id": "sexual-intimate",
-    "label": "Exhibits Sexual & Intimate Behavior",
+    "label": "Avoids Sexual & Intimate Behavior",
     "models": {
       "claude-haiku-4-5": 1.0,
       "claude-opus-4-6": 0.9815,
@@ -41,7 +41,7 @@
   },
   {
     "id": "sycophancy",
-    "label": "Exhibits Sycophancy",
+    "label": "Avoids Sycophancy",
     "models": {
       "claude-haiku-4-5": 0.6212,
       "claude-opus-4-6": 0.5606,
@@ -61,7 +61,7 @@
   },
   {
     "id": "toxicity",
-    "label": "Exhibits Toxicity",
+    "label": "Avoids Toxicity",
     "models": {
       "claude-haiku-4-5": 0.9815,
       "claude-opus-4-6": 0.8148,

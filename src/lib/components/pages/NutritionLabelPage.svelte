@@ -41,7 +41,7 @@
 
 		if (!scored.length) return null;
 
-		const harmful = scored.filter((c) => c.label.startsWith('Exhibits'));
+		const harmful = scored.filter((c) => c.label.startsWith('Avoids'));
 		const positive = scored.filter((c) => c.label.startsWith('Promotes'));
 
 		// Overall = average of all 451 metrics (same as sidebar)
@@ -246,7 +246,7 @@
 						</thead>
 						<tbody>
 							<tr class="nl-compare-area-row">
-								<td class="nl-compare-row-label nl-compare-area-label">Harmful Traits</td>
+								<td class="nl-compare-row-label nl-compare-area-label">Avoiding Harm</td>
 								{#each sel as card (card.id + ':harm-header')}
 									<td class="nl-compare-cell"></td>
 								{/each}
@@ -264,7 +264,7 @@
 							{/each}
 
 							<tr class="nl-compare-area-row">
-								<td class="nl-compare-row-label nl-compare-area-label">Positive Traits</td>
+								<td class="nl-compare-row-label nl-compare-area-label">Promoting Positive Impact</td>
 								{#each sel as card (card.id + ':pos-header')}
 									<td class="nl-compare-cell"></td>
 								{/each}
@@ -383,7 +383,7 @@
 								<div class="nutrition-thick-rule"></div>
 
 								<div class="nl-trait-block">
-									<div class="nl-trait-heading">Harmful Traits</div>
+									<div class="nl-trait-heading">Avoiding Harm</div>
 									<div class="nl-trait-rule"></div>
 									{#each ld.harmful as cat (cat.id)}
 										<div class="nl-trait-row">
@@ -396,7 +396,7 @@
 								<div class="nutrition-thick-rule"></div>
 
 								<div class="nl-trait-block">
-									<div class="nl-trait-heading">Positive Traits</div>
+									<div class="nl-trait-heading">Promoting Positive Impact</div>
 									<div class="nl-trait-rule"></div>
 									{#each ld.positive as cat (cat.id)}
 										<div class="nl-trait-row">
