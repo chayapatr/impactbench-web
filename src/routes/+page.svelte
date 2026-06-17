@@ -451,6 +451,10 @@
 		} else {
 			activeTab = tab;
 			showGate = false;
+			if (tab === 'nutrition') {
+				sidebarState.navStack = [{ type: 'overview' }];
+				closeScenarioPanel();
+			}
 		}
 	}
 </script>

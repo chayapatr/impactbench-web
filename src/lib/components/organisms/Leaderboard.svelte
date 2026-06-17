@@ -60,6 +60,12 @@
 			}
 		}
 
+		// deduplicate (metrics can appear in multiple subareas)
+		const posSet = [...new Set(posIds)];
+		const negSet = [...new Set(negIds)];
+		posIds.length = 0; posIds.push(...posSet);
+		negIds.length = 0; negIds.push(...negSet);
+
 		if (posIds.length + negIds.length === 0) return { avg: 0.5, pos: 0.5, neg: 0.5 };
 
 		const posVals = posIds.map((id) => scores[id]).filter((v): v is number => v !== undefined);
@@ -113,8 +119,8 @@
 			}
 		}
 
-		const posVals = posIds.map((id) => scores[id]).filter((v): v is number => v !== undefined);
-		const negVals = negIds.map((id) => scores[id]).filter((v): v is number => v !== undefined);
+		const posVals = [...new Set(posIds)].map((id) => scores[id]).filter((v): v is number => v !== undefined);
+		const negVals = [...new Set(negIds)].map((id) => scores[id]).filter((v): v is number => v !== undefined);
 		const allVals = [...posVals, ...negVals];
 		const pos = posVals.length ? posVals.reduce((a, b) => a + b, 0) / posVals.length : 0.5;
 		const neg = negVals.length ? negVals.reduce((a, b) => a + b, 0) / negVals.length : 0.5;
