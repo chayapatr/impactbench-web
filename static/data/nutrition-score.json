@@ -1,0 +1,182 @@
+[
+  {
+    "id": "factual-hallucination",
+    "label": "Exhibits Factual Hallucination",
+    "models": {
+      "claude-haiku-4-5": 0.9259,
+      "claude-opus-4-6": 0.9444,
+      "claude-sonnet-4-6": 0.963,
+      "deepseek-v3": 0.4815,
+      "gemini-2-5-pro": 0.537,
+      "gemma-4-31b": 0.5741,
+      "gpt-4o": 0.6111,
+      "gpt-5": 0.8333,
+      "gpt-5-1": 0.9074,
+      "grok-4-1": 0.4815,
+      "grok-4-1-reasoning": 0.4444,
+      "llama-4": 0.7037,
+      "mistral-small-3": 0.3704,
+      "qwen3-80b": 0.4259
+    }
+  },
+  {
+    "id": "sexual-intimate",
+    "label": "Exhibits Sexual & Intimate Behavior",
+    "models": {
+      "claude-haiku-4-5": 1.0,
+      "claude-opus-4-6": 0.9815,
+      "claude-sonnet-4-6": 0.9259,
+      "deepseek-v3": 0.463,
+      "gemini-2-5-pro": 0.4444,
+      "gemma-4-31b": 0.463,
+      "gpt-4o": 0.8148,
+      "gpt-5": 0.9074,
+      "gpt-5-1": 0.7593,
+      "grok-4-1": 0.0926,
+      "grok-4-1-reasoning": 0.3148,
+      "llama-4": 0.7407,
+      "mistral-small-3": 0.3333,
+      "qwen3-80b": 0.0926
+    }
+  },
+  {
+    "id": "sycophancy",
+    "label": "Exhibits Sycophancy",
+    "models": {
+      "claude-haiku-4-5": 0.6212,
+      "claude-opus-4-6": 0.5606,
+      "claude-sonnet-4-6": 0.5758,
+      "deepseek-v3": 0.5758,
+      "gemini-2-5-pro": 0.6364,
+      "gemma-4-31b": 0.6364,
+      "gpt-4o": 0.5303,
+      "gpt-5": 0.6667,
+      "gpt-5-1": 0.7273,
+      "grok-4-1": 0.4697,
+      "grok-4-1-reasoning": 0.5455,
+      "llama-4": 0.5909,
+      "mistral-small-3": 0.4697,
+      "qwen3-80b": 0.4394
+    }
+  },
+  {
+    "id": "toxicity",
+    "label": "Exhibits Toxicity",
+    "models": {
+      "claude-haiku-4-5": 0.9815,
+      "claude-opus-4-6": 0.8148,
+      "claude-sonnet-4-6": 0.8889,
+      "deepseek-v3": 0.2593,
+      "gemini-2-5-pro": 0.6111,
+      "gemma-4-31b": 0.7963,
+      "gpt-4o": 0.2963,
+      "gpt-5": 0.6481,
+      "gpt-5-1": 0.6667,
+      "grok-4-1": 0.2963,
+      "grok-4-1-reasoning": 0.4815,
+      "llama-4": 0.7222,
+      "mistral-small-3": 0.2037,
+      "qwen3-80b": 0.1852
+    }
+  },
+  {
+    "id": "promote-agency",
+    "label": "Promotes Agency",
+    "models": {
+      "claude-haiku-4-5": 0.8039,
+      "claude-opus-4-6": 0.7843,
+      "claude-sonnet-4-6": 0.7843,
+      "deepseek-v3": 0.4118,
+      "gemini-2-5-pro": 0.5294,
+      "gemma-4-31b": 0.4804,
+      "gpt-4o": 0.4608,
+      "gpt-5": 0.7157,
+      "gpt-5-1": 0.6275,
+      "grok-4-1": 0.2941,
+      "grok-4-1-reasoning": 0.3333,
+      "llama-4": 0.6275,
+      "mistral-small-3": 0.3333,
+      "qwen3-80b": 0.3333
+    }
+  },
+  {
+    "id": "promote-learning",
+    "label": "Promotes Learning & Skill Development",
+    "models": {
+      "claude-haiku-4-5": 0.8472,
+      "claude-opus-4-6": 0.7639,
+      "claude-sonnet-4-6": 0.7361,
+      "deepseek-v3": 0.4444,
+      "gemini-2-5-pro": 0.5278,
+      "gemma-4-31b": 0.5417,
+      "gpt-4o": 0.4167,
+      "gpt-5": 0.6111,
+      "gpt-5-1": 0.6389,
+      "grok-4-1": 0.4028,
+      "grok-4-1-reasoning": 0.3889,
+      "llama-4": 0.4861,
+      "mistral-small-3": 0.3889,
+      "qwen3-80b": 0.3889
+    }
+  },
+  {
+    "id": "promote-social-interaction",
+    "label": "Promotes Social Interaction",
+    "models": {
+      "claude-haiku-4-5": 1.0,
+      "claude-opus-4-6": 0.9762,
+      "claude-sonnet-4-6": 0.8571,
+      "deepseek-v3": 0.5476,
+      "gemini-2-5-pro": 0.4762,
+      "gemma-4-31b": 0.5952,
+      "gpt-4o": 0.7857,
+      "gpt-5": 0.881,
+      "gpt-5-1": 0.7857,
+      "grok-4-1": 0.3571,
+      "grok-4-1-reasoning": 0.4762,
+      "llama-4": 0.7143,
+      "mistral-small-3": 0.4762,
+      "qwen3-80b": 0.2381
+    }
+  },
+  {
+    "id": "promote-creativity",
+    "label": "Promotes Creativity",
+    "models": {
+      "claude-haiku-4-5": 0.7333,
+      "claude-opus-4-6": 0.6333,
+      "claude-sonnet-4-6": 0.6,
+      "deepseek-v3": 0.2333,
+      "gemini-2-5-pro": 0.3333,
+      "gemma-4-31b": 0.4,
+      "gpt-4o": 0.2667,
+      "gpt-5": 0.4,
+      "gpt-5-1": 0.4667,
+      "grok-4-1": 0.4,
+      "grok-4-1-reasoning": 0.3333,
+      "llama-4": 0.4333,
+      "mistral-small-3": 0.2667,
+      "qwen3-80b": 0.2667
+    }
+  },
+  {
+    "id": "promote-wellbeing",
+    "label": "Promotes Wellbeing",
+    "models": {
+      "claude-haiku-4-5": 0.9804,
+      "claude-opus-4-6": 0.9706,
+      "claude-sonnet-4-6": 0.951,
+      "deepseek-v3": 0.7941,
+      "gemini-2-5-pro": 0.8529,
+      "gemma-4-31b": 0.8922,
+      "gpt-4o": 0.8824,
+      "gpt-5": 0.9706,
+      "gpt-5-1": 0.8922,
+      "grok-4-1": 0.7353,
+      "grok-4-1-reasoning": 0.8235,
+      "llama-4": 0.8235,
+      "mistral-small-3": 0.7451,
+      "qwen3-80b": 0.7255
+    }
+  }
+]

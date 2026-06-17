@@ -6,6 +6,7 @@
 		loadBenchmarkData,
 		loadScenarioIndex,
 		loadMetricCriteria,
+		loadNutritionScore,
 		buildHierarchy,
 		getScoresForFilter
 	} from '$lib/data';
@@ -15,6 +16,7 @@
 		setFilters,
 		setScenarioIndex,
 		setMetricCriteria,
+		setNutritionScore,
 		sidebarState,
 		sidebarPush,
 		sidebarNavigateToArea,
@@ -43,6 +45,7 @@
 	import AboutPage from '$lib/components/pages/AboutPage.svelte';
 	import MetricsPage from '$lib/components/pages/MetricsPage.svelte';
 	import FeedbackSurveyModal from '$lib/components/organisms/FeedbackSurveyModal.svelte';
+	import NutritionLabelPage from '$lib/components/pages/NutritionLabelPage.svelte';
 
 	let showGate = $state(true);
 	let isAuthenticated = $state(false);
@@ -142,6 +145,9 @@
 				.catch(() => {});
 			loadMetricCriteria()
 				.then(setMetricCriteria)
+				.catch(() => {});
+			loadNutritionScore()
+				.then(setNutritionScore)
 				.catch(() => {});
 
 			// Wire up global window callbacks for backwards compat
@@ -424,7 +430,7 @@
 		});
 	}
 
-	const LOCKED_TABS = new Set(['explore', 'metrics']);
+	const LOCKED_TABS = new Set(['explore', 'metrics', 'nutrition']);
 
 	// Incremented each time a locked tab is clicked to (re-)trigger the
 	// password modal on the gate page. Seeded to 1 when a deep link is
@@ -438,6 +444,9 @@
 			showGate = true;
 		} else if (LOCKED_TABS.has(tab) && !isAuthenticated) {
 			showGate = true;
+			// Remember which locked tab the user wanted so we can land them
+			// there (not on the default Explore) after they enter the password.
+			pendingDeepTab = tab;
 			gatePasswordRequest += 1;
 		} else {
 			activeTab = tab;
@@ -466,11 +475,19 @@
 		{isAuthenticated}
 		showPasswordOnMount={!!(pendingDeepMetric || pendingDeepScenario)}
 		passwordRequestNonce={gatePasswordRequest}
-		onEnter={() => {
+		onEnter={(smartText) => {
 			isAuthenticated = true;
 			showGate = false;
-			activeTab = pendingDeepTab ?? 'explore';
-			pendingDeepTab = null;
+			// If user submitted a focus prompt on the homepage, route them
+			// straight to the Nutritional Label tab and run the pipeline.
+			if (smartText && smartText.trim()) {
+				activeTab = 'nutrition';
+				pendingDeepTab = null;
+				handleSmartExploreSubmit(smartText);
+			} else {
+				activeTab = pendingDeepTab ?? 'explore';
+				pendingDeepTab = null;
+			}
 			// Navigate to deep link target if present
 			if (pendingDeepMetric && appState.taxonomy) {
 				sidebarNavigateToMetric(pendingDeepMetric, appState.taxonomy);
@@ -510,6 +527,7 @@
 		/>
 
 		<!-- Beta banner (below navbar) -->
+		{#if activeTab !== 'nutrition'}
 		<div
 			class="z-[99] flex-shrink-0 border-b border-[#fde047] bg-[#fef9c3] px-6 py-[10px] text-center text-[13px] leading-[1.5] text-[#713f12]"
 		>
@@ -536,6 +554,7 @@
 				Help us learn
 			</button>
 		</div>
+		{/if}
 
 		{#if activeTab === 'explore'}
 			<!-- Main 3-column layout -->
@@ -647,6 +666,14 @@
 		{:else if activeTab === 'about'}
 			<div class="flex flex-1 overflow-hidden">
 				<AboutPage onTabChange={handleTabChange} />
+			</div>
+		{:else if activeTab === 'nutrition'}
+			<div class="flex flex-1 overflow-hidden">
+				<NutritionLabelPage
+					loading={smartExploreLoading}
+					onTabChange={handleTabChange}
+					onModelSelect={handleLeaderboardModelSelect}
+				/>
 			</div>
 		{/if}
 	</div>

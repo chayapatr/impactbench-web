@@ -150,10 +150,7 @@
 					onclick={() => toggleMetric(m.id)}
 				>
 					<BadgeIcon
-						type={(m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) ===
-						'flourishing'
-							? 'pass'
-							: 'fail'}
+						type={(m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'flourishing' ? 'pass' : 'fail'}
 						variant="metric"
 					/>
 					<span

@@ -45,6 +45,23 @@ export function formatScore(score: number): string {
 	return score.toFixed(2);
 }
 
+export function scoreToLetterGrade(score: number): string {
+	if (!Number.isFinite(score)) return 'N/A';
+	if (score >= 0.9) return 'A+';
+	if (score >= 0.85) return 'A';
+	if (score >= 0.8) return 'A-';
+	if (score >= 0.75) return 'B+';
+	if (score >= 0.7) return 'B';
+	if (score >= 0.65) return 'B-';
+	if (score >= 0.6) return 'C+';
+	if (score >= 0.55) return 'C';
+	if (score >= 0.5) return 'C-';
+	if (score >= 0.45) return 'D+';
+	if (score >= 0.4) return 'D';
+	if (score >= 0.35) return 'D-';
+	return 'F';
+}
+
 export function scoreToArcValue(score: number, floor = 0.1): number {
 	return Math.max(Math.abs(score - 0.5), floor);
 }

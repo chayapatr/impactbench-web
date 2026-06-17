@@ -1,4 +1,5 @@
 import type { Taxonomy, AIModel, BenchmarkData, FilterState, ScenarioIndex } from './types';
+import type { NutritionCategory } from './data';
 import { humanizeName } from './utils';
 
 // ===== App State (Svelte 5 runes) =====
@@ -9,6 +10,7 @@ export const appState = $state({
 	benchmarkData: {} as BenchmarkData,
 	scenarioIndex: null as ScenarioIndex | null,
 	metricCriteria: {} as Record<string, string>,
+	nutritionScore: [] as NutritionCategory[],
 	filters: { model: 'claude-haiku-4-5', age: 'adult' } as FilterState,
 	loading: true,
 	error: null as string | null,
@@ -47,6 +49,10 @@ export function setScenarioIndex(idx: ScenarioIndex) {
 
 export function setMetricCriteria(criteria: Record<string, string>) {
 	appState.metricCriteria = criteria;
+}
+
+export function setNutritionScore(score: NutritionCategory[]) {
+	appState.nutritionScore = score;
 }
 
 // ===== Tooltip State =====

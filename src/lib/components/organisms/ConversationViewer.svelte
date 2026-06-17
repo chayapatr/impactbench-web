@@ -12,6 +12,7 @@
 		scenarioDetail: ScenarioDetail | null;
 		loading: boolean;
 		error: boolean;
+		verdictOverride?: string | null;
 		// For model switcher (MetricsPage only)
 		showModelSwitcher?: boolean;
 		viewingModelId?: string;
@@ -31,7 +32,8 @@
 		showModelSwitcher = false,
 		viewingModelId = '',
 		scenarioId = '',
-		onSwitchModel
+		onSwitchModel,
+		verdictOverride = null
 	}: Props = $props();
 
 	const criteria = $derived(appState.metricCriteria?.[metricId] ?? '');
@@ -53,10 +55,9 @@
 {:else if error}
 	<p class="mt-4 text-[13px] text-[#dc2626]">Failed to load conversation.</p>
 {:else if scenarioDetail}
-	{@const verdict = scenarioDetail.verdict ?? {}}
-	{@const rawResult = verdict.result}
+	{@const rawResult = verdictOverride}
 	{@const pass = rawResult == null ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
-	{@const turns = scenarioDetail.samples?.[0] ?? []}
+	{@const turns = scenarioDetail.transcript ?? []}
 
 	<!-- Metric criteria -->
 	{#if criteria}
@@ -102,7 +103,7 @@
 	{/if}
 
 	<!-- Verdict -->
-	{#if pass !== null || verdict.justification}
+	{#if pass !== null || scenarioDetail.justification}
 		<div class="mb-4">
 			<div class="mb-[6px] flex items-center gap-2">
 				<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Verdict</div>
@@ -114,11 +115,9 @@
 					>
 				{/if}
 			</div>
-			{#if verdict.justification}
-				<div
-					class="prose prose-sm max-w-none text-[12px] leading-loose text-balance text-[#6b7280]"
-				>
-					{@html marked.parse(verdict.justification)}
+			{#if scenarioDetail.justification}
+				<div class="prose prose-sm max-w-none text-[12px] leading-loose text-[#6b7280]">
+					{@html marked.parse(scenarioDetail.justification)}
 				</div>
 			{/if}
 		</div>

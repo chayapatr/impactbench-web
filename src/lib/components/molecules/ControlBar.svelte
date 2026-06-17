@@ -15,6 +15,7 @@
 
 	const TABS = [
 		{ id: 'home', label: 'Home', icon: 'fa-house', locked: false },
+		{ id: 'nutrition', label: 'Nutritional Label', icon: 'fa-clipboard-list', locked: true },
 		{ id: 'explore', label: 'Explore', icon: 'fa-chart-pie', locked: true },
 		{ id: 'metrics', label: 'Metrics', icon: 'fa-list-check', locked: true },
 		{ id: 'about', label: 'About', icon: 'fa-seedling', locked: false }
