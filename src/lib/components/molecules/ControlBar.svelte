@@ -10,6 +10,9 @@
 
 	let { onSmartExplore, onTabChange, activeTab, isAuthenticated, isSmartMode = false, smartExploreLoading = false }: Props = $props();
 
+	// Smart Explore is temporarily hidden from the UI; flip to true to surface it again.
+	const SHOW_SMART_EXPLORE = false;
+
 	const TABS = [
 		{ id: 'home', label: 'Home', icon: 'fa-house', locked: false },
 		{ id: 'explore', label: 'Explore', icon: 'fa-chart-pie', locked: true },
@@ -56,7 +59,7 @@
 
 		<!-- Right side -->
 		<div class="flex items-center gap-2 ml-auto">
-			{#if activeTab === 'explore' && !isSmartMode}
+			{#if SHOW_SMART_EXPLORE && activeTab === 'explore' && !isSmartMode}
 				<button
 					disabled={smartExploreLoading}
 					class="inline-flex items-center gap-2 px-4 py-2 rounded-[6px] text-white text-[13px] font-semibold border-none
