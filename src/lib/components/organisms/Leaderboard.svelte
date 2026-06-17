@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appState, leaderboardState, sidebarState, setFilters } from '$lib/store.svelte';
+	import { appState, leaderboardState, sidebarState, scenarioPanelState, setFilters } from '$lib/store.svelte';
 	import { makeBenchmarkKey } from '$lib/data';
 	import { formatScore } from '$lib/scores';
 
@@ -15,7 +15,11 @@
 	let { onModelSelect }: Props = $props();
 
 	// Derive context from sidebar nav stack
-	const navContext = $derived(() => {
+	const _navContextValue = $derived.by(() => {
+		// scenario panel takes priority
+		if (scenarioPanelState.open && scenarioPanelState.metricId && scenarioPanelState.scenarioMeta) {
+			return { mode: 'scenario' as const, metricId: scenarioPanelState.metricId, scenarioMeta: scenarioPanelState.scenarioMeta };
+		}
 		const top = sidebarState.navStack[sidebarState.navStack.length - 1];
 		if (top.type === 'scenario') {
 			return { mode: 'scenario' as const, metricId: top.metricId, scenarioMeta: top.scenarioMeta };
@@ -34,6 +38,7 @@
 		}
 		return { mode: 'overview' as const };
 	});
+	const navContext = () => _navContextValue;
 
 	function computeSplitScore(modelId: string, areaId: string | null, subareaId: string | null, metricId: string | null) {
 		const key = makeBenchmarkKey(modelId, appState.filters.age);

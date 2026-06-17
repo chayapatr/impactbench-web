@@ -102,6 +102,7 @@ export interface ScenarioDetail {
 	metric_type: string;
 	user_goal: string;
 	persona: string;
+	latent_adversarial_goal?: string;
 	transcript: ChatTurn[];
 	justification?: string;
 }

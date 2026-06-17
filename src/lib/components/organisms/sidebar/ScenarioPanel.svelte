@@ -38,7 +38,7 @@
 		<span class="truncate text-[11px] font-semibold text-[#9ca3af]">{getModelName(appState)}</span>
 	{/snippet}
 	{#snippet banner()}
-		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" breadcrumb={backLabel} title={scenarioMeta.title}>
+		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" title={scenarioMeta.title}>
 			{#snippet children()}
 				<span class="text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]">{scenarioMeta.title}</span>
 				{#if _metric}

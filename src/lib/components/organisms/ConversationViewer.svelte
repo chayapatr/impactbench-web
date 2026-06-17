@@ -13,7 +13,6 @@
 		loading: boolean;
 		error: boolean;
 		verdictOverride?: string | null;
-		// For model switcher (MetricsPage only)
 		showModelSwitcher?: boolean;
 		viewingModelId?: string;
 		scenarioId?: string;
@@ -37,19 +36,14 @@
 	}: Props = $props();
 
 	const criteria = $derived(appState.metricCriteria?.[metricId] ?? '');
-
 	const isHarmful = $derived(behaviorType === 'restrain_harm' && measurement === 'presence');
 
-	function verdictLabel(pass: boolean): string {
-		return pass ? 'Pass' : 'Fail';
-	}
+	let reasoningOpen = $state(false);
 </script>
 
 {#if loading}
 	<div class="mt-4 flex items-center gap-2 text-[#9ca3af]">
-		<div
-			class="h-4 w-4 animate-spin rounded-full border-2 border-[#e5e7eb] border-t-[#00b3b0]"
-		></div>
+		<div class="h-4 w-4 animate-spin rounded-full border-2 border-[#e5e7eb] border-t-[#00b3b0]"></div>
 		<span class="text-[13px]">Loading conversation…</span>
 	</div>
 {:else if error}
@@ -59,17 +53,24 @@
 	{@const pass = rawResult == null ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
 	{@const turns = scenarioDetail.transcript ?? []}
 
-	<!-- Metric criteria -->
+	<!-- Metric -->
 	{#if criteria}
 		<div class="mb-4">
-			<div class="mb-[6px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-				Metric
-			</div>
+			<div class="mb-[6px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Metric</div>
 			<div class="prose prose-sm max-w-none text-[12px] leading-relaxed text-[#6b7280]">
 				{@html marked.parse(criteria)}
 			</div>
 		</div>
-		<div class="-mx-6 my-4 border-t border-[#e5e7eb]"></div>
+		<div class="-mx-6 mb-4 border-t border-[#e5e7eb]"></div>
+	{/if}
+
+	<!-- Persona -->
+	{#if scenarioDetail.persona}
+		<div class="mb-4">
+			<div class="mb-[6px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Persona</div>
+			<div class="text-[12px] leading-relaxed text-[#374151]">{scenarioDetail.persona}</div>
+		</div>
+		<div class="-mx-6 mb-4 border-t border-[#e5e7eb]"></div>
 	{/if}
 
 	<!-- Model switcher -->
@@ -91,9 +92,8 @@
 					{#if pass2 !== null}
 						<span
 							class="inline-flex h-[12px] w-[12px] flex-shrink-0 items-center justify-center rounded-full text-[7px] font-[800]"
-							style={pass2
-								? 'background:#dcfce7;color:#16a34a'
-								: 'background:#fee2e2;color:#dc2626'}>{pass2 ? '✓' : '✗'}</span
+							style={pass2 ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
+							>{pass2 ? '✓' : '✗'}</span
 						>
 					{/if}
 					{model.name}
@@ -102,49 +102,43 @@
 		</div>
 	{/if}
 
-	<!-- Verdict -->
-	{#if pass !== null || scenarioDetail.justification}
+	<!-- Verdict — badge always visible, reasoning accordion -->
+	{#if pass !== null}
 		<div class="mb-4">
-			<div class="mb-[6px] flex items-center gap-2">
-				<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Verdict</div>
-				{#if pass !== null}
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Verdict</div>
 					<span
 						class="rounded-full px-2 py-0.5 text-[10px] font-bold"
 						style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-						>{verdictLabel(pass)}</span
+					>{pass ? 'Pass' : 'Fail'}</span>
+				</div>
+				{#if scenarioDetail.justification}
+					<button
+						class="flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] text-[#9ca3af] hover:text-[#6b7280]"
+						onclick={() => (reasoningOpen = !reasoningOpen)}
 					>
+						Reasoning <i class="fa-solid {reasoningOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-[8px]"></i>
+					</button>
 				{/if}
 			</div>
-			{#if scenarioDetail.justification}
-				<div class="prose prose-sm max-w-none text-[12px] leading-loose text-[#6b7280]">
+			{#if reasoningOpen && scenarioDetail.justification}
+				<div class="prose prose-sm mt-2 max-w-none text-[12px] leading-loose text-[#6b7280]">
 					{@html marked.parse(scenarioDetail.justification)}
 				</div>
 			{/if}
 		</div>
-		<div class="-mx-6 my-4 border-t border-[#e5e7eb]"></div>
+		<div class="-mx-6 mb-4 border-t border-[#e5e7eb]"></div>
 	{/if}
 
-	<!-- Conversation label -->
-	<div class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-		Conversation
-	</div>
-
-	<!-- Chat bubbles -->
+	<!-- Conversation -->
+	<div class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Conversation</div>
 	{#each turns as turn, i (i)}
 		<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
-			<div
-				class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role === 'user'
-					? 'text-[#00b3b0]'
-					: 'text-[#9ca3af]'}"
-			>
+			<div class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}">
 				{turn.role === 'user' ? 'User' : 'AI'}
 			</div>
-			<div
-				class="prose prose-sm inline-block max-w-[88%] max-w-none rounded-xl px-3 py-2 text-left text-[12px] {turn.role ===
-				'user'
-					? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert'
-					: 'bg-[#f3f4f6] text-[#374151]'}"
-			>
+			<div class="prose prose-sm inline-block max-w-[88%] max-w-none rounded-xl px-3 py-2 text-left text-[12px] {turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert' : 'bg-[#f3f4f6] text-[#374151]'}">
 				{@html marked.parse(turn.content)}
 			</div>
 		</div>
