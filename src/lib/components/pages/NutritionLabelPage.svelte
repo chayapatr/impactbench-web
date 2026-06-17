@@ -246,7 +246,7 @@
 						</thead>
 						<tbody>
 							<tr class="nl-compare-area-row">
-								<td class="nl-compare-row-label nl-compare-area-label">Avoiding Harm</td>
+								<td class="nl-compare-row-label nl-compare-area-label">Avoiding Negative Impact</td>
 								{#each sel as card (card.id + ':harm-header')}
 									<td class="nl-compare-cell"></td>
 								{/each}
@@ -383,7 +383,7 @@
 								<div class="nutrition-thick-rule"></div>
 
 								<div class="nl-trait-block">
-									<div class="nl-trait-heading">Avoiding Harm</div>
+									<div class="nl-trait-heading">Avoiding Negative Impact</div>
 									<div class="nl-trait-rule"></div>
 									{#each ld.harmful as cat (cat.id)}
 										<div class="nl-trait-row">
