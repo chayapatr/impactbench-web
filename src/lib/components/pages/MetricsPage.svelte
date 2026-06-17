@@ -503,7 +503,7 @@
 						{selectedMetricForScenario.subareaName}
 					</div>
 					<div class="text-[14px] font-[700] text-[#1a1a1a] tracking-[-0.01em] leading-[1.3] mb-[3px]">
-						{conversationDetail ? conversationDetail.scenario.title : '…'}
+						{conversationDetail ? conversationDetail.user_goal : '…'}
 					</div>
 					<div class="flex items-center gap-2 mt-[4px]">
 						<span class="text-[11px] text-[#9ca3af]">{selectedMetricForScenario.name}</span>
@@ -516,6 +516,7 @@
 			</div>
 			<div class="flex-1 overflow-y-auto px-6 py-4">
 				{#if selectedMetricForScenario}
+					{@const _scVerdict = appState.scenarioIndex?.[selectedMetricForScenario.id]?.find(sc => sc.scenario_id === selectedScenarioId)?.verdicts?.[viewingModelId] ?? null}
 					<ConversationViewer
 						metricId={selectedMetricForScenario.id}
 						metricName={selectedMetricForScenario.name}
@@ -529,6 +530,7 @@
 						{viewingModelId}
 						scenarioId={selectedScenarioId ?? ''}
 						onSwitchModel={switchModel}
+						verdictOverride={_scVerdict}
 					/>
 				{/if}
 			</div>

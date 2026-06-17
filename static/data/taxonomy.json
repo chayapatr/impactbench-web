@@ -142,39 +142,39 @@
             {
               "name": "Gambling & Financial Risk Behavior",
               "metric_ids": [
-                "cog-bias_metric_011",
-                "cog-bias_metric_013",
-                "flourishing-ai-benchmark_metric_024",
-                "humanebench_metric_001",
-                "humanebench_metric_004",
-                "humanebench_metric_018",
-                "humanebench_metric_020"
+                "cog-bias__m11",
+                "cog-bias__m13",
+                "flourishing-ai-benchmark__m24",
+                "humanebench__m01",
+                "humanebench__m04",
+                "humanebench__m18",
+                "humanebench__m20"
               ]
             },
             {
               "name": "Bias in Recommendations",
               "metric_ids": [
-                "financial_metric_006",
-                "name-bias_metric_010",
-                "name-bias_metric_014",
-                "prosocial-ai-index_metric_015"
+                "financial__m06",
+                "name-bias__m10",
+                "name-bias__m14",
+                "prosocial-ai-index__m15"
               ]
             },
             {
               "name": "Wellbeing & Professional Referral",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_001",
-                "flourishing-ai-benchmark_metric_006",
-                "flourishing-ai-benchmark_metric_018",
-                "flourishing-ai-benchmark_metric_019",
-                "flourishing-ai-benchmark_metric_030"
+                "flourishing-ai-benchmark__m01",
+                "flourishing-ai-benchmark__m06",
+                "flourishing-ai-benchmark__m18",
+                "flourishing-ai-benchmark__m19",
+                "flourishing-ai-benchmark__m30"
               ]
             },
             {
               "name": "Value Trade-offs & Alternatives",
               "metric_ids": [
-                "prosocial-ai-index_metric_005",
-                "prosocial-ai-index_metric_011"
+                "prosocial-ai-index__m05",
+                "prosocial-ai-index__m11"
               ]
             }
           ]
@@ -378,48 +378,48 @@
             {
               "name": "Emergency and Professional Referral",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_019",
-                "flourishing-ai-benchmark_metric_030",
-                "health-bench_metric_001",
-                "health-bench_metric_002",
-                "health-bench_metric_003",
-                "health-bench_metric_020",
-                "health-bench_metric_018"
+                "flourishing-ai-benchmark__m19",
+                "flourishing-ai-benchmark__m30",
+                "health-bench__m01",
+                "health-bench__m02",
+                "health-bench__m03",
+                "health-bench__m20",
+                "health-bench__m18"
               ]
             },
             {
               "name": "Accuracy and Epistemic Calibration",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_023",
-                "health-bench_metric_008",
-                "health-bench_metric_010",
-                "health-bench_metric_011",
-                "health-bench_metric_009",
-                "health-bench_metric_016"
+                "flourishing-ai-benchmark__m23",
+                "health-bench__m08",
+                "health-bench__m10",
+                "health-bench__m11",
+                "health-bench__m09",
+                "health-bench__m16"
               ]
             },
             {
               "name": "Communication and Context Adaptation",
               "metric_ids": [
-                "health-bench_metric_004",
-                "health-bench_metric_005",
-                "health-bench_metric_006",
-                "health-bench_metric_007",
-                "health-bench_metric_012",
-                "health-bench_metric_013",
-                "health-bench_metric_017",
-                "health-bench_metric_019"
+                "health-bench__m04",
+                "health-bench__m05",
+                "health-bench__m06",
+                "health-bench__m07",
+                "health-bench__m12",
+                "health-bench__m13",
+                "health-bench__m17",
+                "health-bench__m19"
               ]
             },
             {
               "name": "Actionable Guidance and Wellbeing",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_001",
-                "flourishing-ai-benchmark_metric_006",
-                "flourishing-ai-benchmark_metric_009",
-                "flourishing-ai-benchmark_metric_018",
-                "health-bench_metric_014",
-                "health-bench_metric_015"
+                "flourishing-ai-benchmark__m01",
+                "flourishing-ai-benchmark__m06",
+                "flourishing-ai-benchmark__m09",
+                "flourishing-ai-benchmark__m18",
+                "health-bench__m14",
+                "health-bench__m15"
               ]
             }
           ]
@@ -574,41 +574,41 @@
             {
               "name": "Legal Reasoning & Analysis",
               "metric_ids": [
-                "legal-bench_metric_001",
-                "legal-bench_metric_003",
-                "legal-bench_metric_004",
-                "legal-bench_metric_009",
-                "legal-bench_metric_010",
-                "legal-bench_metric_013"
+                "legal-bench__m01",
+                "legal-bench__m03",
+                "legal-bench__m04",
+                "legal-bench__m09",
+                "legal-bench__m10",
+                "legal-bench__m13"
               ]
             },
             {
               "name": "Legal Knowledge & Doctrine",
               "metric_ids": [
-                "legal-bench_metric_002",
-                "legal-bench_metric_005",
-                "legal-bench_metric_011",
-                "legal-bench_metric_012",
-                "legal-bench_metric_015",
-                "legal-bench_metric_017",
-                "legal-bench_metric_018"
+                "legal-bench__m02",
+                "legal-bench__m05",
+                "legal-bench__m11",
+                "legal-bench__m12",
+                "legal-bench__m15",
+                "legal-bench__m17",
+                "legal-bench__m18"
               ]
             },
             {
               "name": "Accuracy & Error Avoidance",
               "metric_ids": [
-                "legal-bench_metric_007",
-                "legal-bench_metric_008",
-                "legal-bench_metric_014",
-                "legal-bench_metric_016"
+                "legal-bench__m07",
+                "legal-bench__m08",
+                "legal-bench__m14",
+                "legal-bench__m16"
               ]
             },
             {
               "name": "Professional Judgment & Objectivity",
               "metric_ids": [
-                "legal-bench_metric_006",
-                "legal-bench_metric_019",
-                "legal-bench_metric_020"
+                "legal-bench__m06",
+                "legal-bench__m19",
+                "legal-bench__m20"
               ]
             }
           ]
@@ -1156,131 +1156,131 @@
             {
               "name": "Therapeutic Support & Wellbeing Promotion",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_002",
-                "flourishing-ai-benchmark_metric_005",
-                "flourishing-ai-benchmark_metric_008",
-                "flourishing-ai-benchmark_metric_010",
-                "flourishing-ai-benchmark_metric_018",
-                "flourishing-ai-benchmark_metric_026",
-                "humanagency-bench_metric_035",
-                "cog-bias_metric_015"
+                "flourishing-ai-benchmark__m02",
+                "flourishing-ai-benchmark__m05",
+                "flourishing-ai-benchmark__m08",
+                "flourishing-ai-benchmark__m10",
+                "flourishing-ai-benchmark__m18",
+                "flourishing-ai-benchmark__m26",
+                "humanagency-bench__m35",
+                "cog-bias__m15"
               ]
             },
             {
               "name": "Professional Referral & Responsible Information",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_006",
-                "flourishing-ai-benchmark_metric_007",
-                "flourishing-ai-benchmark_metric_019",
-                "flourishing-ai-benchmark_metric_020",
-                "flourishing-ai-benchmark_metric_021",
-                "flourishing-ai-benchmark_metric_030"
+                "flourishing-ai-benchmark__m06",
+                "flourishing-ai-benchmark__m07",
+                "flourishing-ai-benchmark__m19",
+                "flourishing-ai-benchmark__m20",
+                "flourishing-ai-benchmark__m21",
+                "flourishing-ai-benchmark__m30"
               ]
             },
             {
               "name": "Boundaries Against Parasocial Attachment",
               "metric_ids": [
-                "humanagency-bench_metric_027",
-                "humanagency-bench_metric_031",
-                "humanebench_metric_010",
-                "humanebench_metric_011",
-                "humanebench_metric_012",
-                "humanebench_metric_013",
-                "humanebench_metric_014"
+                "humanagency-bench__m27",
+                "humanagency-bench__m31",
+                "humanebench__m10",
+                "humanebench__m11",
+                "humanebench__m12",
+                "humanebench__m13",
+                "humanebench__m14"
               ]
             },
             {
               "name": "Addiction & Harm Reduction",
               "metric_ids": [
-                "humanebench_metric_001",
-                "humanebench_metric_002",
-                "humanebench_metric_003",
-                "humanebench_metric_004"
+                "humanebench__m01",
+                "humanebench__m02",
+                "humanebench__m03",
+                "humanebench__m04"
               ]
             },
             {
               "name": "Suicide Prevention & Harm Refusal",
               "metric_ids": [
-                "llm-mental-health-refusal-and-responsiveness-score_metric_001",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_002",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_003",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_004",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_005",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_008",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_009",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_013",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_015",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_016"
+                "llm-mental-health-refusal-and-responsiveness-score__m01",
+                "llm-mental-health-refusal-and-responsiveness-score__m02",
+                "llm-mental-health-refusal-and-responsiveness-score__m03",
+                "llm-mental-health-refusal-and-responsiveness-score__m04",
+                "llm-mental-health-refusal-and-responsiveness-score__m05",
+                "llm-mental-health-refusal-and-responsiveness-score__m08",
+                "llm-mental-health-refusal-and-responsiveness-score__m09",
+                "llm-mental-health-refusal-and-responsiveness-score__m13",
+                "llm-mental-health-refusal-and-responsiveness-score__m15",
+                "llm-mental-health-refusal-and-responsiveness-score__m16"
               ]
             },
             {
               "name": "Crisis Response & Therapeutic Support",
               "metric_ids": [
-                "llm-mental-health-refusal-and-responsiveness-score_metric_006",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_007",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_010",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_011",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_012",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_014",
-                "humanebench_metric_022"
+                "llm-mental-health-refusal-and-responsiveness-score__m06",
+                "llm-mental-health-refusal-and-responsiveness-score__m07",
+                "llm-mental-health-refusal-and-responsiveness-score__m10",
+                "llm-mental-health-refusal-and-responsiveness-score__m11",
+                "llm-mental-health-refusal-and-responsiveness-score__m12",
+                "llm-mental-health-refusal-and-responsiveness-score__m14",
+                "humanebench__m22"
               ]
             },
             {
               "name": "Healthy Engagement & Dependency Prevention",
               "metric_ids": [
-                "humanebench_metric_015",
-                "humanebench_metric_016",
-                "humanebench_metric_017",
-                "humanebench_metric_023",
-                "humanebench_metric_025"
+                "humanebench__m15",
+                "humanebench__m16",
+                "humanebench__m17",
+                "humanebench__m23",
+                "humanebench__m25"
               ]
             },
             {
               "name": "Addictive Behavior Awareness",
               "metric_ids": [
-                "humanebench_metric_019",
-                "humanebench_metric_020",
-                "humanebench_metric_021"
+                "humanebench__m19",
+                "humanebench__m20",
+                "humanebench__m21"
               ]
             },
             {
               "name": "Responsible Crisis Communication",
               "metric_ids": [
-                "llm-mental-health-refusal-and-responsiveness-score_metric_017",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_018",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_019",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_020"
+                "llm-mental-health-refusal-and-responsiveness-score__m17",
+                "llm-mental-health-refusal-and-responsiveness-score__m18",
+                "llm-mental-health-refusal-and-responsiveness-score__m19",
+                "llm-mental-health-refusal-and-responsiveness-score__m20"
               ]
             },
             {
               "name": "Dependency & Engagement Awareness",
               "metric_ids": [
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_010"
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m10"
               ]
             },
             {
               "name": "Crisis Protocol & Safe Messaging",
               "metric_ids": [
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_001",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_002",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_003",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_004",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_005",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_006",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_007",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_008",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_009",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_010",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_011",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_012",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_013",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_014",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_015",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_016",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_017",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_018",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_019",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_020"
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m01",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m02",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m03",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m04",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m05",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m06",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m07",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m08",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m09",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m10",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m11",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m12",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m13",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m14",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m15",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m16",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m17",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m18",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m19",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m20"
               ]
             }
           ]
@@ -1925,121 +1925,121 @@
             {
               "name": "Decision Authority & Non-Directive Guidance",
               "metric_ids": [
-                "autonomy-preserving-information-provision_metric_001",
-                "autonomy-preserving-information-provision_metric_004",
-                "autonomy-preserving-information-provision_metric_006",
-                "autonomy-preserving-information-provision_metric_010",
-                "autonomy-preserving-information-provision_metric_017",
-                "autonomy-preserving-information-provision_metric_019",
-                "autonomy-preserving-information-provision_metric_020",
-                "humanagency-bench_metric_015",
-                "humanagency-bench_metric_017",
-                "humanagency-bench_metric_018",
-                "humanagency-bench_metric_034",
-                "humanagency-bench_metric_038",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_004",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_005",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_007",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_009",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_011",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_015",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_007",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_013"
+                "autonomy-preserving-information-provision__m01",
+                "autonomy-preserving-information-provision__m04",
+                "autonomy-preserving-information-provision__m06",
+                "autonomy-preserving-information-provision__m10",
+                "autonomy-preserving-information-provision__m17",
+                "autonomy-preserving-information-provision__m19",
+                "autonomy-preserving-information-provision__m20",
+                "humanagency-bench__m15",
+                "humanagency-bench__m17",
+                "humanagency-bench__m18",
+                "humanagency-bench__m34",
+                "humanagency-bench__m38",
+                "modulated-cognitive-autonomy-benchmark-mcab__m04",
+                "modulated-cognitive-autonomy-benchmark-mcab__m05",
+                "modulated-cognitive-autonomy-benchmark-mcab__m07",
+                "modulated-cognitive-autonomy-benchmark-mcab__m09",
+                "modulated-cognitive-autonomy-benchmark-mcab__m11",
+                "modulated-cognitive-autonomy-benchmark-mcab__m15",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m07",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m13"
               ]
             },
             {
               "name": "Value Neutrality & Avoiding Influence",
               "metric_ids": [
-                "autonomy-preserving-information-provision_metric_007",
-                "autonomy-preserving-information-provision_metric_011",
-                "autonomy-preserving-information-provision_metric_013",
-                "humanagency-bench_metric_005",
-                "humanagency-bench_metric_006",
-                "humanagency-bench_metric_008",
-                "humanagency-bench_metric_009",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_018",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_019",
-                "flourishing-ai-benchmark_metric_029",
-                "user-bias_metric_002",
-                "user-bias_metric_008"
+                "autonomy-preserving-information-provision__m07",
+                "autonomy-preserving-information-provision__m11",
+                "autonomy-preserving-information-provision__m13",
+                "humanagency-bench__m05",
+                "humanagency-bench__m06",
+                "humanagency-bench__m08",
+                "humanagency-bench__m09",
+                "modulated-cognitive-autonomy-benchmark-mcab__m18",
+                "modulated-cognitive-autonomy-benchmark-mcab__m19",
+                "flourishing-ai-benchmark__m29",
+                "user-bias__m02",
+                "user-bias__m08"
               ]
             },
             {
               "name": "Epistemic Humility & Uncertainty Disclosure",
               "metric_ids": [
-                "autonomy-preserving-information-provision_metric_003",
-                "autonomy-preserving-information-provision_metric_005",
-                "autonomy-preserving-information-provision_metric_008",
-                "autonomy-preserving-information-provision_metric_014",
-                "autonomy-preserving-information-provision_metric_016",
-                "autonomy-preserving-information-provision_metric_018",
-                "humanagency-bench_metric_020",
-                "humanagency-bench_metric_032",
-                "humanagency-bench_metric_040",
-                "humanebench_metric_009",
-                "humanebench_metric_012",
-                "flourishing-ai-benchmark_metric_015",
-                "financial_metric_014",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_002",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_008"
+                "autonomy-preserving-information-provision__m03",
+                "autonomy-preserving-information-provision__m05",
+                "autonomy-preserving-information-provision__m08",
+                "autonomy-preserving-information-provision__m14",
+                "autonomy-preserving-information-provision__m16",
+                "autonomy-preserving-information-provision__m18",
+                "humanagency-bench__m20",
+                "humanagency-bench__m32",
+                "humanagency-bench__m40",
+                "humanebench__m09",
+                "humanebench__m12",
+                "flourishing-ai-benchmark__m15",
+                "financial__m14",
+                "modulated-cognitive-autonomy-benchmark-mcab__m02",
+                "modulated-cognitive-autonomy-benchmark-mcab__m08"
               ]
             },
             {
               "name": "Scaffolding Independent Reasoning",
               "metric_ids": [
-                "autonomy-preserving-information-provision_metric_002",
-                "autonomy-preserving-information-provision_metric_009",
-                "autonomy-preserving-information-provision_metric_012",
-                "autonomy-preserving-information-provision_metric_015",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_003",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_006",
-                "humanagency-bench_metric_002",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_001",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_003",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_006",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_010",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_012",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_014",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_016",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_020",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_002"
+                "autonomy-preserving-information-provision__m02",
+                "autonomy-preserving-information-provision__m09",
+                "autonomy-preserving-information-provision__m12",
+                "autonomy-preserving-information-provision__m15",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m03",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m06",
+                "humanagency-bench__m02",
+                "modulated-cognitive-autonomy-benchmark-mcab__m01",
+                "modulated-cognitive-autonomy-benchmark-mcab__m03",
+                "modulated-cognitive-autonomy-benchmark-mcab__m06",
+                "modulated-cognitive-autonomy-benchmark-mcab__m10",
+                "modulated-cognitive-autonomy-benchmark-mcab__m12",
+                "modulated-cognitive-autonomy-benchmark-mcab__m14",
+                "modulated-cognitive-autonomy-benchmark-mcab__m16",
+                "modulated-cognitive-autonomy-benchmark-mcab__m20",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m02"
               ]
             },
             {
               "name": "Cognitive Bias Resistance",
               "metric_ids": [
-                "cog-bias_metric_001",
-                "cog-bias_metric_002",
-                "cog-bias_metric_003",
-                "cog-bias_metric_005",
-                "cog-bias_metric_006",
-                "cog-bias_metric_007",
-                "cog-bias_metric_008",
-                "cog-bias_metric_009",
-                "cog-bias_metric_010",
-                "cog-bias_metric_012",
-                "cog-bias_metric_014",
-                "cog-bias_metric_016",
-                "cog-bias_metric_017",
-                "cog-bias_metric_018",
-                "cog-bias_metric_019",
-                "cog-bias_metric_020",
-                "cog-bias_metric_022",
-                "cog-bias_metric_023",
-                "cog-bias_metric_025",
-                "cog-bias_metric_027",
-                "cog-bias_metric_029",
-                "cog-bias_metric_030"
+                "cog-bias__m01",
+                "cog-bias__m02",
+                "cog-bias__m03",
+                "cog-bias__m05",
+                "cog-bias__m06",
+                "cog-bias__m07",
+                "cog-bias__m08",
+                "cog-bias__m09",
+                "cog-bias__m10",
+                "cog-bias__m12",
+                "cog-bias__m14",
+                "cog-bias__m16",
+                "cog-bias__m17",
+                "cog-bias__m18",
+                "cog-bias__m19",
+                "cog-bias__m20",
+                "cog-bias__m22",
+                "cog-bias__m23",
+                "cog-bias__m25",
+                "cog-bias__m27",
+                "cog-bias__m29",
+                "cog-bias__m30"
               ]
             },
             {
               "name": "Misinformation Correction & Accuracy",
               "metric_ids": [
-                "humanagency-bench_metric_010",
-                "humanagency-bench_metric_011",
-                "humanagency-bench_metric_012",
-                "humanagency-bench_metric_013",
-                "humanagency-bench_metric_014"
+                "humanagency-bench__m10",
+                "humanagency-bench__m11",
+                "humanagency-bench__m12",
+                "humanagency-bench__m13",
+                "humanagency-bench__m14"
               ]
             }
           ]
@@ -2285,59 +2285,59 @@
             {
               "name": "Solution Substitution & Premature Closure",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_001",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_002",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_007",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_013",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_015",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_005",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_007",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_013",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_017"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m01",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m02",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m07",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m13",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m15",
+                "modulated-cognitive-autonomy-benchmark-mcab__m05",
+                "modulated-cognitive-autonomy-benchmark-mcab__m07",
+                "modulated-cognitive-autonomy-benchmark-mcab__m13",
+                "modulated-cognitive-autonomy-benchmark-mcab__m17"
               ]
             },
             {
               "name": "Scaffolded Reasoning & Inquiry",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_004",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_008",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_011",
-                "humanagency-bench_metric_024",
-                "humanebench_metric_005",
-                "humanebench_metric_006",
-                "humanebench_metric_007",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_001"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m04",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m08",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m11",
+                "humanagency-bench__m24",
+                "humanebench__m05",
+                "humanebench__m06",
+                "humanebench__m07",
+                "modulated-cognitive-autonomy-benchmark-mcab__m01"
               ]
             },
             {
               "name": "Metacognitive Engagement",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_005",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_010",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_012",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_014",
-                "humanagency-bench_metric_039",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_004",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_008"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m05",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m10",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m12",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m14",
+                "humanagency-bench__m39",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m04",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m08"
               ]
             },
             {
               "name": "User Dignity & Framing",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_003",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_009"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m03",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m09"
               ]
             },
             {
               "name": "Directive Planning Restraint",
               "metric_ids": [
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_001",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_003",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_005",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_009",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_011",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_014",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_015"
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m01",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m03",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m05",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m09",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m11",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m14",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m15"
               ]
             }
           ]
@@ -2660,70 +2660,70 @@
             {
               "name": "Decision Ownership & Deference",
               "metric_ids": [
-                "autonomy-preserving-information-provision_metric_020",
-                "humanagency-bench_metric_005",
-                "humanagency-bench_metric_006",
-                "humanagency-bench_metric_015",
-                "humanagency-bench_metric_016",
-                "humanagency-bench_metric_017",
-                "humanagency-bench_metric_019",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_015",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_006",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_011"
+                "autonomy-preserving-information-provision__m20",
+                "humanagency-bench__m05",
+                "humanagency-bench__m06",
+                "humanagency-bench__m15",
+                "humanagency-bench__m16",
+                "humanagency-bench__m17",
+                "humanagency-bench__m19",
+                "modulated-cognitive-autonomy-benchmark-mcab__m15",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m06",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m11"
               ]
             },
             {
               "name": "Clarification & Assumption Avoidance",
               "metric_ids": [
-                "humanagency-bench_metric_001",
-                "humanagency-bench_metric_003",
-                "humanagency-bench_metric_004",
-                "humanagency-bench_metric_007",
-                "humanagency-bench_metric_036",
-                "humanagency-bench_metric_037"
+                "humanagency-bench__m01",
+                "humanagency-bench__m03",
+                "humanagency-bench__m04",
+                "humanagency-bench__m07",
+                "humanagency-bench__m36",
+                "humanagency-bench__m37"
               ]
             },
             {
               "name": "Metacognition & Self-Assessment",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_010",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_012",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_006",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_018",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_002",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_008",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_012"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m10",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m12",
+                "modulated-cognitive-autonomy-benchmark-mcab__m06",
+                "modulated-cognitive-autonomy-benchmark-mcab__m18",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m02",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m08",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m12"
               ]
             },
             {
               "name": "Flourishing & Meaning",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_003",
-                "flourishing-ai-benchmark_metric_004",
-                "flourishing-ai-benchmark_metric_005",
-                "flourishing-ai-benchmark_metric_011",
-                "flourishing-ai-benchmark_metric_012",
-                "flourishing-ai-benchmark_metric_014",
-                "flourishing-ai-benchmark_metric_018",
-                "flourishing-ai-benchmark_metric_022",
-                "flourishing-ai-benchmark_metric_026",
-                "flourishing-ai-benchmark_metric_027",
-                "flourishing-ai-benchmark_metric_029",
-                "prosocial-ai-index_metric_007"
+                "flourishing-ai-benchmark__m03",
+                "flourishing-ai-benchmark__m04",
+                "flourishing-ai-benchmark__m05",
+                "flourishing-ai-benchmark__m11",
+                "flourishing-ai-benchmark__m12",
+                "flourishing-ai-benchmark__m14",
+                "flourishing-ai-benchmark__m18",
+                "flourishing-ai-benchmark__m22",
+                "flourishing-ai-benchmark__m26",
+                "flourishing-ai-benchmark__m27",
+                "flourishing-ai-benchmark__m29",
+                "prosocial-ai-index__m07"
               ]
             },
             {
               "name": "Dependency & Harm Risks",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_017",
-                "humanebench_metric_014",
-                "humanebench_metric_019",
-                "humanebench_metric_025",
-                "prosocial-ai-index_metric_009",
-                "prosocial-ai-index_metric_018",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_010",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_004",
-                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning_metric_007"
+                "flourishing-ai-benchmark__m17",
+                "humanebench__m14",
+                "humanebench__m19",
+                "humanebench__m25",
+                "prosocial-ai-index__m09",
+                "prosocial-ai-index__m18",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m10",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m04",
+                "the-spillunder-effect-of-ai-cognitive-intrusion-and-multitasking-degradation-through-ai-assisted-task-planning__m07"
               ]
             }
           ]
@@ -2885,42 +2885,42 @@
             {
               "name": "Direct Answer Provision",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_001",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_002",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_007",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_015",
-                "humanagency-bench_metric_024",
-                "humanagency-bench_metric_025"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m01",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m02",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m07",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m15",
+                "humanagency-bench__m24",
+                "humanagency-bench__m25"
               ]
             },
             {
               "name": "Socratic Questioning",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_004",
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_014",
-                "humanagency-bench_metric_021",
-                "humanebench_metric_007",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_012",
-                "humanagency-bench_metric_039"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m04",
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m14",
+                "humanagency-bench__m21",
+                "humanebench__m07",
+                "modulated-cognitive-autonomy-benchmark-mcab__m12",
+                "humanagency-bench__m39"
               ]
             },
             {
               "name": "Scaffolded Learning Design",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_008",
-                "humanagency-bench_metric_022",
-                "humanagency-bench_metric_023",
-                "humanebench_metric_005",
-                "humanebench_metric_006",
-                "modulated-cognitive-autonomy-benchmark-mcab_metric_014"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m08",
+                "humanagency-bench__m22",
+                "humanagency-bench__m23",
+                "humanebench__m05",
+                "humanebench__m06",
+                "modulated-cognitive-autonomy-benchmark-mcab__m14"
               ]
             },
             {
               "name": "Long-term Independence Support",
               "metric_ids": [
-                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses_metric_005",
-                "humanagency-bench_metric_026",
-                "humanebench_metric_008"
+                "cognitive-offloading-asymmetry-over-scaffolding-vs-autonomy-preservation-in-llm-responses__m05",
+                "humanagency-bench__m26",
+                "humanebench__m08"
               ]
             }
           ]
@@ -3447,108 +3447,108 @@
             {
               "name": "Cognitive Bias Reasoning",
               "metric_ids": [
-                "cog-bias_metric_004",
-                "cog-bias_metric_021",
-                "cog-bias_metric_024",
-                "cog-bias_metric_026",
-                "cog-bias_metric_028"
+                "cog-bias__m04",
+                "cog-bias__m21",
+                "cog-bias__m24",
+                "cog-bias__m26",
+                "cog-bias__m28"
               ]
             },
             {
               "name": "Cultural Context Sensitivity",
               "metric_ids": [
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_001",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_002",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_003",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_004",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_005",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_006",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_007",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_008",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_009",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_010",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_011",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_012",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_013",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_014",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_015",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_016",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_017",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_018",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_019",
-                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production_metric_020",
-                "flourishing-ai-benchmark_metric_014",
-                "flourishing-ai-benchmark_metric_016",
-                "flourishing-ai-benchmark_metric_028",
-                "prosocial-ai-index_metric_002"
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m01",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m02",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m03",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m04",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m05",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m06",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m07",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m08",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m09",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m10",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m11",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m12",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m13",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m14",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m15",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m16",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m17",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m18",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m19",
+                "construct-cultural-context-sensitivity-in-ai-mediated-knowledge-production__m20",
+                "flourishing-ai-benchmark__m14",
+                "flourishing-ai-benchmark__m16",
+                "flourishing-ai-benchmark__m28",
+                "prosocial-ai-index__m02"
               ]
             },
             {
               "name": "Racial Bias in Financial Recommendations",
               "metric_ids": [
-                "financial_metric_001",
-                "financial_metric_002",
-                "financial_metric_003",
-                "financial_metric_004",
-                "financial_metric_005",
-                "financial_metric_006",
-                "financial_metric_007",
-                "financial_metric_008",
-                "financial_metric_009",
-                "financial_metric_010",
-                "financial_metric_011",
-                "financial_metric_012",
-                "financial_metric_013",
-                "financial_metric_015"
+                "financial__m01",
+                "financial__m02",
+                "financial__m03",
+                "financial__m04",
+                "financial__m05",
+                "financial__m06",
+                "financial__m07",
+                "financial__m08",
+                "financial__m09",
+                "financial__m10",
+                "financial__m11",
+                "financial__m12",
+                "financial__m13",
+                "financial__m15"
               ]
             },
             {
               "name": "Name-Based Hiring & Salary Fairness",
               "metric_ids": [
-                "name-bias_metric_001",
-                "name-bias_metric_002",
-                "name-bias_metric_003",
-                "name-bias_metric_004",
-                "name-bias_metric_005",
-                "name-bias_metric_006",
-                "name-bias_metric_007",
-                "name-bias_metric_008",
-                "name-bias_metric_009",
-                "name-bias_metric_010",
-                "name-bias_metric_011",
-                "name-bias_metric_012",
-                "name-bias_metric_013",
-                "name-bias_metric_015"
+                "name-bias__m01",
+                "name-bias__m02",
+                "name-bias__m03",
+                "name-bias__m04",
+                "name-bias__m05",
+                "name-bias__m06",
+                "name-bias__m07",
+                "name-bias__m08",
+                "name-bias__m09",
+                "name-bias__m10",
+                "name-bias__m11",
+                "name-bias__m12",
+                "name-bias__m13",
+                "name-bias__m15"
               ]
             },
             {
               "name": "Implicit Identity Inference",
               "metric_ids": [
-                "user-bias_metric_001",
-                "user-bias_metric_002",
-                "user-bias_metric_003",
-                "user-bias_metric_004",
-                "user-bias_metric_006",
-                "user-bias_metric_015"
+                "user-bias__m01",
+                "user-bias__m02",
+                "user-bias__m03",
+                "user-bias__m04",
+                "user-bias__m06",
+                "user-bias__m15"
               ]
             },
             {
               "name": "Explicit Identity Transparency",
               "metric_ids": [
-                "user-bias_metric_005",
-                "user-bias_metric_008",
-                "user-bias_metric_013",
-                "user-bias_metric_014"
+                "user-bias__m05",
+                "user-bias__m08",
+                "user-bias__m13",
+                "user-bias__m14"
               ]
             },
             {
               "name": "Individual-Centered Recommendations",
               "metric_ids": [
-                "user-bias_metric_007",
-                "user-bias_metric_009",
-                "user-bias_metric_010",
-                "user-bias_metric_011",
-                "user-bias_metric_012"
+                "user-bias__m07",
+                "user-bias__m09",
+                "user-bias__m10",
+                "user-bias__m11",
+                "user-bias__m12"
               ]
             }
           ]
@@ -3703,41 +3703,41 @@
             {
               "name": "Suicide Method Refusal",
               "metric_ids": [
-                "llm-mental-health-refusal-and-responsiveness-score_metric_001",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_003",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_004",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_005",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_009",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_015",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_016",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_018",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_007"
+                "llm-mental-health-refusal-and-responsiveness-score__m01",
+                "llm-mental-health-refusal-and-responsiveness-score__m03",
+                "llm-mental-health-refusal-and-responsiveness-score__m04",
+                "llm-mental-health-refusal-and-responsiveness-score__m05",
+                "llm-mental-health-refusal-and-responsiveness-score__m09",
+                "llm-mental-health-refusal-and-responsiveness-score__m15",
+                "llm-mental-health-refusal-and-responsiveness-score__m16",
+                "llm-mental-health-refusal-and-responsiveness-score__m18",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m07"
               ]
             },
             {
               "name": "Crisis Response & Safety",
               "metric_ids": [
-                "llm-mental-health-refusal-and-responsiveness-score_metric_019",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_001",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_003",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_011",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_014"
+                "llm-mental-health-refusal-and-responsiveness-score__m19",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m01",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m03",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m11",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m14"
               ]
             },
             {
               "name": "Refusal Firmness Under Pressure",
               "metric_ids": [
-                "llm-mental-health-refusal-and-responsiveness-score_metric_008",
-                "llm-mental-health-refusal-and-responsiveness-score_metric_013"
+                "llm-mental-health-refusal-and-responsiveness-score__m08",
+                "llm-mental-health-refusal-and-responsiveness-score__m13"
               ]
             },
             {
               "name": "Vulnerability & Addiction Awareness",
               "metric_ids": [
-                "humanebench_metric_002",
-                "humanebench_metric_003",
-                "humanebench_metric_021",
-                "prosocial-ai-index_metric_014"
+                "humanebench__m02",
+                "humanebench__m03",
+                "humanebench__m21",
+                "prosocial-ai-index__m14"
               ]
             }
           ]
@@ -3969,52 +3969,52 @@
             {
               "name": "AI Relationship Boundaries",
               "metric_ids": [
-                "humanagency-bench_metric_027",
-                "humanagency-bench_metric_028",
-                "humanagency-bench_metric_030",
-                "humanagency-bench_metric_031",
-                "humanagency-bench_metric_033",
-                "humanebench_metric_010",
-                "humanebench_metric_011",
-                "humanebench_metric_012",
-                "humanebench_metric_024"
+                "humanagency-bench__m27",
+                "humanagency-bench__m28",
+                "humanagency-bench__m30",
+                "humanagency-bench__m31",
+                "humanagency-bench__m33",
+                "humanebench__m10",
+                "humanebench__m11",
+                "humanebench__m12",
+                "humanebench__m24"
               ]
             },
             {
               "name": "Encouraging Human Connection",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_013",
-                "flourishing-ai-benchmark_metric_025",
-                "humanagency-bench_metric_029",
-                "humanebench_metric_016",
-                "humanebench_metric_017",
-                "humanebench_metric_025",
-                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh_metric_006"
+                "flourishing-ai-benchmark__m13",
+                "flourishing-ai-benchmark__m25",
+                "humanagency-bench__m29",
+                "humanebench__m16",
+                "humanebench__m17",
+                "humanebench__m25",
+                "validation-of-ethical-and-responsible-ai-in-mental-health-vera-mh__m06"
               ]
             },
             {
               "name": "Wellbeing Guidance Quality",
               "metric_ids": [
-                "flourishing-ai-benchmark_metric_001",
-                "flourishing-ai-benchmark_metric_006",
-                "flourishing-ai-benchmark_metric_018"
+                "flourishing-ai-benchmark__m01",
+                "flourishing-ai-benchmark__m06",
+                "flourishing-ai-benchmark__m18"
               ]
             },
             {
               "name": "Societal & Systemic Impact",
               "metric_ids": [
-                "prosocial-ai-index_metric_001",
-                "prosocial-ai-index_metric_003",
-                "prosocial-ai-index_metric_004",
-                "prosocial-ai-index_metric_006",
-                "prosocial-ai-index_metric_008",
-                "prosocial-ai-index_metric_010",
-                "prosocial-ai-index_metric_012",
-                "prosocial-ai-index_metric_013",
-                "prosocial-ai-index_metric_016",
-                "prosocial-ai-index_metric_017",
-                "prosocial-ai-index_metric_019",
-                "prosocial-ai-index_metric_020"
+                "prosocial-ai-index__m01",
+                "prosocial-ai-index__m03",
+                "prosocial-ai-index__m04",
+                "prosocial-ai-index__m06",
+                "prosocial-ai-index__m08",
+                "prosocial-ai-index__m10",
+                "prosocial-ai-index__m12",
+                "prosocial-ai-index__m13",
+                "prosocial-ai-index__m16",
+                "prosocial-ai-index__m17",
+                "prosocial-ai-index__m19",
+                "prosocial-ai-index__m20"
               ]
             }
           ]

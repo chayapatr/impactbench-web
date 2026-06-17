@@ -38,14 +38,21 @@
 		<span class="truncate text-[11px] font-semibold text-[#9ca3af]">{getModelName(appState)}</span>
 	{/snippet}
 	{#snippet banner()}
-		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" breadcrumb={backLabel} title={scenarioMeta.title} />
+		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" breadcrumb={backLabel} title={scenarioMeta.title}>
+			{#snippet children()}
+				<span class="text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]">{scenarioMeta.title}</span>
+				{#if _metric}
+					<div class="mt-[4px] text-[11px] text-[#9ca3af]">{_metric.name}</div>
+				{/if}
+			{/snippet}
+		</ColoredBanner>
 	{/snippet}
 </StickyHeader>
 
 <div class="px-6 py-4">
 	{#if _metric?.behavior_type}
 		<div class="mb-4">
-			<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{_metric.behavior_type === 'restrain_harm' ? 'background:#fee2e2;color:#dc2626' : 'background:#dcfce7;color:#16a34a'}">
+			<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{_metric.behavior_type === 'restrain_harm' ? 'background:#ede9fe;color:#7c3aed' : 'background:#dbeafe;color:#2563eb'}">
 				<i class="fa-solid {_metric.behavior_type === 'flourishing' ? 'fa-star' : 'fa-shield-halved'} text-[9px]"></i>
 				{_metric.behavior_type === 'flourishing' ? 'Promoting good behavior' : 'Avoiding bad behavior'}
 			</span>
@@ -59,5 +66,6 @@
 		{scenarioDetail}
 		loading={scenarioLoading}
 		error={scenarioError}
+		verdictOverride={scenarioMeta.verdicts?.[appState.filters.model] ?? null}
 	/>
 </div>

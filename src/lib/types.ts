@@ -96,18 +96,14 @@ export interface ChatTurn {
 }
 
 export interface ScenarioDetail {
-	scenario_id: string;
-	scenario: {
-		title: string;
-		description: string;
-		metric_id: string;
-		metric: string;
-	};
-	samples: ChatTurn[][];
-	verdict: {
-		result: 'yes' | 'no' | null;
-		justification: string | null;
-	};
+	id: string;
+	metric_id: string;
+	metric_name: string;
+	metric_type: string;
+	user_goal: string;
+	persona: string;
+	transcript: ChatTurn[];
+	justification?: string;
 }
 
 // ===== Smart Nutrition =====
