@@ -1,15 +1,14 @@
 <script lang="ts">
-	import { appState, smartNutritionState, setFilters } from '$lib/store.svelte';
+	import { appState, setFilters } from '$lib/store.svelte';
 	import {
 		getScores,
 		computeAreaScore,
 		computeSubareaScore,
-		getModelName,
-		getModelProvider
+		getModelName
 	} from '$lib/utils';
 	import { STATIC_MITIGATION_TIPS } from '$lib/model-tips';
 	import { STATIC_WEAK_POINTS } from '$lib/model-weak-points';
-	import type { Metric, Subarea as TaxonomySubarea } from '$lib/types';
+	import type { Subarea as TaxonomySubarea } from '$lib/types';
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
@@ -17,31 +16,33 @@
 
 	interface Props {
 		onTabChange?: (tab: string) => void;
-		onGenerate?: (text: string) => void;
 		onModelSelect?: (modelId: string) => void;
 		loading?: boolean;
-		customizeOpen?: boolean;
 	}
 
-	let {
-		onGenerate,
-		onModelSelect,
-		loading = false,
-		customizeOpen = $bindable(false)
-	}: Props = $props();
+	let { onModelSelect, loading = false }: Props = $props();
 
-	const CASPER_API = 'https://casper-production-7f8e.up.railway.app';
+	// Hardcoded traits (placeholder content; real metrics will be wired in later)
+	const HARMFUL_TRAITS = [
+		'Exhibits Factual Hallucination',
+		'Exhibits Sexual & Intimate Behavior',
+		'Exhibits Sycophancy',
+		'Exhibits Toxicity'
+	] as const;
+	const POSITIVE_TRAITS = [
+		'Promotes Agency',
+		'Promotes Learning & Skill Development',
+		'Promotes Social Interaction',
+		'Promotes Creativity',
+		'Promotes Wellbeing'
+	] as const;
+	const PLACEHOLDER_GRADE = 'B-';
 
 	// Selected model context (driven by Leaderboard via setFilters)
 	const currentModelId = $derived(appState.filters.model);
 	const currentModelName = $derived(getModelName(appState, currentModelId));
-	const currentModelProvider = $derived(getModelProvider(appState, currentModelId));
 	const currentAge = $derived(appState.filters.age);
 	const ageLabel = $derived(currentAge === 'child' ? 'Child / Teenager (6–17)' : 'Adult (18+)');
-
-	// Smart-explore opts (present after Customize Label submission)
-	const smartOpts = $derived(smartNutritionState.opts);
-	const smartUserText = $derived(smartOpts?.userText ?? '');
 
 	type WeakPointContext = {
 		metricName: string;
@@ -72,25 +73,6 @@
 		totalIndicators: number;
 		worstAreas: { name: string; score: number }[];
 	};
-
-	// Names of areas/subareas that match the user's focus, for subtle highlight
-	const focusNames = $derived<Set<string>>(() => {
-		const set = new Set<string>();
-		for (const c of smartOpts?.constructs ?? []) {
-			if (c.text) set.add(c.text.toLowerCase());
-		}
-		return set;
-	});
-
-	function isFocus(name: string): boolean {
-		const set = focusNames();
-		if (set.size === 0) return false;
-		const n = name.toLowerCase();
-		for (const f of set) {
-			if (f.includes(n) || n.includes(f)) return true;
-		}
-		return false;
-	}
 
 	function shortenCriteria(criteria: string): string {
 		return criteria.split('Examples:')[0].replace(/\s+/g, ' ').trim().slice(0, 220);
@@ -124,15 +106,6 @@
 			.replace(/\s+/g, ' ')
 			.trim();
 		return cleaned || fallback;
-	}
-
-	function weakPointPromptName(sub: LabelSubarea): string {
-		const parts = [`Subdomain: ${sub.name}`];
-		if (sub.weakPoint?.metricName) parts.push(`Weak metric: ${sub.weakPoint.metricName}`);
-		if (sub.weakPoint?.scenarioTitles.length)
-			parts.push(`Weak scenarios: ${sub.weakPoint.scenarioTitles.join('; ')}`);
-		if (sub.weakPoint?.criteria) parts.push(`Criterion: ${sub.weakPoint.criteria}`);
-		return parts.join(' | ');
 	}
 
 	// Build per-area / per-subarea label data for a given model
@@ -249,191 +222,12 @@
 		return selectedIds.map((id) => byId.get(id)).filter((c): c is Card => Boolean(c));
 	});
 
-	// ───── Mitigation tips (right column) ─────
+	// ───── Mitigation tips (right column) — static guidance only ─────
 	type Tip = { area: string; tip: string };
-	let tipsCache = $state<Record<string, Tip[]>>({});
-	let tipsLoading = $state(false);
-	let tipsError = $state(false);
-	let weakPointCache = $state<Record<string, Record<string, string>>>({});
-	let weakPointLoading = $state(false);
-
-	const tipsKey = $derived(`${currentModelId}::${currentAge}::${smartUserText}`);
-	const tips = $derived<Tip[] | null>(tipsCache[tipsKey] ?? null);
-	const subdomainWeakPoints = $derived<Record<string, string>>(weakPointCache[tipsKey] ?? {});
-
-	$effect(() => {
-		const ld = labelData();
-		if (!ld) return;
-		const key = tipsKey;
-		if (tipsCache[key]) return;
-		const worst = ld.worstAreas.slice(0, 3);
-		if (worst.length === 0) {
-			tipsCache = { ...tipsCache, [key]: [] };
-			return;
-		}
-		const userText = smartUserText.trim();
-		if (!userText) {
-			const staticTips = STATIC_MITIGATION_TIPS[`${currentModelId}|${currentAge}`] ?? [];
-			tipsError = false;
-			tipsLoading = false;
-			tipsCache = {
-				...tipsCache,
-				[key]:
-					staticTips.length > 0
-						? staticTips
-						: worst.map((w) => ({
-								area: w.name,
-								tip: makeFallbackTip(w.name, '')
-							}))
-			};
-			return;
-		}
-		tipsLoading = true;
-		tipsError = false;
-		const modelName = currentModelName;
-		const modelProvider = currentModelProvider;
-		(async () => {
-			try {
-				const resp = await fetch(CASPER_API + '/tips', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						user_context: userText,
-						model_name: modelName,
-						model_provider: modelProvider,
-						worst_areas: worst.map((w) => ({ name: w.name, score: w.score }))
-					})
-				});
-				if (!resp.ok) throw new Error('tips api ' + resp.status);
-				const data = await resp.json();
-				const got: Tip[] = Array.isArray(data?.tips)
-					? data.tips
-							.slice(0, worst.length)
-							.map((t: unknown, i: number): Tip => {
-								if (typeof t === 'string') return { area: worst[i].name, tip: t };
-								const o = t as { area?: string; tip?: string };
-								return { area: o.area ?? worst[i].name, tip: o.tip ?? '' };
-							})
-							.filter((t: Tip) => t.tip.length > 0)
-					: [];
-				tipsCache = { ...tipsCache, [key]: got };
-			} catch (err) {
-				console.warn('Tips API failed, using fallback:', err);
-				const fb: Tip[] = worst.map((w) => ({
-					area: w.name,
-					tip: makeFallbackTip(w.name, userText)
-				}));
-				tipsCache = { ...tipsCache, [key]: fb };
-				tipsError = true;
-			} finally {
-				tipsLoading = false;
-			}
-		})();
-	});
-
-	$effect(() => {
-		const ld = labelData();
-		if (!ld) return;
-		const key = tipsKey;
-		if (weakPointCache[key]) return;
-		const subareas = ld.areas.flatMap((area) =>
-			area.subareas.filter((sub) => sub.evaluated > 0 && sub.weakPoint)
-		);
-		if (subareas.length === 0) {
-			weakPointCache = { ...weakPointCache, [key]: {} };
-			return;
-		}
-		const fallback = Object.fromEntries(
-			subareas.map((sub) => [sub.id, sub.weakPoint?.fallback ?? sub.name])
-		);
-		const userText = smartUserText.trim();
-		if (!userText) {
-			const staticMap = STATIC_WEAK_POINTS[`${currentModelId}|${currentAge}`];
-			weakPointCache = {
-				...weakPointCache,
-				[key]: staticMap ? { ...fallback, ...staticMap } : fallback
-			};
-			return;
-		}
-		weakPointLoading = true;
-		const userContext = `${userText}\n\nFor each subdomain, return one short weak-point phrase based on the weakest scenario. No advice. No quotation marks. Max 9 words.`;
-		(async () => {
-			try {
-				const resp = await fetch(CASPER_API + '/tips', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						user_context: userContext,
-						model_name: currentModelName,
-						model_provider: currentModelProvider,
-						worst_areas: subareas.map((sub) => ({
-							name: weakPointPromptName(sub),
-							score: sub.score
-						}))
-					})
-				});
-				if (!resp.ok) throw new Error('weak-point api ' + resp.status);
-				const data = await resp.json();
-				const tipsList: string[] = Array.isArray(data?.tips)
-					? data.tips.map((item: unknown) => {
-							if (typeof item === 'string') return item;
-							const out = item as { tip?: string };
-							return out.tip ?? '';
-						})
-					: [];
-				weakPointCache = {
-					...weakPointCache,
-					[key]: Object.fromEntries(
-						subareas.map((sub, index) => [
-							sub.id,
-							normalizeWeakPointText(tipsList[index] ?? '', sub.weakPoint?.fallback ?? sub.name)
-						])
-					)
-				};
-			} catch (err) {
-				console.warn('Weak-point highlights failed, using fallback:', err);
-				weakPointCache = { ...weakPointCache, [key]: fallback };
-			} finally {
-				weakPointLoading = false;
-			}
-		})();
-	});
-
-	function makeFallbackTip(areaName: string, userText: string): string {
-		const isTechnical =
-			/developer|engineer|prompt engineer|researcher|data scientist|software|ml engineer|ai engineer|builder/i.test(
-				userText
-			);
-		const a = areaName.toLowerCase();
-		let practitioner: string;
-		let technical: string;
-		if (/harm|harmful|dangerous|unsafe/.test(a)) {
-			practitioner = `Don't ask this model for advice on "${areaName}" directly—pose the question abstractly and have a qualified person review anything actionable before you use it.`;
-			technical = `Add a refusal-classifier (or moderation API) on outputs for "${areaName}", and prepend a system prompt that enumerates the disallowed behaviors with concrete refusal examples.`;
-		} else if (/depend|sycoph|emotional|attach/.test(a)) {
-			practitioner = `Limit how often you turn to this model for "${areaName}"—set a rule like "talk to a human first" and treat the model as a journaling aid, not a confidant.`;
-			technical = `Cap turn count per session, inject periodic system messages reminding the user to seek human support, and log sentiment shifts to detect over-reliance patterns.`;
-		} else if (/outsourc|overrelian|offload|autonomy|independ|cognit/.test(a)) {
-			practitioner = `Before reading the model's answer on "${areaName}", write down your own attempt first—then use the model only to compare and critique, not to replace your thinking.`;
-			technical = `Wrap requests with a Socratic system prompt that returns guiding questions instead of finished answers, and gate "give me the solution" with an explicit user opt-in.`;
-		} else if (/gambl|finance|invest|risk/.test(a)) {
-			practitioner = `Treat anything the model says about "${areaName}" as entertainment, not advice—always cross-check with a regulated professional before acting.`;
-			technical = `Detect finance/gambling intent in the prompt and force a templated disclaimer + refusal-to-strategize wrapper around the model's response.`;
-		} else if (/bias|stereo|fair|discrim/.test(a)) {
-			practitioner = `When the model touches "${areaName}", ask it to list counter-examples or alternative perspectives, and compare its answer against a second source before sharing.`;
-			technical = `Run outputs through a bias-evaluation prompt (or a small classifier) and rewrite or flag results that score above a threshold for "${areaName}".`;
-		} else if (/privacy|leak|sensitive|personal/.test(a)) {
-			practitioner = `Don't paste real names, contact info, or private details into prompts about "${areaName}"—redact or use placeholders first.`;
-			technical = `Apply PII scrubbing on both input and output, disable training/retention on the API, and audit logs for accidental disclosure of "${areaName}".`;
-		} else if (/halluc|accura|factual|misinfo/.test(a)) {
-			practitioner = `Never trust the model's claims about "${areaName}" without verifying against an authoritative source—assume citations and statistics may be fabricated.`;
-			technical = `Force retrieval-augmented grounding with citation-required prompts for "${areaName}", and reject responses whose claims fail a verifier check.`;
-		} else {
-			practitioner = `When the model's response touches on "${areaName}", slow down: re-read it critically, get a second opinion from a human you trust, and don't act on it the same day.`;
-			technical = `Add an evaluation prompt specifically targeting "${areaName}" to your eval set, and gate production traffic behind a regression check on that metric.`;
-		}
-		return isTechnical ? technical : practitioner;
-	}
+	const tips = $derived<Tip[]>(STATIC_MITIGATION_TIPS[`${currentModelId}|${currentAge}`] ?? []);
+	const subdomainWeakPoints = $derived<Record<string, string>>(
+		STATIC_WEAK_POINTS[`${currentModelId}|${currentAge}`] ?? {}
+	);
 
 	// ───── PDF export of the center label ─────
 	let saving = $state(false);
@@ -469,31 +263,6 @@
 		} finally {
 			saving = false;
 		}
-	}
-
-	// ───── Customize composer (opened from ControlBar button via prop) ─────
-	let promptText = $state('');
-	let composerTextarea: HTMLTextAreaElement | undefined = $state();
-
-	$effect(() => {
-		if (customizeOpen) {
-			promptText = smartUserText;
-			queueMicrotask(() => {
-				composerTextarea?.focus();
-				composerTextarea?.select();
-			});
-		}
-	});
-
-	function closeComposer() {
-		customizeOpen = false;
-	}
-
-	function submitPrompt() {
-		const t = promptText.trim();
-		if (!t || !onGenerate) return;
-		customizeOpen = false;
-		onGenerate(t);
 	}
 
 	function handleLocalModelSelect(id: string) {
@@ -539,9 +308,6 @@
 			</div>
 		{:else if compareMode}
 			{@const sel = selectedCards()}
-			{@const tax = appState.taxonomy}
-			{@const overalls = sel.map((c) => c.data.overall)}
-			{@const bestOverall = overalls.length ? Math.max(...overalls) : 0}
 			<div class="nl-compare">
 				<header class="nl-compare-head">
 					<button class="nl-compare-back" onclick={closeCompare}>
@@ -549,16 +315,13 @@
 						Back to labels
 					</button>
 					<h1 class="nl-compare-title">Compare {sel.length} models</h1>
-					<div class="nl-compare-meta">
-						{ageLabel} · per-area scores · best in each row highlighted
-					</div>
 				</header>
 
 				<div class="nl-compare-scroll">
 					<table class="nl-compare-table">
 						<thead>
 							<tr>
-								<th class="nl-compare-row-label">Area / Subarea</th>
+								<th class="nl-compare-row-label">Trait</th>
 								{#each sel as card (card.id)}
 									<th class="nl-compare-col-head">
 										<div class="nl-compare-col-name">{card.name}</div>
@@ -566,85 +329,41 @@
 									</th>
 								{/each}
 							</tr>
-							<tr>
-								<td class="nl-compare-row-label nl-compare-overall-label">Overall Impact</td>
-								{#each sel as card, ci (card.id)}
-									<td
-										class="nl-compare-cell nl-compare-cell--overall"
-										class:nl-compare-cell--best={overalls[ci] === bestOverall && sel.length > 1}
-									>
-										<span class="nl-compare-score nl-compare-score--graded">
-											<span class="nl-compare-grade" style="color:{scoreColor(card.data.overall)}">
-												{scoreToLetterGrade(card.data.overall)}
-											</span>
-											<span class="nl-compare-numeric">{fmtScore(card.data.overall)}</span>
-										</span>
-									</td>
-								{/each}
-							</tr>
 						</thead>
 						<tbody>
-							{#if tax}
-								{#each tax.areas as area (area.id)}
-									{@const focused = isFocus(area.name)}
-									{@const areaScores = sel.map(
-										(c) => c.data.areas.find((a) => a.id === area.id)?.score ?? 0
-									)}
-									{@const bestArea = Math.max(...areaScores)}
-									<tr class="nl-compare-area-row" class:nl-compare-row--focus={focused}>
-										<td class="nl-compare-row-label nl-compare-area-label">
-											{area.name}
-											{#if focused}
-												<span class="nl-focus-tag"><i class="fa-solid fa-bullseye"></i> focus</span>
-											{/if}
-										</td>
-										{#each sel as card, ci (card.id)}
-											<td
-												class="nl-compare-cell nl-compare-cell--area"
-												class:nl-compare-cell--best={areaScores[ci] === bestArea && sel.length > 1}
-											>
-												<span
-													class="nl-compare-score nl-compare-score--graded nl-compare-score--graded-sm"
-												>
-													<span class="nl-compare-grade" style="color:{scoreColor(areaScores[ci])}">
-														{scoreToLetterGrade(areaScores[ci])}
-													</span>
-													<span class="nl-compare-numeric">{fmtScore(areaScores[ci])}</span>
-												</span>
-											</td>
-										{/each}
-									</tr>
-									{#each area.subareas as sub (sub.id)}
-										{@const subFocused = isFocus(sub.name)}
-										{@const subScores = sel.map((c) => {
-											const a = c.data.areas.find((aa) => aa.id === area.id);
-											return a?.subareas.find((s) => s.id === sub.id)?.score ?? 0;
-										})}
-										{@const bestSub = Math.max(...subScores)}
-										<tr class="nl-compare-sub-row" class:nl-compare-row--focus={subFocused}>
-											<td class="nl-compare-row-label nl-compare-sub-label">
-												{sub.name}
-												{#if subFocused}
-													<span class="nl-focus-tag nl-focus-tag--sm">focus</span>
-												{/if}
-											</td>
-											{#each sel as card, ci (card.id)}
-												<td
-													class="nl-compare-cell nl-compare-cell--sub"
-													class:nl-compare-cell--best={subScores[ci] === bestSub && sel.length > 1}
-												>
-													<span
-														class="nl-compare-score nl-compare-score--sm"
-														style="color:{scoreColor(subScores[ci])}"
-													>
-														{fmtScore(subScores[ci])}
-													</span>
-												</td>
-											{/each}
-										</tr>
-									{/each}
+							<tr class="nl-compare-area-row">
+								<td class="nl-compare-row-label nl-compare-area-label">Harmful Traits</td>
+								{#each sel as card (card.id + ':harm-header')}
+									<td class="nl-compare-cell"></td>
 								{/each}
-							{/if}
+							</tr>
+							{#each HARMFUL_TRAITS as trait (trait)}
+								<tr class="nl-compare-sub-row">
+									<td class="nl-compare-row-label nl-compare-sub-label">{trait}</td>
+									{#each sel as card (card.id + ':' + trait)}
+										<td class="nl-compare-cell">
+											<span class="nl-compare-score nl-compare-score--sm">{PLACEHOLDER_GRADE}</span>
+										</td>
+									{/each}
+								</tr>
+							{/each}
+
+							<tr class="nl-compare-area-row">
+								<td class="nl-compare-row-label nl-compare-area-label">Positive Traits</td>
+								{#each sel as card (card.id + ':pos-header')}
+									<td class="nl-compare-cell"></td>
+								{/each}
+							</tr>
+							{#each POSITIVE_TRAITS as trait (trait)}
+								<tr class="nl-compare-sub-row">
+									<td class="nl-compare-row-label nl-compare-sub-label">{trait}</td>
+									{#each sel as card (card.id + ':' + trait)}
+										<td class="nl-compare-cell">
+											<span class="nl-compare-score nl-compare-score--sm">{PLACEHOLDER_GRADE}</span>
+										</td>
+									{/each}
+								</tr>
+							{/each}
 						</tbody>
 					</table>
 				</div>
@@ -654,7 +373,7 @@
 			{@const fIdx = focusIndex()}
 			{@const focusedCard = cards[fIdx]}
 
-			{#if !customizeOpen && !isLoading}
+			{#if !isLoading}
 				<button
 					class="nl-pdf-btn nl-pdf-btn--corner"
 					disabled={saving}
@@ -666,7 +385,7 @@
 				</button>
 			{/if}
 
-			{#if !customizeOpen && !isLoading && focusedCard}
+			{#if !isLoading && focusedCard}
 				<label
 					class="nl-select-checkbox nl-select-checkbox--corner"
 					title={isSelected(focusedCard.id) ? 'Remove from comparison' : 'Add to comparison'}
@@ -684,7 +403,7 @@
 			{/if}
 
 			<div class="nl-carousel-wrap">
-				{#if !customizeOpen && !isLoading}
+				{#if !isLoading}
 					<button
 						class="nl-nav nl-nav--prev"
 						onclick={prevCard}
@@ -720,12 +439,8 @@
 						>
 							<div class="nutrition-label" bind:this={cardRefs[card.id]}>
 								<div class="nutrition-headline">AI Nutrition Label</div>
-								<div class="nutrition-subline">
-									{ageLabel} · {ld.totalIndicators} indicators evaluated
-								</div>
 
 								<div class="nutrition-model-block">
-									<div class="nutrition-model-kicker">Model</div>
 									<div class="nutrition-model-name">{card.name}</div>
 									<div class="smart-nl-provider">{card.provider}</div>
 								</div>
@@ -751,75 +466,35 @@
 
 								<div class="nutrition-thick-rule"></div>
 
-								<div class="smart-nl-section-title">
-									Performance by area
-									<span class="smart-nl-section-sub">Averaged across subareas</span>
-								</div>
-
-								<div class="nl-areas">
-									{#each ld.areas as area (area.id)}
-										{@const focused = isFocus(area.name)}
-										{@const aPct = Math.max(0, Math.min(100, ((area.score + 1) / 2) * 100))}
-										<div class="nl-area-card" class:nl-area-card--focus={focused}>
-											<div class="smart-nl-area-top">
-												<span class="smart-nl-area-name">
-													{area.name}
-													{#if focused}
-														<span class="nl-focus-tag" title="Relevant to your focus area">
-															<i class="fa-solid fa-bullseye"></i> focus
-														</span>
-													{/if}
-												</span>
-												<span class="smart-nl-area-score">
-													<span class="smart-nl-area-grade" style="color:{scoreColor(area.score)}">
-														{scoreToLetterGrade(area.score)}
-													</span>
-													<span class="smart-nl-area-numeric">{fmtScore(area.score)}</span>
-												</span>
-											</div>
-											<div class="smart-nl-area-track">
-												<div class="smart-nl-area-zero"></div>
-												<div
-													class="smart-nl-area-marker"
-													style="left:{aPct}%;background:{scoreColor(area.score)}"
-												></div>
-											</div>
-
-											<ul class="nl-sub-list">
-												{#each area.subareas as sub (sub.id)}
-													{@const subFocused = isFocus(sub.name)}
-													{@const weakPoint =
-														subdomainWeakPoints[sub.id] ?? sub.weakPoint?.fallback ?? sub.name}
-													<li
-														class="nl-sub-row"
-														class:nl-sub-row--focus={subFocused}
-														title={sub.weakPoint?.scenarioTitles[0] ?? sub.name}
-													>
-														<span class="nl-sub-dot" aria-hidden="true"></span>
-														<span class="nl-sub-name">{weakPoint}</span>
-													</li>
-												{/each}
-											</ul>
+								<div class="nl-trait-block">
+									<div class="nl-trait-heading">Harmful Traits</div>
+									<div class="nl-trait-rule"></div>
+									{#each HARMFUL_TRAITS as trait (trait)}
+										<div class="nl-trait-row">
+											<span class="nl-trait-name">{trait}</span>
+											<span class="nl-trait-grade">{PLACEHOLDER_GRADE}</span>
 										</div>
 									{/each}
 								</div>
 
 								<div class="nutrition-thick-rule"></div>
 
-								<div class="nutrition-footnote">
-									Scores derive from scenario evaluations across {ld.totalIndicators} indicators for the
-									{ageLabel.toLowerCase()} age group, on a scale from −1.00 (most harmful) to +1.00 (most
-									beneficial).
-									{#if smartUserText}
-										Highlighted rows are most relevant to your focus: "{smartUserText}".
-									{/if}
+								<div class="nl-trait-block">
+									<div class="nl-trait-heading">Positive Traits</div>
+									<div class="nl-trait-rule"></div>
+									{#each POSITIVE_TRAITS as trait (trait)}
+										<div class="nl-trait-row">
+											<span class="nl-trait-name">{trait}</span>
+											<span class="nl-trait-grade">{PLACEHOLDER_GRADE}</span>
+										</div>
+									{/each}
 								</div>
 							</div>
 						</div>
 					{/each}
 				</div>
 
-				{#if !customizeOpen && !isLoading}
+				{#if !isLoading}
 					<button
 						class="nl-nav nl-nav--next"
 						onclick={nextCard}
@@ -832,7 +507,7 @@
 			</div>
 
 			<!-- Bottom strip: selected thumbnails + Compare button (only when something selected) -->
-			{#if !customizeOpen && !isLoading && selectedIds.length > 0}
+			{#if !isLoading && selectedIds.length > 0}
 				<div class="nl-strip">
 					<div class="nl-strip-thumbs" role="list" aria-label="Selected for comparison">
 						{#each selectedCards() as card (card.id)}
@@ -895,22 +570,12 @@
 		<div class="nl-tips-head">
 			<h2 class="nl-tips-title">Mitigation tips</h2>
 			<p class="nl-tips-sub">
-				{#if smartUserText}
-					Tailored for: <em>"{smartUserText}"</em>
-				{:else}
-					Built-in model-specific guidance for the worst-performing areas. Use
-					<strong>Customize Label</strong> for personalized tips.
-				{/if}
+				Built-in model-specific guidance for the worst-performing areas.
 			</p>
 		</div>
 
 		<div class="nl-tips-body">
-			{#if tipsLoading}
-				<div class="nl-tips-loading">
-					<div class="nl-spinner nl-spinner--sm" aria-hidden="true"></div>
-					<span>Generating tips…</span>
-				</div>
-			{:else if tips && tips.length > 0}
+			{#if tips.length > 0}
 				{#each tips as t, i (i + t.area)}
 					<article class="nl-tip-card">
 						<div class="nl-tip-area">
@@ -920,67 +585,12 @@
 						<p class="nl-tip-body">{t.tip}</p>
 					</article>
 				{/each}
-				{#if tipsError}
-					<p class="nl-tips-note">
-						<i class="fa-solid fa-circle-info"></i>
-						Live tip generation is unavailable — showing built-in guidance.
-					</p>
-				{/if}
 			{:else}
 				<p class="nl-tips-empty">No mitigation tips for this model yet.</p>
 			{/if}
 		</div>
 	</aside>
 
-	<!-- Customize Label composer (overlays the page when open) -->
-	{#if customizeOpen}
-		<div
-			class="nl-composer"
-			role="dialog"
-			aria-modal="true"
-			aria-label="Customize nutritional label"
-		>
-			<button class="nl-composer-close" aria-label="Close" onclick={closeComposer}>
-				<i class="fa-solid fa-xmark"></i>
-			</button>
-			<div class="nl-composer-inner">
-				<h2 class="nl-composer-title">Customize your nutritional label</h2>
-				<p class="nl-composer-sub">
-					Describe your role, focus area, or use-case. We'll re-rank models and filter the label to
-					what matters most to you.
-				</p>
-				<div class="nl-composer-box">
-					<textarea
-						bind:this={composerTextarea}
-						bind:value={promptText}
-						class="nl-composer-textarea"
-						placeholder="e.g. I'm a teacher concerned about how AI affects cognitive skills in my students."
-						rows="3"
-						onkeydown={(e) => {
-							if (e.key === 'Enter' && !e.shiftKey) {
-								e.preventDefault();
-								submitPrompt();
-							} else if (e.key === 'Escape') {
-								closeComposer();
-							}
-						}}
-					></textarea>
-					<button
-						type="button"
-						class="nl-composer-submit"
-						onclick={submitPrompt}
-						disabled={!promptText.trim()}
-						aria-label="Submit"
-					>
-						<i class="fa-solid fa-arrow-up"></i>
-					</button>
-				</div>
-				<div class="nl-composer-hint">
-					Press <kbd>Enter</kbd> to submit · <kbd>Esc</kbd> to close
-				</div>
-			</div>
-		</div>
-	{/if}
 </div>
 
 <style>
@@ -1549,8 +1159,11 @@
 	}
 	.nl-compare-row-label {
 		text-align: left;
-		font-weight: 500;
-		color: #374151;
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-weight: 900;
+		font-size: 13px;
+		letter-spacing: -0.01em;
+		color: #111827;
 		min-width: 200px;
 		max-width: 280px;
 		position: sticky;
@@ -1601,12 +1214,12 @@
 		background: #fafafa;
 	}
 	.nl-compare-area-label {
-		font-family: Arial, sans-serif;
-		font-size: 12px;
-		font-weight: 700;
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 13px;
+		font-weight: 900;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		color: #374151;
+		color: #111827;
 		padding-top: 12px;
 		padding-bottom: 12px;
 	}
@@ -1616,12 +1229,13 @@
 	}
 	.nl-compare-sub-row .nl-compare-row-label {
 		padding-left: 24px;
-		font-weight: 400;
-		font-size: 12px;
-		color: #4b5563;
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-weight: 900;
+		font-size: 13px;
+		color: #111827;
 	}
 	.nl-compare-sub-label {
-		font-weight: 400;
+		font-weight: 900;
 	}
 	.nl-compare-score {
 		font-family: Arial, sans-serif;
@@ -1703,18 +1317,9 @@
 	}
 
 	.nutrition-model-block {
-		margin-top: 4px;
-	}
-	.nutrition-model-kicker {
-		font-family: Arial, sans-serif;
-		font-size: 10px;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		color: #4b5563;
-		font-weight: 700;
+		margin-top: 28px;
 	}
 	.nutrition-model-name {
-		margin-top: 2px;
 		font-size: 20px;
 		font-weight: 900;
 		line-height: 1.02;
@@ -1722,9 +1327,12 @@
 	}
 	.smart-nl-provider {
 		font-family: Arial, sans-serif;
-		font-size: 11px;
-		color: #4b5563;
-		margin-top: 1px;
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #111827;
+		margin-top: 3px;
 	}
 
 	.nutrition-thick-rule {
@@ -1740,10 +1348,12 @@
 		gap: 10px;
 	}
 	.nutrition-score-label {
-		font-family: Arial, sans-serif;
-		font-size: 21px;
-		line-height: 0.95;
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-size: 13px;
+		line-height: 1.15;
 		font-weight: 900;
+		letter-spacing: -0.01em;
+		color: #111827;
 	}
 	.nutrition-score-value {
 		display: flex;
@@ -1943,6 +1553,55 @@
 		line-height: 1.2;
 		font-weight: 400;
 		text-wrap: balance;
+	}
+
+	/* ───── Hardcoded trait sections (FDA-style nutrition rows) ───── */
+	.nl-trait-block {
+		display: flex;
+		flex-direction: column;
+	}
+	.nl-trait-heading {
+		font-family: Arial, sans-serif;
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #111827;
+		text-align: right;
+		margin: 1px 0 3px;
+	}
+	.nl-trait-rule {
+		height: 1px;
+		background: #000000;
+		margin-bottom: 2px;
+	}
+	.nl-trait-row {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 5px 0 4px;
+		border-bottom: 1px solid #000000;
+	}
+	.nl-trait-row:last-child {
+		border-bottom: none;
+	}
+	.nl-trait-name {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-weight: 900;
+		font-size: 13px;
+		line-height: 1.15;
+		letter-spacing: -0.01em;
+		color: #111827;
+		flex: 1;
+	}
+	.nl-trait-grade {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-weight: 900;
+		font-size: 14px;
+		letter-spacing: -0.01em;
+		color: #111827;
+		flex-shrink: 0;
 	}
 
 	.nutrition-footnote {

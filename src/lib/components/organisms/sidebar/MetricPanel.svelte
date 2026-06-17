@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appState, sidebarBack, sidebarPush } from '$lib/store.svelte';
+	import { appState, sidebarBack, openScenarioPanel, scenarioPanelState } from '$lib/store.svelte';
 	import { scoreColors } from '$lib/scores';
 	import { getModelName, getScores, filterScenariosByAge, findMetricInTaxonomy, metricPassFraction } from '$lib/utils';
 	import ScorePill from '$lib/components/atoms/ScorePill.svelte';
@@ -55,9 +55,10 @@
 			{#each scenarios as sc (sc.scenario_id)}
 				{@const rawResult = sc.verdicts?.[appState.filters.model]}
 				{@const pass = rawResult === undefined ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
+				{@const isActive = scenarioPanelState.open && scenarioPanelState.scenarioMeta?.scenario_id === sc.scenario_id}
 				<button
-					class="flex w-full items-center gap-[8px] border-l-[3px] border-l-transparent px-[14px] py-[7px] text-left transition-colors duration-150 hover:border-l-[#00b3b0] hover:bg-[#f3f4f6]"
-					onclick={() => sidebarPush({ type: 'scenario', metricId, scenarioMeta: sc })}
+					class="flex w-full items-center gap-[8px] border-l-[3px] px-[14px] py-[7px] text-left transition-colors duration-150 hover:border-l-[#00b3b0] hover:bg-[#f3f4f6] {isActive ? 'border-l-[#00b3b0] bg-[#f0fafa]' : 'border-l-transparent'}"
+					onclick={() => openScenarioPanel(metricId, sc)}
 				>
 					{#if pass !== null}
 						<span

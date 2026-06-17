@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appState, sidebarBack, sidebarPush, sidebarState } from '$lib/store.svelte';
+	import { appState, sidebarBack, openScenarioPanel, scenarioPanelState, sidebarState } from '$lib/store.svelte';
 	import { scoreColors, scoreToColor, scorePillStyle } from '$lib/scores';
 	import { SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
 	import { getModelName, getScores, computeSubareaScore, filterScenariosByAge, subareaPassFraction } from '$lib/utils';
@@ -217,9 +217,10 @@
 									: _isHarmful
 										? rawResult === 'no'
 										: rawResult === 'yes'}
+							{@const isActive = scenarioPanelState.open && scenarioPanelState.scenarioMeta?.scenario_id === sc.scenario_id}
 							<button
-								class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]"
-								onclick={() => sidebarPush({ type: 'scenario', metricId: m.id, scenarioMeta: sc })}
+								class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6] {isActive ? 'bg-[#f0fafa]' : ''}"
+								onclick={() => openScenarioPanel(m.id, sc)}
 							>
 								<BadgeIcon type={pass === null ? 'empty' : pass ? 'pass' : 'fail'} />
 								<span

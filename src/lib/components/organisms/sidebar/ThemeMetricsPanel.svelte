@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appState, sidebarBack, sidebarPush } from '$lib/store.svelte';
+	import { appState, sidebarBack, openScenarioPanel, scenarioPanelState } from '$lib/store.svelte';
 	import { scoreColors } from '$lib/scores';
 	import { getModelName, getScores, filterScenariosByAge, metricPassFraction } from '$lib/utils';
 	import type { ThemeMetricItem } from '$lib/store.svelte';
@@ -75,9 +75,10 @@
 						{#each expandedScenarios as sc (sc.scenario_id)}
 							{@const rawResult = sc.verdicts?.[appState.filters.model]}
 							{@const pass = rawResult === undefined ? null : rawResult === 'yes'}
+							{@const isActive = scenarioPanelState.open && scenarioPanelState.scenarioMeta?.scenario_id === sc.scenario_id}
 							<button
-								class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6]"
-								onclick={() => sidebarPush({ type: 'scenario', metricId: m.id, scenarioMeta: sc })}
+								class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6] {isActive ? 'bg-[#f0fafa]' : ''}"
+								onclick={() => openScenarioPanel(m.id, sc)}
 							>
 								{#if pass !== null}
 									<span

@@ -1,7 +1,6 @@
 <script lang="ts">
 	interface Props {
 		onSmartExplore: () => void;
-		onCustomizeLabel?: () => void;
 		onTabChange: (tab: string) => void;
 		activeTab: string;
 		isAuthenticated: boolean;
@@ -9,7 +8,7 @@
 		smartExploreLoading?: boolean;
 	}
 
-	let { onSmartExplore, onCustomizeLabel, onTabChange, activeTab, isAuthenticated, isSmartMode = false, smartExploreLoading = false }: Props = $props();
+	let { onSmartExplore, onTabChange, activeTab, isAuthenticated, isSmartMode = false, smartExploreLoading = false }: Props = $props();
 
 	const TABS = [
 		{ id: 'home', label: 'Home', icon: 'fa-house', locked: false },
@@ -74,25 +73,6 @@
 					{:else}
 						<i class="fa-solid fa-wand-magic-sparkles text-[13px]"></i>
 						Smart Explore
-					{/if}
-				</button>
-			{/if}
-			{#if activeTab === 'nutrition'}
-				<button
-					disabled={smartExploreLoading}
-					class="inline-flex items-center gap-2 px-4 py-2 rounded-[6px] text-white text-[13px] font-semibold border-none
-						shadow-[0_1px_2px_rgba(3,141,143,0.25)]
-						transition-[transform,box-shadow,filter,opacity] duration-[150ms]
-						{smartExploreLoading ? 'opacity-70 cursor-wait' : 'cursor-pointer hover:brightness-[1.06] hover:shadow-[0_3px_10px_rgba(3,141,143,0.35)] hover:-translate-y-px active:translate-y-0'}"
-					style="background:linear-gradient(135deg,#00b3b0,#038d8f)"
-					onclick={() => onCustomizeLabel?.()}
-				>
-					{#if smartExploreLoading}
-						<i class="fa-solid fa-spinner fa-spin text-[13px]"></i>
-						Analyzing…
-					{:else}
-						<i class="fa-solid fa-wand-magic-sparkles text-[13px]"></i>
-						Customize Label
 					{/if}
 				</button>
 			{/if}
