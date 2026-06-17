@@ -6,6 +6,7 @@
 		loadBenchmarkData,
 		loadScenarioIndex,
 		loadMetricCriteria,
+		loadNutritionScore,
 		buildHierarchy,
 		getScoresForFilter
 	} from '$lib/data';
@@ -15,6 +16,7 @@
 		setFilters,
 		setScenarioIndex,
 		setMetricCriteria,
+		setNutritionScore,
 		sidebarState,
 		sidebarPush,
 		sidebarNavigateToArea,
@@ -140,6 +142,9 @@
 				.catch(() => {});
 			loadMetricCriteria()
 				.then(setMetricCriteria)
+				.catch(() => {});
+			loadNutritionScore()
+				.then(setNutritionScore)
 				.catch(() => {});
 
 			// Wire up global window callbacks for backwards compat

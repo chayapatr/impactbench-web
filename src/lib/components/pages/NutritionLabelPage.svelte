@@ -1,14 +1,8 @@
 <script lang="ts">
 	import { appState, setFilters } from '$lib/store.svelte';
-	import {
-		getScores,
-		computeAreaScore,
-		computeSubareaScore,
-		getModelName
-	} from '$lib/utils';
+	import { getModelName } from '$lib/utils';
 	import { STATIC_MITIGATION_TIPS } from '$lib/model-tips';
 	import { STATIC_WEAK_POINTS } from '$lib/model-weak-points';
-	import type { Subarea as TaxonomySubarea } from '$lib/types';
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
@@ -22,174 +16,94 @@
 
 	let { onModelSelect, loading = false }: Props = $props();
 
-	// Hardcoded traits (placeholder content; real metrics will be wired in later)
-	const HARMFUL_TRAITS = [
-		'Exhibits Factual Hallucination',
-		'Exhibits Sexual & Intimate Behavior',
-		'Exhibits Sycophancy',
-		'Exhibits Toxicity'
-	] as const;
-	const POSITIVE_TRAITS = [
-		'Promotes Agency',
-		'Promotes Learning & Skill Development',
-		'Promotes Social Interaction',
-		'Promotes Creativity',
-		'Promotes Wellbeing'
-	] as const;
-	const PLACEHOLDER_GRADE = 'B-';
-
 	// Selected model context (driven by Leaderboard via setFilters)
 	const currentModelId = $derived(appState.filters.model);
 	const currentModelName = $derived(getModelName(appState, currentModelId));
 	const currentAge = $derived(appState.filters.age);
 	const ageLabel = $derived(currentAge === 'child' ? 'Child / Teenager (6–17)' : 'Adult (18+)');
 
-	type WeakPointContext = {
-		metricName: string;
-		scenarioTitles: string[];
-		criteria: string;
-		fallback: string;
-	};
-
-	type LabelSubarea = {
-		id: string;
-		name: string;
-		score: number;
-		evaluated: number;
-		total: number;
-		weakPoint: WeakPointContext | null;
-	};
-
-	type LabelArea = {
-		id: string;
-		name: string;
-		score: number;
-		subareas: LabelSubarea[];
-	};
+	type NutritionCategory = { id: string; label: string; score: number };
 
 	type LabelData = {
-		areas: LabelArea[];
+		harmful: NutritionCategory[];
+		positive: NutritionCategory[];
 		overall: number;
-		totalIndicators: number;
 		worstAreas: { name: string; score: number }[];
 	};
 
-	function shortenCriteria(criteria: string): string {
-		return criteria.split('Examples:')[0].replace(/\s+/g, ' ').trim().slice(0, 220);
+	function buildLabelData(modelId: string): LabelData | null {
+		const cats = appState.nutritionScore;
+		if (!cats.length) return null;
+
+		const scored: NutritionCategory[] = cats
+			.map((c) => ({ id: c.id, label: c.label, score: c.models[modelId] ?? NaN }))
+			.filter((c) => !isNaN(c.score));
+
+		if (!scored.length) return null;
+
+		const harmful = scored.filter((c) => c.label.startsWith('Exhibits'));
+		const positive = scored.filter((c) => c.label.startsWith('Promotes'));
+
+		// Overall = average of all 451 metrics (same as sidebar)
+		const allMetricScores = Object.values(appState.benchmarkData[`${modelId}|${currentAge}`] ?? {});
+		const overall = allMetricScores.length
+			? allMetricScores.reduce((s, v) => s + v, 0) / allMetricScores.length
+			: scored.reduce((s, c) => s + c.score, 0) / scored.length;
+
+		const worst = [...scored].sort((a, b) => a.score - b.score).slice(0, 3)
+			.map((c) => ({ name: c.label, score: c.score }));
+
+		return { harmful, positive, overall, worstAreas: worst };
 	}
 
-	function buildWeakPointContext(
-		sub: TaxonomySubarea,
-		scores: Record<string, number>,
-		age: 'adult' | 'child'
-	): WeakPointContext | null {
-		const weakestMetric = [...sub.metrics]
-			.filter((metric) => scores[metric.id] !== undefined)
-			.sort((left, right) => (scores[left.id] ?? 1) - (scores[right.id] ?? 1))[0];
-		if (!weakestMetric) return null;
-		const scenarioTitles = (appState.scenarioIndex?.[weakestMetric.id] ?? [])
-			.filter((scenario) => scenario.age === age)
-			.map((scenario) => scenario.title)
-			.slice(0, 2);
-		const criteria = shortenCriteria(appState.metricCriteria[weakestMetric.id] ?? '');
-		return {
-			metricName: weakestMetric.name,
-			scenarioTitles,
-			criteria,
-			fallback: scenarioTitles[0] || weakestMetric.name || sub.name
-		};
-	}
-
-	function normalizeWeakPointText(text: string, fallback: string): string {
-		const cleaned = text
-			.replace(/^\s*(weak point|risk|issue|highlight)\s*:\s*/i, '')
-			.replace(/\s+/g, ' ')
-			.trim();
-		return cleaned || fallback;
-	}
-
-	// Build per-area / per-subarea label data for a given model
-	function buildLabelData(modelId: string, age: 'adult' | 'child') {
-		const tax = appState.taxonomy;
-		if (!tax) return null;
-		const scores = getScores(appState, modelId, age);
-		const areas: LabelArea[] = tax.areas.map((area) => {
-			const areaScore = computeAreaScore(appState, area.id, modelId, age);
-			const subareas: LabelSubarea[] = area.subareas.map((sub) => {
-				const subScore = computeSubareaScore(appState, sub.id, modelId, age);
-				const vals = sub.metrics
-					.map((m) => scores[m.id])
-					.filter((v): v is number => v !== undefined);
-				return {
-					id: sub.id,
-					name: sub.name,
-					score: subScore,
-					evaluated: vals.length,
-					total: sub.metrics.length,
-					weakPoint: buildWeakPointContext(sub, scores, age)
-				};
-			});
-			return { id: area.id, name: area.name, score: areaScore, subareas };
-		});
-		const allVals = Object.values(scores);
-		const overall = allVals.length ? allVals.reduce((a, b) => a + b, 0) / allVals.length : 0;
-		const worst = [...areas]
-			.filter((a) => a.subareas.some((s) => s.evaluated > 0))
-			.sort((a, b) => a.score - b.score)
-			.slice(0, 3)
-			.map((a) => ({ name: a.name, score: a.score }));
-		return {
-			areas,
-			overall,
-			totalIndicators: allVals.length,
-			worstAreas: worst
-		} satisfies LabelData;
-	}
-
-	// Carousel: all models, sorted by overall impact (descending)
+	// Carousel: all models with nutrition scores, sorted by overall impact (descending)
 	type Card = {
 		id: string;
 		name: string;
 		provider: string;
-		data: NonNullable<ReturnType<typeof buildLabelData>>;
+		data: LabelData;
 	};
-	const carouselCards = $derived<Card[]>(() => {
-		if (!appState.taxonomy) return [];
+	const carouselCards = $derived.by<Card[]>(() => {
+		if (!appState.nutritionScore.length) return [];
 		const cards: Card[] = [];
 		for (const m of appState.models) {
-			const d = buildLabelData(m.id, currentAge);
-			if (!d || d.totalIndicators === 0) continue;
+			const d = buildLabelData(m.id);
+			if (!d) continue;
 			cards.push({ id: m.id, name: m.name, provider: m.provider ?? '', data: d });
 		}
 		cards.sort((a, b) => b.data.overall - a.data.overall);
 		return cards;
 	});
 
-	const focusIndex = $derived(() => {
-		const cards = carouselCards();
-		const idx = cards.findIndex((c) => c.id === currentModelId);
-		return idx >= 0 ? idx : 0;
+	let focusIndex = $state(0);
+	let carouselDrivenModel = $state('');
+
+	// Only sync focusIndex when model was changed externally (e.g. Leaderboard)
+	$effect(() => {
+		const id = currentModelId;
+		if (id === carouselDrivenModel) return;
+		const idx = carouselCards.findIndex((c) => c.id === id);
+		if (idx >= 0) focusIndex = idx;
 	});
 
-	const labelData = $derived(() => {
-		const cards = carouselCards();
-		return cards[focusIndex()]?.data ?? null;
-	});
+	const labelData = $derived.by(() => carouselCards[focusIndex]?.data ?? null);
 
 	function gotoCard(idx: number) {
-		const cards = carouselCards();
+		const cards = carouselCards;
 		if (cards.length === 0) return;
 		const clamped = ((idx % cards.length) + cards.length) % cards.length;
 		const target = cards[clamped];
-		if (!target || target.id === currentModelId) return;
+		if (!target) return;
+		focusIndex = clamped;
+		carouselDrivenModel = target.id;
 		setFilters({ ...appState.filters, model: target.id });
 		onModelSelect?.(target.id);
 	}
 	function nextCard() {
-		gotoCard(focusIndex() + 1);
+		gotoCard(focusIndex + 1);
 	}
 	function prevCard() {
-		gotoCard(focusIndex() - 1);
+		gotoCard(focusIndex - 1);
 	}
 
 	// ───── Compare selection ─────
@@ -216,9 +130,8 @@
 		compareMode = false;
 	}
 
-	const selectedCards = $derived<Card[]>(() => {
-		const cards = carouselCards();
-		const byId = new Map(cards.map((c) => [c.id, c]));
+	const selectedCards = $derived.by<Card[]>(() => {
+		const byId = new Map(carouselCards.map((c) => [c.id, c]));
 		return selectedIds.map((id) => byId.get(id)).filter((c): c is Card => Boolean(c));
 	});
 
@@ -234,8 +147,8 @@
 	let labelEl: HTMLElement | undefined = $state();
 	const cardRefs: Record<string, HTMLElement | undefined> = $state({});
 	$effect(() => {
-		const cards = carouselCards();
-		const focused = cards[focusIndex()];
+		const cards = carouselCards;
+		const focused = cards[focusIndex];
 		labelEl = focused ? cardRefs[focused.id] : undefined;
 	});
 	async function savePdf() {
@@ -275,12 +188,12 @@
 		return (s >= 0 ? '+' : '') + s.toFixed(2);
 	}
 	function scoreColor(s: number): string {
-		if (s >= 0.5) return '#16a34a';
-		if (s >= 0.15) return '#65a30d';
-		if (s >= -0.15) return '#6b7280';
-		if (s >= -0.4) return '#d97706';
-		if (s >= -0.7) return '#ea580c';
-		return '#dc2626';
+		if (!Number.isFinite(s)) return '#6b7280';
+		if (s >= 0.85) return '#16a34a'; // A / A+
+		if (s >= 0.7)  return '#65a30d'; // B / B+
+		if (s >= 0.55) return '#d97706'; // C / C+
+		if (s >= 0.4)  return '#ea580c'; // D
+		return '#dc2626';                // F
 	}
 
 	const isLoading = $derived(loading);
@@ -301,13 +214,14 @@
 
 	<!-- CENTER: Nutritional Label carousel or compare view -->
 	<div class="nl-center">
-		{#if appState.loading || carouselCards().length === 0}
+		{#if appState.loading || carouselCards.length === 0}
 			<div class="nl-center-loading">
 				<div class="nl-spinner" aria-hidden="true"></div>
 				<p>Loading taxonomy…</p>
 			</div>
 		{:else if compareMode}
-			{@const sel = selectedCards()}
+			{@const sel = selectedCards}
+			{@const refCard = sel[0]}
 			<div class="nl-compare">
 				<header class="nl-compare-head">
 					<button class="nl-compare-back" onclick={closeCompare}>
@@ -337,12 +251,13 @@
 									<td class="nl-compare-cell"></td>
 								{/each}
 							</tr>
-							{#each HARMFUL_TRAITS as trait (trait)}
+							{#each refCard.data.harmful as cat (cat.id)}
 								<tr class="nl-compare-sub-row">
-									<td class="nl-compare-row-label nl-compare-sub-label">{trait}</td>
-									{#each sel as card (card.id + ':' + trait)}
+									<td class="nl-compare-row-label nl-compare-sub-label">{cat.label}</td>
+									{#each sel as card (card.id + ':' + cat.id)}
+										{@const s = card.data.harmful.find((c: NutritionCategory) => c.id === cat.id)?.score ?? NaN}
 										<td class="nl-compare-cell">
-											<span class="nl-compare-score nl-compare-score--sm">{PLACEHOLDER_GRADE}</span>
+											<span class="nl-compare-score nl-compare-score--sm" style="color:{scoreColor(s)}">{isNaN(s) ? '—' : scoreToLetterGrade(s)}</span>
 										</td>
 									{/each}
 								</tr>
@@ -354,12 +269,13 @@
 									<td class="nl-compare-cell"></td>
 								{/each}
 							</tr>
-							{#each POSITIVE_TRAITS as trait (trait)}
+							{#each refCard.data.positive as cat (cat.id)}
 								<tr class="nl-compare-sub-row">
-									<td class="nl-compare-row-label nl-compare-sub-label">{trait}</td>
-									{#each sel as card (card.id + ':' + trait)}
+									<td class="nl-compare-row-label nl-compare-sub-label">{cat.label}</td>
+									{#each sel as card (card.id + ':' + cat.id)}
+										{@const s = card.data.positive.find((c: NutritionCategory) => c.id === cat.id)?.score ?? NaN}
 										<td class="nl-compare-cell">
-											<span class="nl-compare-score nl-compare-score--sm">{PLACEHOLDER_GRADE}</span>
+											<span class="nl-compare-score nl-compare-score--sm" style="color:{scoreColor(s)}">{isNaN(s) ? '—' : scoreToLetterGrade(s)}</span>
 										</td>
 									{/each}
 								</tr>
@@ -369,8 +285,8 @@
 				</div>
 			</div>
 		{:else}
-			{@const cards = carouselCards()}
-			{@const fIdx = focusIndex()}
+			{@const cards = carouselCards}
+			{@const fIdx = focusIndex}
 			{@const focusedCard = cards[fIdx]}
 
 			{#if !isLoading}
@@ -469,10 +385,10 @@
 								<div class="nl-trait-block">
 									<div class="nl-trait-heading">Harmful Traits</div>
 									<div class="nl-trait-rule"></div>
-									{#each HARMFUL_TRAITS as trait (trait)}
+									{#each ld.harmful as cat (cat.id)}
 										<div class="nl-trait-row">
-											<span class="nl-trait-name">{trait}</span>
-											<span class="nl-trait-grade">{PLACEHOLDER_GRADE}</span>
+											<span class="nl-trait-name">{cat.label}</span>
+											<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}">{scoreToLetterGrade(cat.score)}</span>
 										</div>
 									{/each}
 								</div>
@@ -482,10 +398,10 @@
 								<div class="nl-trait-block">
 									<div class="nl-trait-heading">Positive Traits</div>
 									<div class="nl-trait-rule"></div>
-									{#each POSITIVE_TRAITS as trait (trait)}
+									{#each ld.positive as cat (cat.id)}
 										<div class="nl-trait-row">
-											<span class="nl-trait-name">{trait}</span>
-											<span class="nl-trait-grade">{PLACEHOLDER_GRADE}</span>
+											<span class="nl-trait-name">{cat.label}</span>
+											<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}">{scoreToLetterGrade(cat.score)}</span>
 										</div>
 									{/each}
 								</div>
@@ -510,13 +426,13 @@
 			{#if !isLoading && selectedIds.length > 0}
 				<div class="nl-strip">
 					<div class="nl-strip-thumbs" role="list" aria-label="Selected for comparison">
-						{#each selectedCards() as card (card.id)}
+						{#each selectedCards as card (card.id)}
 							<div class="nl-thumb" role="listitem">
 								<button
 									class="nl-thumb-main"
 									onclick={() => {
 										if (card.id !== focusedCard?.id) {
-											const idx = carouselCards().findIndex((c) => c.id === card.id);
+											const idx = carouselCards.findIndex((c) => c.id === card.id);
 											if (idx >= 0) gotoCard(idx);
 										}
 									}}
@@ -701,21 +617,19 @@
 	.nl-carousel {
 		position: relative;
 		flex: 1;
-		height: 100%;
-		min-height: 0;
+		height: 680px;
 		max-width: 520px;
 		perspective: 1400px;
 	}
 
 	.nl-carousel-card {
 		position: absolute;
-		top: 0;
-		bottom: 0;
+		top: 50%;
 		left: 50%;
 		width: 100%;
 		max-width: 440px;
-		transform-origin: center bottom;
-		transform: translateX(calc(-50% + var(--offset) * 70px)) rotate(calc(var(--offset) * 5deg))
+		transform-origin: center center;
+		transform: translate(calc(-50% + var(--offset) * 70px), -50%) rotate(calc(var(--offset) * 5deg))
 			scale(calc(1 - var(--abs) * 0.07));
 		opacity: calc(1 - var(--abs) * 0.55);
 		transition:
@@ -747,9 +661,6 @@
 	}
 
 	.nl-carousel-card > .nutrition-label {
-		flex: 1;
-		min-height: 0;
-		overflow-y: auto;
 		box-shadow: 0 18px 38px -22px rgba(15, 23, 42, 0.45);
 	}
 	.nl-carousel-card--focus > .nutrition-label {
@@ -1600,7 +1511,6 @@
 		font-weight: 900;
 		font-size: 14px;
 		letter-spacing: -0.01em;
-		color: #111827;
 		flex-shrink: 0;
 	}
 
