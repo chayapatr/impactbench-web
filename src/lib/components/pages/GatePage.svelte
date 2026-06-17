@@ -312,11 +312,11 @@
 			</p>
 
 			<div class="mb-3 flex flex-wrap items-center justify-center gap-3">
-				<button class="btn-primary" onclick={() => openTab('request')}>
-					<i class="fa-solid fa-key"></i> Request Access
+				<button class="btn-primary" onclick={openPwModal}>
+					<i class="fa-solid fa-chart-pie"></i> Explore Benchmark
 				</button>
-				<button class="btn-white" onclick={openPwModal}>
-					<i class="fa-solid fa-chart-pie"></i> Explore
+				<button class="btn-white" onclick={() => openTab('request')}>
+					<i class="fa-solid fa-key"></i> Request Access
 				</button>
 				<button class="btn-white" onclick={() => onTabChange('about')}>
 					<i class="fa-solid fa-file-lines"></i> About

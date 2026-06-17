@@ -4,6 +4,19 @@ import { averageScore } from '$lib/scores';
 
 type AppState = typeof AppStateInstance;
 
+/**
+ * Convert a possibly snake_case identifier into a human-readable sentence-case
+ * label. Names that already contain capital letters or whitespace are returned
+ * unchanged.
+ */
+export function humanizeName(name: string): string {
+	if (!name) return name;
+	if (!/_/.test(name) && /[A-Z\s]/.test(name)) return name;
+	const spaced = name.replace(/_+/g, ' ').trim();
+	if (!spaced) return name;
+	return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
+
 export function getScores(appState: AppState, modelId?: string, age?: string): Record<string, number> {
 	const m = modelId ?? appState.filters.model;
 	const a = age ?? appState.filters.age;

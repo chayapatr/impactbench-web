@@ -24,6 +24,9 @@
 		sidebarNavigateToSmartFocus,
 		leaderboardState,
 		smartNutritionState,
+		scenarioPanelState,
+		openScenarioPanel,
+		closeScenarioPanel,
 		type ThemeMetricItem
 	} from '$lib/store.svelte';
 	import { makeBenchmarkKey } from '$lib/data';
@@ -34,6 +37,7 @@
 	import Leaderboard from '$lib/components/organisms/Leaderboard.svelte';
 	import NutritionLabel from '$lib/components/organisms/NutritionLabel.svelte';
 	import SmartExplore from '$lib/components/organisms/SmartExplore.svelte';
+	import ScenarioPanel from '$lib/components/organisms/sidebar/ScenarioPanel.svelte';
 	import SmartNutritionLabel from '$lib/components/organisms/SmartNutritionLabel.svelte';
 	import GatePage from '$lib/components/pages/GatePage.svelte';
 	import AboutPage from '$lib/components/pages/AboutPage.svelte';
@@ -76,6 +80,12 @@
 		} else if (top.type === 'subarea') {
 			sunburstRef?.focusNode(top.subareaId, 'subarea');
 		}
+	});
+
+	// Auto-close the scenario side-panel when the user switches away from the explore tab.
+	$effect(() => {
+		if (!scenarioPanelState.open) return;
+		if (activeTab !== 'explore') closeScenarioPanel();
 	});
 
 	// Derived hierarchy data for sunburst
@@ -123,7 +133,7 @@
 						const scenarios = idx[pendingDeepMetric] ?? [];
 						const scenarioMeta = scenarios.find((s) => s.scenario_id === pendingDeepScenario);
 						if (scenarioMeta) {
-							sidebarPush({ type: 'scenario', metricId: pendingDeepMetric, scenarioMeta });
+							openScenarioPanel(pendingDeepMetric, scenarioMeta);
 						}
 						pendingDeepScenario = null;
 					}
@@ -471,7 +481,7 @@
 					const scenarios = appState.scenarioIndex[pendingDeepMetric] ?? [];
 					const scenarioMeta = scenarios.find((s) => s.scenario_id === pendingDeepScenario);
 					if (scenarioMeta)
-						sidebarPush({ type: 'scenario', metricId: pendingDeepMetric!, scenarioMeta });
+						openScenarioPanel(pendingDeepMetric!, scenarioMeta);
 					pendingDeepScenario = null;
 					pendingDeepMetric = null;
 				}
@@ -613,6 +623,22 @@
 						onClearFocus={handleClearFocus}
 					/>
 				</aside>
+
+				<!-- FAR RIGHT: Scenario detail side-panel (only when a scenario is selected) -->
+				{#if scenarioPanelState.open && scenarioPanelState.scenarioMeta && scenarioPanelState.metricId}
+					<aside
+						class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white shadow-[-4px_0_12px_-6px_rgba(0,0,0,0.08)]"
+					>
+						<div class="flex flex-1 flex-col overflow-y-auto">
+							<ScenarioPanel
+								metricId={scenarioPanelState.metricId}
+								scenarioMeta={scenarioPanelState.scenarioMeta}
+								backLabel="Close"
+								onBack={closeScenarioPanel}
+							/>
+						</div>
+					</aside>
+				{/if}
 			</div>
 		{:else if activeTab === 'metrics'}
 			<div class="flex flex-1 overflow-hidden">

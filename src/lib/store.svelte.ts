@@ -1,4 +1,5 @@
 import type { Taxonomy, AIModel, BenchmarkData, FilterState, ScenarioIndex } from './types';
+import { humanizeName } from './utils';
 
 // ===== App State (Svelte 5 runes) =====
 
@@ -15,10 +16,25 @@ export const appState = $state({
 });
 
 export function setData(taxonomy: Taxonomy, models: AIModel[], benchmarkData: BenchmarkData) {
-	appState.taxonomy = taxonomy;
+	appState.taxonomy = normalizeTaxonomyNames(taxonomy);
 	appState.models = models;
 	appState.benchmarkData = benchmarkData;
 	appState.loading = false;
+}
+
+function normalizeTaxonomyNames(taxonomy: Taxonomy): Taxonomy {
+	return {
+		...taxonomy,
+		areas: taxonomy.areas.map((area) => ({
+			...area,
+			name: humanizeName(area.name),
+			subareas: area.subareas.map((sub) => ({
+				...sub,
+				name: humanizeName(sub.name),
+				metrics: sub.metrics.map((m) => ({ ...m, name: humanizeName(m.name) }))
+			}))
+		}))
+	};
 }
 
 export function setFilters(filters: FilterState) {
@@ -163,3 +179,26 @@ export const smartNutritionState = $state({
 export const nutritionLabelState = $state({
 	open: false
 });
+
+// ===== Scenario side-panel (opens to the right of the main sidebar) =====
+
+export const scenarioPanelState = $state({
+	open: false,
+	metricId: null as string | null,
+	scenarioMeta: null as import('./types').ScenarioMeta | null
+});
+
+export function openScenarioPanel(
+	metricId: string,
+	scenarioMeta: import('./types').ScenarioMeta
+) {
+	scenarioPanelState.open = true;
+	scenarioPanelState.metricId = metricId;
+	scenarioPanelState.scenarioMeta = scenarioMeta;
+}
+
+export function closeScenarioPanel() {
+	scenarioPanelState.open = false;
+	scenarioPanelState.metricId = null;
+	scenarioPanelState.scenarioMeta = null;
+}

@@ -11,9 +11,11 @@
 		metricId: string;
 		scenarioMeta: ScenarioMeta;
 		backLabel: string;
+		onBack?: () => void;
 	}
 
-	let { metricId, scenarioMeta, backLabel }: Props = $props();
+	let { metricId, scenarioMeta, backLabel, onBack }: Props = $props();
+	const handleBack = $derived(onBack ?? sidebarBack);
 
 	const _metric = $derived(findMetricInTaxonomy(appState, metricId)?.metric);
 
@@ -31,7 +33,7 @@
 	});
 </script>
 
-<StickyHeader {backLabel} onBack={sidebarBack}>
+<StickyHeader {backLabel} onBack={handleBack}>
 	{#snippet right()}
 		<span class="truncate text-[11px] font-semibold text-[#9ca3af]">{getModelName(appState)}</span>
 	{/snippet}
