@@ -87,10 +87,10 @@
 		}
 	});
 
-	// Auto-close the scenario side-panel when switching away from tabs that use it.
+	// Auto-close the scenario side-panel on tab switch.
 	$effect(() => {
-		if (!scenarioPanelState.open) return;
-		if (activeTab !== 'explore' && activeTab !== 'nutrition') closeScenarioPanel();
+		void activeTab;
+		closeScenarioPanel();
 	});
 
 	// Derived hierarchy data for sunburst
