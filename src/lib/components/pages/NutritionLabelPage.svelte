@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { appState, setFilters } from '$lib/store.svelte';
-	import { getModelName } from '$lib/utils';
+	import { getModelName, getScores } from '$lib/utils';
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
@@ -44,7 +44,7 @@
 		const positive = scored.filter((c) => c.label.startsWith('Promotes'));
 
 		// Overall = average of all 451 metrics (same as sidebar)
-		const allMetricScores = Object.values(appState.benchmarkData[`${modelId}|${currentAge}`] ?? {});
+		const allMetricScores = Object.values(getScores(appState, modelId, currentAge));
 		const overall = allMetricScores.length
 			? allMetricScores.reduce((s, v) => s + v, 0) / allMetricScores.length
 			: scored.reduce((s, c) => s + c.score, 0) / scored.length;

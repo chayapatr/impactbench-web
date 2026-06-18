@@ -21,10 +21,8 @@
 		setNutritionCat,
 		sidebarState,
 		sidebarPush,
-		sidebarNavigateToArea,
-		sidebarNavigateToSubarea,
+		sidebarNavigateTo,
 		sidebarNavigateToMetric,
-		sidebarNavigateToThemeMetrics,
 		sidebarNavigateToSmartFocus,
 		leaderboardState,
 		smartNutritionState,
@@ -146,16 +144,16 @@
 					}
 					if (isAuthenticated && pendingDeepMetric) pendingDeepMetric = null;
 				})
-				.catch(() => {});
+				.catch((e) => console.warn('Failed to load scenario index:', e));
 			loadMetricCriteria()
 				.then(setMetricCriteria)
-				.catch(() => {});
+				.catch((e) => console.warn('Failed to load metric criteria:', e));
 			loadNutritionScore()
 				.then(setNutritionScore)
-				.catch(() => {});
+				.catch((e) => console.warn('Failed to load nutrition scores:', e));
 			loadNutritionCat()
 				.then(setNutritionCat)
-				.catch(() => {});
+				.catch((e) => console.warn('Failed to load nutrition categories:', e));
 
 			// Wire up global window callbacks for backwards compat
 			const w = window as unknown as Record<string, unknown>;
@@ -166,7 +164,7 @@
 			w.__renderSmartRankings = renderSmartRankings;
 			w.__restoreNormalRankings = restoreNormalRankings;
 			w.__openThemeMetrics = (name: string, desc: string, metrics: ThemeMetricItem[]) =>
-				sidebarNavigateToThemeMetrics(name, desc, metrics);
+				sidebarNavigateTo({ type: 'theme-metrics', themeName: name, themeDesc: desc, metrics });
 			w.__getSmartRanked = () => leaderboardState.smartRanked;
 			w.__getBenchmarkScores = () =>
 				appState.benchmarkData[makeBenchmarkKey(appState.filters.model, appState.filters.age)] ??
@@ -190,11 +188,15 @@
 
 	function handleSubareaClick(subareaId: string) {
 		if (!appState.taxonomy) return;
-		sidebarNavigateToSubarea(subareaId, appState.taxonomy);
+		const area = appState.taxonomy.areas.find((a) => a.subareas.some((s) => s.id === subareaId));
+		const levels: import('$lib/store.svelte').NavLevel[] = [];
+		if (area) levels.push({ type: 'area', areaId: area.id });
+		levels.push({ type: 'subarea', subareaId });
+		sidebarNavigateTo(...levels);
 	}
 
 	function handleAreaClick(areaId: string) {
-		sidebarNavigateToArea(areaId);
+		sidebarNavigateTo({ type: 'area', areaId });
 	}
 
 	function handleCenterClick() {

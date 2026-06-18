@@ -98,14 +98,8 @@ export type NavLevel =
 	| { type: 'area'; areaId: string }
 	| { type: 'subarea'; subareaId: string }
 	| { type: 'metric'; metricId: string; metricName: string }
-	| { type: 'scenario'; metricId: string; scenarioMeta: import('./types').ScenarioMeta }
 	| { type: 'smart-focus'; userText: string; themes: SmartTheme[] }
-	| {
-			type: 'theme-metrics';
-			themeName: string;
-			themeDesc: string;
-			metrics: ThemeMetricItem[];
-	  };
+	| { type: 'theme-metrics'; themeName: string; themeDesc: string; metrics: ThemeMetricItem[] };
 
 export const sidebarState = $state({
 	navStack: [{ type: 'overview' }] as NavLevel[],
@@ -122,16 +116,8 @@ export function sidebarBack() {
 	}
 }
 
-export function sidebarNavigateToArea(areaId: string) {
-	sidebarState.navStack = [{ type: 'overview' }, { type: 'area', areaId }];
-}
-
-export function sidebarNavigateToSubarea(subareaId: string, taxonomy: Taxonomy) {
-	const area = taxonomy.areas.find((a) => a.subareas.some((s) => s.id === subareaId));
-	const stack: NavLevel[] = [{ type: 'overview' }];
-	if (area) stack.push({ type: 'area', areaId: area.id });
-	stack.push({ type: 'subarea', subareaId });
-	sidebarState.navStack = stack;
+export function sidebarNavigateTo(...levels: NavLevel[]) {
+	sidebarState.navStack = [{ type: 'overview' }, ...levels];
 }
 
 export function sidebarNavigateToMetric(metricId: string, taxonomy: Taxonomy) {
@@ -139,12 +125,11 @@ export function sidebarNavigateToMetric(metricId: string, taxonomy: Taxonomy) {
 		for (const sub of area.subareas) {
 			const metric = sub.metrics.find((m) => m.id === metricId);
 			if (metric) {
-				sidebarState.navStack = [
-					{ type: 'overview' },
+				sidebarNavigateTo(
 					{ type: 'area', areaId: area.id },
 					{ type: 'subarea', subareaId: sub.id },
 					{ type: 'metric', metricId, metricName: metric.name }
-				];
+				);
 				return;
 			}
 		}
@@ -154,18 +139,7 @@ export function sidebarNavigateToMetric(metricId: string, taxonomy: Taxonomy) {
 export function sidebarNavigateToSmartFocus(userText: string, themes: SmartTheme[]) {
 	const node = { type: 'smart-focus' as const, userText, themes };
 	leaderboardState.smartFocusNode = node;
-	sidebarState.navStack = [{ type: 'overview' }, node];
-}
-
-export function sidebarNavigateToThemeMetrics(
-	themeName: string,
-	themeDesc: string,
-	metrics: ThemeMetricItem[]
-) {
-	sidebarState.navStack = [
-		{ type: 'overview' },
-		{ type: 'theme-metrics', themeName, themeDesc, metrics }
-	];
+	sidebarNavigateTo(node);
 }
 
 // ===== Leaderboard State =====

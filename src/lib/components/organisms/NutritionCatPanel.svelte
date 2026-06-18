@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { appState, openScenarioPanel, scenarioPanelState } from '$lib/store.svelte';
 	import { scorePillStyle, scoreColors } from '$lib/scores';
-	import { filterScenariosByAge } from '$lib/utils';
+	import { filterScenariosByAge, getScores } from '$lib/utils';
 	import { STATIC_MITIGATION_TIPS } from '$lib/model-tips';
 	import type { ScenarioMeta } from '$lib/types';
 	import BadgeIcon from '$lib/components/atoms/BadgeIcon.svelte';
@@ -19,7 +19,7 @@
 
 	const age = $derived(appState.filters.age);
 	const catDef = $derived(catId ? appState.nutritionCat.find((c) => c.id === catId) : null);
-	const modelScores = $derived(appState.benchmarkData[`${modelId}|${age}`] ?? {});
+	const modelScores = $derived(getScores(appState, modelId, age));
 
 	const metrics = $derived(
 		(catDef?.metrics ?? [])

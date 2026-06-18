@@ -11,7 +11,6 @@
 	import AreaPanel from './sidebar/AreaPanel.svelte';
 	import SubareaPanel from './sidebar/SubareaPanel.svelte';
 	import MetricPanel from './sidebar/MetricPanel.svelte';
-	import ScenarioPanel from './sidebar/ScenarioPanel.svelte';
 	import SmartFocusPanel from './sidebar/SmartFocusPanel.svelte';
 	import ThemeMetricsPanel from './sidebar/ThemeMetricsPanel.svelte';
 
@@ -26,7 +25,7 @@
 	const top = $derived(sidebarState.navStack[sidebarState.navStack.length - 1]);
 	const isFocused = $derived(top.type !== 'overview' && top.type !== 'smart-focus');
 
-	const overallScore = $derived(() => {
+	const overallScore = $derived.by(() => {
 		// In smart mode, show flat avg of all smart-focus metrics for the selected model
 		if (leaderboardState.smartRanked.length > 0) {
 			const entry = leaderboardState.smartRanked.find((e) => e.id === appState.filters.model);
@@ -36,18 +35,14 @@
 		return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
 	});
 
-	const overallTotal = $derived(() => {
-		const scores = getScores(appState);
-		return Object.keys(scores).length;
-	});
+	const overallTotal = $derived.by(() => Object.keys(getScores(appState)).length);
 
-	function getAncestorName(): string {
+	const ancestorName = $derived.by(() => {
 		const stack = sidebarState.navStack;
 		if (stack.length < 2) return 'Back';
 		const prev = stack[stack.length - 2];
-		if (prev.type === 'area' && appState.taxonomy) {
+		if (prev.type === 'area' && appState.taxonomy)
 			return appState.taxonomy.areas.find((a) => a.id === prev.areaId)?.name ?? 'Back';
-		}
 		if (prev.type === 'subarea' && appState.taxonomy) {
 			for (const area of appState.taxonomy.areas) {
 				const sub = area.subareas.find((s) => s.id === prev.subareaId);
@@ -56,7 +51,7 @@
 		}
 		if (prev.type === 'metric') return prev.metricName;
 		return 'Back';
-	}
+	});
 </script>
 
 <div class="flex h-full flex-col overflow-hidden bg-white">
@@ -127,7 +122,7 @@
 						{getModelName(appState)}
 					</div>
 				</div>
-				<ScorePill score={overallScore()} total={overallTotal()} />
+				<ScorePill score={overallScore} total={overallTotal} />
 			</div>
 		</div>
 	</div>
@@ -141,9 +136,7 @@
 		{:else if top.type === 'subarea' && appState.taxonomy}
 			<SubareaPanel subareaId={top.subareaId} />
 		{:else if top.type === 'metric'}
-			<MetricPanel metricId={top.metricId} metricName={top.metricName} backLabel={getAncestorName()} />
-		{:else if top.type === 'scenario'}
-			<ScenarioPanel metricId={top.metricId} scenarioMeta={top.scenarioMeta} backLabel={getAncestorName()} />
+			<MetricPanel metricId={top.metricId} metricName={top.metricName} backLabel={ancestorName} />
 		{:else if top.type === 'smart-focus'}
 			<SmartFocusPanel themes={top.themes} userText={top.userText} />
 		{:else if top.type === 'theme-metrics'}

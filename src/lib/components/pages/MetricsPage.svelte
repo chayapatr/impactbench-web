@@ -2,7 +2,7 @@
 	import { appState } from '$lib/store.svelte';
 	import { formatScore, scoreToClass, scoreColors } from '$lib/scores';
 	import { loadScenarioDetail } from '$lib/data';
-	import { filterScenariosByAge } from '$lib/utils';
+	import { filterScenariosByAge, getScores } from '$lib/utils';
 	import type { ScenarioMeta, ScenarioDetail } from '$lib/types';
 	import ConversationViewer from '../organisms/ConversationViewer.svelte';
 	import ScorePill from '../atoms/ScorePill.svelte';
@@ -94,7 +94,7 @@
 				for (const m of sub.metrics) {
 					// average across all models for current age
 					const vals = appState.models
-						.map((mo) => (appState.benchmarkData[`${mo.id}|${appState.filters.age}`] ?? {})[m.id])
+						.map((mo) => getScores(appState, mo.id, appState.filters.age)[m.id])
 						.filter((v): v is number => v !== undefined);
 					const avgScore = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
 					result.push({
