@@ -39,3 +39,14 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #d1d5db;
 }
+
+/* Hide scrollbar in sidebar panels */
+#summary-panel,
+#summary-panel *,
+.sidebar-scroll {
+  scrollbar-width: none;
+}
+#summary-panel::-webkit-scrollbar,
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}

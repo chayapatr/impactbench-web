@@ -200,7 +200,7 @@
 				</button>
 			</div>
 			{#if expandedMetricId === m.id}
-				<div class="bg-[#f9fafb] pb-1">
+				<div class="bg-white pb-1">
 					{#if expandedScenarios.length === 0}
 						<p class="px-[28px] py-2 text-[11px] text-[#9ca3af]">No scenarios available.</p>
 					{:else}

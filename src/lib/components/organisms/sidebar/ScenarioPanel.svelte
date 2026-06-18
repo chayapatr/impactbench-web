@@ -6,6 +6,7 @@
 	import ConversationViewer from '$lib/components/organisms/ConversationViewer.svelte';
 	import StickyHeader from '$lib/components/molecules/StickyHeader.svelte';
 	import ColoredBanner from '$lib/components/molecules/ColoredBanner.svelte';
+	import { marked } from 'marked';
 
 	interface Props {
 		metricId: string;
@@ -38,11 +39,20 @@
 		<span class="truncate text-[11px] font-semibold text-[#9ca3af]">{getModelName(appState)}</span>
 	{/snippet}
 	{#snippet banner()}
-		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" title={scenarioMeta.title}>
+		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" title={_metric?.name ?? metricId}>
 			{#snippet children()}
-				<span class="text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]">{scenarioMeta.title}</span>
-				{#if _metric}
-					<div class="mt-[4px] text-[11px] text-[#9ca3af]">{_metric.name}</div>
+				{#if _metric?.behavior_type}
+					<div class="mb-[6px]">
+						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{_metric.behavior_type === 'restrain_harm' ? 'background:#ede9fe;color:#7c3aed' : 'background:#dbeafe;color:#2563eb'}">
+							<i class="fa-solid {_metric.behavior_type === 'flourishing' ? 'fa-star' : 'fa-shield-halved'} text-[9px]"></i>
+							{_metric.behavior_type === 'flourishing' ? 'Promoting good behavior' : 'Avoiding bad behavior'}
+						</span>
+					</div>
+				{/if}
+				<span class="text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]">{_metric?.name ?? metricId}</span>
+				{@const criteria = appState.metricCriteria?.[metricId] ?? ''}
+				{#if criteria}
+					<div class="mt-[6px] text-[12px] leading-relaxed text-[#6b7280]">{@html marked.parse(criteria)}</div>
 				{/if}
 			{/snippet}
 		</ColoredBanner>
@@ -50,14 +60,6 @@
 </StickyHeader>
 
 <div class="px-6 py-4">
-	{#if _metric?.behavior_type}
-		<div class="mb-4">
-			<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{_metric.behavior_type === 'restrain_harm' ? 'background:#ede9fe;color:#7c3aed' : 'background:#dbeafe;color:#2563eb'}">
-				<i class="fa-solid {_metric.behavior_type === 'flourishing' ? 'fa-star' : 'fa-shield-halved'} text-[9px]"></i>
-				{_metric.behavior_type === 'flourishing' ? 'Promoting good behavior' : 'Avoiding bad behavior'}
-			</span>
-		</div>
-	{/if}
 	<ConversationViewer
 		{metricId}
 		metricName={scenarioMeta.title}

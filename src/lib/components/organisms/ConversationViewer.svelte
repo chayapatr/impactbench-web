@@ -43,7 +43,9 @@
 
 {#if loading}
 	<div class="mt-4 flex items-center gap-2 text-[#9ca3af]">
-		<div class="h-4 w-4 animate-spin rounded-full border-2 border-[#e5e7eb] border-t-[#00b3b0]"></div>
+		<div
+			class="h-4 w-4 animate-spin rounded-full border-2 border-[#e5e7eb] border-t-[#00b3b0]"
+		></div>
 		<span class="text-[13px]">Loading conversation…</span>
 	</div>
 {:else if error}
@@ -53,25 +55,33 @@
 	{@const pass = rawResult == null ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
 	{@const turns = scenarioDetail.transcript ?? []}
 
-	<!-- Metric -->
-	{#if criteria}
+	<!-- Scenario title -->
+	{#if metricName}
 		<div class="mb-4">
-			<div class="mb-[6px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Metric</div>
-			<div class="prose prose-sm max-w-none text-[12px] leading-relaxed text-[#6b7280]">
-				{@html marked.parse(criteria)}
+			<div class="mb-[3px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+				Scenario
 			</div>
+			<div class="text-[12px] font-[600] text-[#374151]">{metricName}</div>
 		</div>
+
+		{#if scenarioDetail.persona}
+			<div class="-mt-2 mb-4 text-[12px] leading-relaxed text-[#374151]">
+				{scenarioDetail.persona}
+			</div>
+		{/if}
 		<div class="-mx-6 mb-4 border-t border-[#e5e7eb]"></div>
 	{/if}
 
 	<!-- Persona -->
-	{#if scenarioDetail.persona}
+	<!-- {#if scenarioDetail.persona}
 		<div class="mb-4">
-			<div class="mb-[6px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Persona</div>
+			<div class="mb-[6px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+				Persona
+			</div>
 			<div class="text-[12px] leading-relaxed text-[#374151]">{scenarioDetail.persona}</div>
 		</div>
 		<div class="-mx-6 mb-4 border-t border-[#e5e7eb]"></div>
-	{/if}
+	{/if} -->
 
 	<!-- Model switcher -->
 	{#if showModelSwitcher}
@@ -92,8 +102,9 @@
 					{#if pass2 !== null}
 						<span
 							class="inline-flex h-[12px] w-[12px] flex-shrink-0 items-center justify-center rounded-full text-[7px] font-[800]"
-							style={pass2 ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-							>{pass2 ? '✓' : '✗'}</span
+							style={pass2
+								? 'background:#dcfce7;color:#16a34a'
+								: 'background:#fee2e2;color:#dc2626'}>{pass2 ? '✓' : '✗'}</span
 						>
 					{/if}
 					{model.name}
@@ -107,18 +118,23 @@
 		<div class="mb-4">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-2">
-					<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Verdict</div>
+					<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+						Verdict
+					</div>
 					<span
 						class="rounded-full px-2 py-0.5 text-[10px] font-bold"
 						style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-					>{pass ? 'Pass' : 'Fail'}</span>
+						>{pass ? 'Pass' : 'Fail'}</span
+					>
 				</div>
 				{#if scenarioDetail.justification}
 					<button
 						class="flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] text-[#9ca3af] hover:text-[#6b7280]"
 						onclick={() => (reasoningOpen = !reasoningOpen)}
 					>
-						Reasoning <i class="fa-solid {reasoningOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-[8px]"></i>
+						Reasoning <i
+							class="fa-solid {reasoningOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-[8px]"
+						></i>
 					</button>
 				{/if}
 			</div>
@@ -132,13 +148,24 @@
 	{/if}
 
 	<!-- Conversation -->
-	<div class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Conversation</div>
+	<div class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+		Conversation
+	</div>
 	{#each turns as turn, i (i)}
 		<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
-			<div class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}">
+			<div
+				class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role === 'user'
+					? 'text-[#00b3b0]'
+					: 'text-[#9ca3af]'}"
+			>
 				{turn.role === 'user' ? 'User' : 'AI'}
 			</div>
-			<div class="prose prose-sm inline-block max-w-[88%] max-w-none rounded-xl px-3 py-2 text-left text-[12px] {turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert' : 'bg-[#f3f4f6] text-[#374151]'}">
+			<div
+				class="prose prose-sm inline-block max-w-[88%] max-w-none rounded-xl px-3 py-2 text-left text-[12px] {turn.role ===
+				'user'
+					? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert'
+					: 'bg-[#f3f4f6] text-[#374151]'}"
+			>
 				{@html marked.parse(turn.content)}
 			</div>
 		</div>

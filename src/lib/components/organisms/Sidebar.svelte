@@ -59,7 +59,7 @@
 	}
 </script>
 
-<div class="flex h-full flex-col overflow-hidden bg-[#fafaf9]">
+<div class="flex h-full flex-col overflow-hidden bg-white">
 	<!-- Smart focus card -->
 	{#if leaderboardState.smartFocusNode}
 		{@const focusNode = leaderboardState.smartFocusNode}
