@@ -7,6 +7,7 @@
 		loadScenarioIndex,
 		loadMetricCriteria,
 		loadNutritionScore,
+		loadNutritionCat,
 		buildHierarchy,
 		getScoresForFilter
 	} from '$lib/data';
@@ -17,6 +18,7 @@
 		setScenarioIndex,
 		setMetricCriteria,
 		setNutritionScore,
+		setNutritionCat,
 		sidebarState,
 		sidebarPush,
 		sidebarNavigateToArea,
@@ -46,6 +48,7 @@
 	import MetricsPage from '$lib/components/pages/MetricsPage.svelte';
 	import FeedbackSurveyModal from '$lib/components/organisms/FeedbackSurveyModal.svelte';
 	import NutritionLabelPage from '$lib/components/pages/NutritionLabelPage.svelte';
+	import NutritionCatPanel from '$lib/components/organisms/NutritionCatPanel.svelte';
 
 	let showGate = $state(true);
 	let isAuthenticated = $state(false);
@@ -54,6 +57,7 @@
 	let smartExploreLoading = $state(false);
 	let smartExploreInitialText = $state('');
 	let smartNutritionOpen = $state(false);
+	let nutritionCatPanel: { catId: string; modelId: string } | null = $state(null);
 	let surveyOpen = $state(false);
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
 
@@ -85,10 +89,10 @@
 		}
 	});
 
-	// Auto-close the scenario side-panel when the user switches away from the explore tab.
+	// Auto-close the scenario side-panel when switching away from tabs that use it.
 	$effect(() => {
 		if (!scenarioPanelState.open) return;
-		if (activeTab !== 'explore') closeScenarioPanel();
+		if (activeTab !== 'explore' && activeTab !== 'nutrition') closeScenarioPanel();
 	});
 
 	// Derived hierarchy data for sunburst
@@ -148,6 +152,9 @@
 				.catch(() => {});
 			loadNutritionScore()
 				.then(setNutritionScore)
+				.catch(() => {});
+			loadNutritionCat()
+				.then(setNutritionCat)
 				.catch(() => {});
 
 			// Wire up global window callbacks for backwards compat
@@ -677,7 +684,27 @@
 					loading={smartExploreLoading}
 					onTabChange={handleTabChange}
 					onModelSelect={handleLeaderboardModelSelect}
+					onCatSelect={(catId, modelId) => { nutritionCatPanel = { catId, modelId }; closeScenarioPanel(); }}
 				/>
+				<aside class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb]">
+					<NutritionCatPanel
+						catId={nutritionCatPanel?.catId ?? null}
+						modelId={nutritionCatPanel?.modelId ?? appState.filters.model}
+						onClose={() => (nutritionCatPanel = null)}
+					/>
+				</aside>
+				{#if scenarioPanelState.open && scenarioPanelState.scenarioMeta && scenarioPanelState.metricId}
+					<aside class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white shadow-[-4px_0_12px_-6px_rgba(0,0,0,0.08)]">
+						<div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto">
+							<ScenarioPanel
+								metricId={scenarioPanelState.metricId}
+								scenarioMeta={scenarioPanelState.scenarioMeta}
+								backLabel="Close"
+								onBack={closeScenarioPanel}
+							/>
+						</div>
+					</aside>
+				{/if}
 			</div>
 		{/if}
 	</div>

@@ -52,6 +52,25 @@ export async function loadNutritionScore(): Promise<NutritionCategory[]> {
 	return res.json();
 }
 
+export interface NutritionMetric {
+	id: string;
+	name: string;
+	type: string;
+}
+
+export interface NutritionCategoryDetail {
+	id: string;
+	label: string;
+	description?: string;
+	metrics: NutritionMetric[];
+}
+
+export async function loadNutritionCat(): Promise<NutritionCategoryDetail[]> {
+	const res = await fetch('/data/nutrition-cat.json');
+	if (!res.ok) throw new Error(`Failed to load nutrition cat: ${res.status}`);
+	return res.json();
+}
+
 export async function loadScenarioDetail(
 	benchmark: string,
 	modelId: string,

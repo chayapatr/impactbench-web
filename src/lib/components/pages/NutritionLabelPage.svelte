@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { appState, setFilters } from '$lib/store.svelte';
 	import { getModelName } from '$lib/utils';
-	import { STATIC_MITIGATION_TIPS } from '$lib/model-tips';
-	import { STATIC_WEAK_POINTS } from '$lib/model-weak-points';
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
@@ -11,10 +9,11 @@
 	interface Props {
 		onTabChange?: (tab: string) => void;
 		onModelSelect?: (modelId: string) => void;
+		onCatSelect?: (catId: string, modelId: string) => void;
 		loading?: boolean;
 	}
 
-	let { onModelSelect, loading = false }: Props = $props();
+	let { onModelSelect, onCatSelect, loading = false }: Props = $props();
 
 	// Selected model context (driven by Leaderboard via setFilters)
 	const currentModelId = $derived(appState.filters.model);
@@ -135,12 +134,6 @@
 		return selectedIds.map((id) => byId.get(id)).filter((c): c is Card => Boolean(c));
 	});
 
-	// ───── Mitigation tips (right column) — static guidance only ─────
-	type Tip = { area: string; tip: string };
-	const tips = $derived<Tip[]>(STATIC_MITIGATION_TIPS[`${currentModelId}|${currentAge}`] ?? []);
-	const subdomainWeakPoints = $derived<Record<string, string>>(
-		STATIC_WEAK_POINTS[`${currentModelId}|${currentAge}`] ?? {}
-	);
 
 	// ───── PDF export of the center label ─────
 	let saving = $state(false);
@@ -386,10 +379,13 @@
 									<div class="nl-trait-heading">Avoiding Negative Impact</div>
 									<div class="nl-trait-rule"></div>
 									{#each ld.harmful as cat (cat.id)}
-										<div class="nl-trait-row">
+										<button class="nl-trait-row nl-trait-row--btn" onclick={() => onCatSelect?.(cat.id, card.id)}>
 											<span class="nl-trait-name">{cat.label}</span>
-											<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}">{scoreToLetterGrade(cat.score)}</span>
-										</div>
+											<span class="nl-trait-row-right">
+												<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}">{scoreToLetterGrade(cat.score)}</span>
+												<i class="fa-solid fa-chevron-right nl-trait-chevron"></i>
+											</span>
+										</button>
 									{/each}
 								</div>
 
@@ -399,10 +395,13 @@
 									<div class="nl-trait-heading">Promoting Positive Impact</div>
 									<div class="nl-trait-rule"></div>
 									{#each ld.positive as cat (cat.id)}
-										<div class="nl-trait-row">
+										<button class="nl-trait-row nl-trait-row--btn" onclick={() => onCatSelect?.(cat.id, card.id)}>
 											<span class="nl-trait-name">{cat.label}</span>
-											<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}">{scoreToLetterGrade(cat.score)}</span>
-										</div>
+											<span class="nl-trait-row-right">
+												<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}">{scoreToLetterGrade(cat.score)}</span>
+												<i class="fa-solid fa-chevron-right nl-trait-chevron"></i>
+											</span>
+										</button>
 									{/each}
 								</div>
 							</div>
@@ -481,31 +480,6 @@
 		{/if}
 	</div>
 
-	<!-- RIGHT: Mitigation tips -->
-	<aside class="nl-right">
-		<div class="nl-tips-head">
-			<h2 class="nl-tips-title">Mitigation tips</h2>
-			<p class="nl-tips-sub">
-				Built-in model-specific guidance for the worst-performing areas.
-			</p>
-		</div>
-
-		<div class="nl-tips-body">
-			{#if tips.length > 0}
-				{#each tips as t, i (i + t.area)}
-					<article class="nl-tip-card">
-						<div class="nl-tip-area">
-							<i class="fa-solid fa-triangle-exclamation"></i>
-							{t.area}
-						</div>
-						<p class="nl-tip-body">{t.tip}</p>
-					</article>
-				{/each}
-			{:else}
-				<p class="nl-tips-empty">No mitigation tips for this model yet.</p>
-			{/if}
-		</div>
-	</aside>
 
 </div>
 
@@ -591,16 +565,6 @@
 		font-size: 13px;
 	}
 
-	.nl-right {
-		display: flex;
-		height: 100%;
-		width: 380px;
-		flex-shrink: 0;
-		flex-direction: column;
-		overflow: hidden;
-		border-left: 1px solid #e5e7eb;
-		background: #f9fafb;
-	}
 
 	/* ───── Carousel ───── */
 	.nl-carousel-wrap {
@@ -1494,7 +1458,8 @@
 		padding: 5px 0 4px;
 		border-bottom: 1px solid #000000;
 	}
-	.nl-trait-row:last-child {
+	.nl-trait-row:last-child,
+	.nl-trait-row--btn:last-child {
 		border-bottom: none;
 	}
 	.nl-trait-name {
@@ -1512,6 +1477,28 @@
 		font-size: 14px;
 		letter-spacing: -0.01em;
 		flex-shrink: 0;
+	}
+	.nl-trait-row--btn {
+		width: 100%;
+		text-align: left;
+		background: none;
+		border: none;
+		border-bottom: 1px solid #000000;
+		cursor: pointer;
+		padding: 5px 0 4px;
+	}
+	.nl-trait-row--btn:last-child {
+		border-bottom: none;
+	}
+	.nl-trait-row-right {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		flex-shrink: 0;
+	}
+	.nl-trait-chevron {
+		font-size: 8px;
+		color: #9ca3af;
 	}
 
 	.nutrition-footnote {
@@ -1780,8 +1767,7 @@
 		margin: 0 2px;
 	}
 	@media (max-width: 1200px) {
-		.nl-left,
-		.nl-right {
+		.nl-left {
 			display: none;
 		}
 		.nl-center {
