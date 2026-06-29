@@ -6,6 +6,7 @@
 		loadBenchmarkData,
 		loadScenarioIndex,
 		loadMetricCriteria,
+		loadMetricMeta,
 		loadNutritionScore,
 		loadNutritionCat,
 		buildHierarchy,
@@ -17,6 +18,7 @@
 		setFilters,
 		setScenarioIndex,
 		setMetricCriteria,
+		setMetricMeta,
 		setNutritionScore,
 		setNutritionCat,
 		sidebarState,
@@ -148,6 +150,9 @@
 			loadMetricCriteria()
 				.then(setMetricCriteria)
 				.catch((e) => console.warn('Failed to load metric criteria:', e));
+			loadMetricMeta()
+				.then(setMetricMeta)
+				.catch((e) => console.warn('Failed to load metric meta:', e));
 			loadNutritionScore()
 				.then(setNutritionScore)
 				.catch((e) => console.warn('Failed to load nutrition scores:', e));

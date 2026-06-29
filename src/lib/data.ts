@@ -40,6 +40,12 @@ export async function loadMetricCriteria(): Promise<Record<string, string>> {
 	return res.json();
 }
 
+export async function loadMetricMeta(): Promise<Record<string, import('./types').MetricMeta>> {
+	const res = await fetch('/data/metric-meta.json');
+	if (!res.ok) return {};
+	return res.json();
+}
+
 export interface NutritionCategory {
 	id: string;
 	label: string;

@@ -1,4 +1,4 @@
-import type { Taxonomy, AIModel, BenchmarkData, FilterState, ScenarioIndex } from './types';
+import type { Taxonomy, AIModel, BenchmarkData, FilterState, ScenarioIndex, MetricMeta } from './types';
 import type { NutritionCategory, NutritionCategoryDetail } from './data';
 import { humanizeName } from './utils';
 
@@ -10,6 +10,7 @@ export const appState = $state({
 	benchmarkData: {} as BenchmarkData,
 	scenarioIndex: null as ScenarioIndex | null,
 	metricCriteria: {} as Record<string, string>,
+	metricMeta: {} as Record<string, MetricMeta>,
 	nutritionScore: [] as NutritionCategory[],
 	nutritionCat: [] as NutritionCategoryDetail[],
 	filters: { model: 'claude-haiku-4-5', age: 'adult' } as FilterState,
@@ -50,6 +51,10 @@ export function setScenarioIndex(idx: ScenarioIndex) {
 
 export function setMetricCriteria(criteria: Record<string, string>) {
 	appState.metricCriteria = criteria;
+}
+
+export function setMetricMeta(meta: Record<string, MetricMeta>) {
+	appState.metricMeta = meta;
 }
 
 export function setNutritionScore(score: NutritionCategory[]) {

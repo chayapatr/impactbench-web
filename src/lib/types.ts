@@ -6,6 +6,14 @@ export interface Metric {
 	harmful: boolean;
 	behavior_type?: 'flourishing' | 'restrain_harm';
 	measurement?: 'presence' | 'absence';
+	// Optional. Populated from upstream benchmark.yaml `metric_contributor` field
+	// once the data pipeline emits it; safe to read as undefined until then.
+	metric_contributor?: string;
+}
+
+export interface MetricMeta {
+	contributor: string;
+	mattersBecause: string;
 }
 
 export interface MetricGroup {
@@ -83,6 +91,7 @@ export interface ScenarioMeta {
 	title: string;
 	age: 'child' | 'adult';
 	benchmark: string;
+	metric_contributor?: string;
 	verdicts?: Record<string, string>;
 }
 
@@ -112,6 +121,7 @@ export interface ScenarioDetail {
 export interface SmartConstruct {
 	text: string;
 	benchmark: string;
+	metric_contributor?: string;
 	score: number;
 	icon?: string;
 	summary?: string;
