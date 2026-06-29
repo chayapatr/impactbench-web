@@ -53,13 +53,15 @@
 				{@const criteria = appState.metricCriteria?.[metricId] ?? ''}
 				{@const meta = appState.metricMeta?.[metricId]}
 				{#if meta?.contributor}
-					<div class="mt-[6px] text-[12px] font-semibold text-[#1a1a1a]">Part of: {meta.contributor}</div>
+					<div class="mt-[6px] mb-[10px] text-[12px] font-semibold text-[#1a1a1a]">Part of: {meta.contributor}</div>
 				{/if}
 				{#if criteria}
-					<div class="mt-[6px] text-[12px] leading-relaxed text-[#6b7280]">{@html marked.parse(criteria)}</div>
+					<div class="mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Description</div>
+					<div class="text-[12px] leading-relaxed text-[#6b7280]">{@html marked.parse(criteria)}</div>
 				{/if}
 				{#if meta?.mattersBecause}
-					<div class="mt-[6px] text-[12px] leading-relaxed text-[#1a1a1a]">{meta.mattersBecause}</div>
+					<div class="mt-[10px] mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Why this matters</div>
+					<div class="text-[12px] leading-relaxed text-[#6b7280]">{meta.mattersBecause}</div>
 				{/if}
 			{/snippet}
 		</ColoredBanner>

@@ -563,15 +563,19 @@
 			</div>
 			<div class="flex-1 overflow-y-auto px-6 py-4">
 				{#if mMeta?.contributor}
-					<div class="mb-2 text-[13px] font-semibold text-[#1a1a1a]">Part of: {mMeta.contributor}</div>
+					<div class="mb-[14px] text-[13px] font-semibold text-[#1a1a1a]">Part of: {mMeta.contributor}</div>
 				{/if}
 				{#if mCriteria}
-					<div class="mb-2 border-l-[2px] border-[#e5e7eb] pl-[10px] text-[12px] leading-[1.6] whitespace-pre-line text-[#6b7280]">
+					<div class="mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Description</div>
+					<div class="mb-3 border-l-[2px] border-[#e5e7eb] pl-[10px] text-[12px] leading-[1.6] whitespace-pre-line text-[#6b7280]">
 						{mCriteria}
 					</div>
 				{/if}
 				{#if mMeta?.mattersBecause}
-					<div class="mb-5 text-[12px] leading-[1.6] text-[#1a1a1a]">{mMeta.mattersBecause}</div>
+					<div class="mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Why this matters</div>
+					<div class="mb-5 border-l-[2px] border-[#e5e7eb] pl-[10px] text-[12px] leading-[1.6] whitespace-pre-line text-[#6b7280]">
+						{mMeta.mattersBecause}
+					</div>
 				{/if}
 				{#if mScenarios.length}
 					<div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">
