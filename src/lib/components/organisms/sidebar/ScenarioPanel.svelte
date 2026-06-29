@@ -57,11 +57,11 @@
 				{/if}
 				{#if criteria}
 					<div class="mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Description</div>
-					<div class="text-[12px] leading-relaxed text-[#6b7280]">{@html marked.parse(criteria)}</div>
+					<div class="text-[12px] leading-relaxed text-[#4b5563] [&>p]:m-0">{@html marked.parse(criteria)}</div>
 				{/if}
 				{#if meta?.mattersBecause}
 					<div class="mt-[10px] mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Why this matters</div>
-					<div class="text-[12px] leading-relaxed text-[#6b7280]">{meta.mattersBecause}</div>
+					<div class="text-[12px] leading-relaxed text-[#4b5563]">{meta.mattersBecause}</div>
 				{/if}
 			{/snippet}
 		</ColoredBanner>

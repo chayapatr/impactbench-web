@@ -567,13 +567,13 @@
 				{/if}
 				{#if mCriteria}
 					<div class="mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Description</div>
-					<div class="mb-3 border-l-[2px] border-[#e5e7eb] pl-[10px] text-[12px] leading-[1.6] whitespace-pre-line text-[#6b7280]">
+					<div class="mb-3 border-l-[2px] border-[#e5e7eb] pl-[10px] text-[12px] leading-[1.6] whitespace-pre-line text-[#4b5563]">
 						{mCriteria}
 					</div>
 				{/if}
 				{#if mMeta?.mattersBecause}
 					<div class="mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Why this matters</div>
-					<div class="mb-5 border-l-[2px] border-[#e5e7eb] pl-[10px] text-[12px] leading-[1.6] whitespace-pre-line text-[#6b7280]">
+					<div class="mb-5 border-l-[2px] border-[#e5e7eb] pl-[10px] text-[12px] leading-[1.6] whitespace-pre-line text-[#4b5563]">
 						{mMeta.mattersBecause}
 					</div>
 				{/if}
