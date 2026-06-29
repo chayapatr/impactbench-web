@@ -1,5 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 
+export const trailingSlash = 'always';
+
 const DOCS_ORIGIN = 'https://impactbench-docs.pages.dev';
 
 export const GET: RequestHandler = async ({ params, request }) => {
