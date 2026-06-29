@@ -6,7 +6,6 @@
 	import ConversationViewer from '$lib/components/organisms/ConversationViewer.svelte';
 	import StickyHeader from '$lib/components/molecules/StickyHeader.svelte';
 	import ColoredBanner from '$lib/components/molecules/ColoredBanner.svelte';
-	import { marked } from 'marked';
 
 	interface Props {
 		metricId: string;
@@ -57,11 +56,11 @@
 				{/if}
 				{#if criteria}
 					<div class="mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Description</div>
-					<div class="text-[12px] leading-relaxed text-[#4b5563] [&>p]:m-0">{@html marked.parse(criteria)}</div>
+					<div class="text-[12px] leading-relaxed text-[#4b5563] whitespace-pre-line">{criteria}</div>
 				{/if}
 				{#if meta?.mattersBecause}
 					<div class="mt-[10px] mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Why this matters</div>
-					<div class="text-[12px] leading-relaxed text-[#4b5563]">{meta.mattersBecause}</div>
+					<div class="text-[12px] leading-relaxed text-[#4b5563] whitespace-pre-line">{meta.mattersBecause}</div>
 				{/if}
 			{/snippet}
 		</ColoredBanner>
