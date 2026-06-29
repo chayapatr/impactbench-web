@@ -766,7 +766,9 @@
 		<span>·</span>
 		<span><a class="underline" href="https://accessibility.mit.edu/">Accessibility</a></span>
 		<span>·</span>
-		<span>Human-AI Impact Bench</span>
+		<span
+			><a class="underline" href="https://docs.impactbench.cyborglab.org/">Documentation</a></span
+		>
 		<span>·</span>
 		<span>77 Massachusetts Ave, Cambridge, MA 02139, USA</span>
 	</footer>

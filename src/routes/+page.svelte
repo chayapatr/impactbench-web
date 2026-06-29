@@ -469,7 +469,7 @@
 </script>
 
 <svelte:head>
-	<title>MIT | Human-AI Impact Bench</title>
+	<title>MIT | ImpactBench</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
@@ -510,8 +510,7 @@
 				if (appState.scenarioIndex) {
 					const scenarios = appState.scenarioIndex[pendingDeepMetric] ?? [];
 					const scenarioMeta = scenarios.find((s) => s.scenario_id === pendingDeepScenario);
-					if (scenarioMeta)
-						openScenarioPanel(pendingDeepMetric!, scenarioMeta);
+					if (scenarioMeta) openScenarioPanel(pendingDeepMetric!, scenarioMeta);
 					pendingDeepScenario = null;
 					pendingDeepMetric = null;
 				}
@@ -541,32 +540,32 @@
 
 		<!-- Beta banner (below navbar) -->
 		{#if activeTab !== 'nutrition'}
-		<div
-			class="z-[99] flex-shrink-0 border-b border-[#fde047] bg-[#fef9c3] px-6 py-[10px] text-center text-[13px] leading-[1.5] text-[#713f12]"
-		>
-			<i class="fa-solid fa-triangle-exclamation mr-1.5 text-[#a16207]"></i>
-			The current data and benchmarks are subject to change and still under validation and review.
-			<button
-				type="button"
-				class="ml-1 cursor-pointer border-none bg-transparent p-0 font-semibold text-[#713f12] underline hover:opacity-80"
-				onclick={() => {
-					if (typeof window !== 'undefined') {
-						window.location.hash = '#feedback';
-					}
-					handleTabChange('home');
-				}}
+			<div
+				class="z-[99] flex-shrink-0 border-b border-[#fde047] bg-[#fef9c3] px-6 py-[10px] text-center text-[13px] leading-[1.5] text-[#713f12]"
 			>
-				Share feedback
-			</button>
-			<span class="mx-1 text-[#a16207]">|</span>
-			<button
-				type="button"
-				class="cursor-pointer border-none bg-transparent p-0 font-semibold text-[#713f12] underline hover:opacity-80"
-				onclick={() => (surveyOpen = true)}
-			>
-				Help us learn
-			</button>
-		</div>
+				<i class="fa-solid fa-triangle-exclamation mr-1.5 text-[#a16207]"></i>
+				The current data and benchmarks are subject to change and still under validation and review.
+				<button
+					type="button"
+					class="ml-1 cursor-pointer border-none bg-transparent p-0 font-semibold text-[#713f12] underline hover:opacity-80"
+					onclick={() => {
+						if (typeof window !== 'undefined') {
+							window.location.hash = '#feedback';
+						}
+						handleTabChange('home');
+					}}
+				>
+					Share feedback
+				</button>
+				<span class="mx-1 text-[#a16207]">|</span>
+				<button
+					type="button"
+					class="cursor-pointer border-none bg-transparent p-0 font-semibold text-[#713f12] underline hover:opacity-80"
+					onclick={() => (surveyOpen = true)}
+				>
+					Help us learn
+				</button>
+			</div>
 		{/if}
 
 		{#if activeTab === 'explore'}
@@ -686,9 +685,14 @@
 					loading={smartExploreLoading}
 					onTabChange={handleTabChange}
 					onModelSelect={handleLeaderboardModelSelect}
-					onCatSelect={(catId, modelId) => { nutritionCatPanel = { catId, modelId }; closeScenarioPanel(); }}
+					onCatSelect={(catId, modelId) => {
+						nutritionCatPanel = { catId, modelId };
+						closeScenarioPanel();
+					}}
 				/>
-				<aside class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb]">
+				<aside
+					class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb]"
+				>
 					<NutritionCatPanel
 						catId={nutritionCatPanel?.catId ?? null}
 						modelId={nutritionCatPanel?.modelId ?? appState.filters.model}
@@ -696,7 +700,9 @@
 					/>
 				</aside>
 				{#if scenarioPanelState.open && scenarioPanelState.scenarioMeta && scenarioPanelState.metricId}
-					<aside class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white shadow-[-4px_0_12px_-6px_rgba(0,0,0,0.08)]">
+					<aside
+						class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white shadow-[-4px_0_12px_-6px_rgba(0,0,0,0.08)]"
+					>
 						<div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto">
 							<ScenarioPanel
 								metricId={scenarioPanelState.metricId}
