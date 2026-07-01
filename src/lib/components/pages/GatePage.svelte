@@ -471,8 +471,7 @@
 			>
 				{#each [['request', 'fa-key', 'Request Access'], ['expert', 'fa-user-check', 'Be an Expert'], ['support', 'fa-hand-holding-heart', 'Support Benchmarking Efforts'], ['feedback', 'fa-comment-dots', 'Feedback']] as [tab, icon, label] (tab)}
 					<button
-						class="inline-flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-none px-3 py-[8px] text-[13px] font-semibold whitespace-nowrap transition-all duration-[180ms]
-							{tab === 'expert' ? 'mx-2' : ''}
+						class="inline-flex min-w-0 flex-auto cursor-pointer items-center justify-center gap-2 rounded-[8px] border-none px-3 py-[8px] text-[13px] font-semibold whitespace-nowrap transition-all duration-[180ms]
 							{activeTab === tab
 							? 'bg-white text-[#111827] shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_10px_rgba(15,23,42,0.06)]'
 							: 'bg-transparent text-[#6b7280] hover:text-[#111827]'}"
