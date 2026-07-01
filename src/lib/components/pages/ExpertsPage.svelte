@@ -614,6 +614,38 @@
 							{@const evalKey = `${currentScenario.scenario_id}__${currentMaskedModel.id}`}
 							{@const isReviewed = selectedMetricProgress.evaluated.has(evalKey)}
 							<div class="mx-auto max-w-[820px]">
+								<!-- Evaluation call-to-action (sticky under the tab bar) -->
+								<div
+									class="sticky top-0 z-[20] -mx-8 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#99e7e5] bg-[#e6f9f8] px-8 py-4"
+								>
+									<div class="min-w-0">
+										<div class="text-[13px] font-semibold text-[#0f4f50]">
+											Evaluate {currentMaskedModel.label}'s response to this scenario
+										</div>
+										<div class="mt-[2px] text-[12px] text-[#0f4f50]/80">
+											Complete the evaluation form, then return here to continue.
+										</div>
+									</div>
+									<div class="flex items-center gap-3">
+										{#if isReviewed}
+											<span
+												class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#16a34a]"
+											>
+												<i class="fa-solid fa-check-circle text-[13px]"></i>
+												Marked reviewed
+											</span>
+										{/if}
+										<button
+											type="button"
+											class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 py-[8px] text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(3,141,143,0.25)] transition-[filter] duration-150 hover:brightness-105"
+											onclick={openQualtrics}
+										>
+											<i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+											Open evaluation form
+										</button>
+									</div>
+								</div>
+
 								<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
 									<div
 										class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
@@ -683,36 +715,6 @@
 												</div>
 											{/each}
 										{/if}
-									</div>
-
-									<!-- Evaluation call-to-action -->
-									<div
-										class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[#99e7e5] bg-[#e6f9f8] px-5 py-4"
-									>
-										<div class="min-w-0">
-											<div class="text-[13px] font-semibold text-[#0f4f50]">
-												Evaluate {currentMaskedModel.label}'s response to this scenario
-											</div>
-											<div class="mt-[2px] text-[12px] text-[#0f4f50]/80">
-												Complete the evaluation form, then return here and click Next.
-											</div>
-										</div>
-										<div class="flex items-center gap-3">
-											{#if isReviewed}
-												<span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#16a34a]">
-													<i class="fa-solid fa-check-circle text-[13px]"></i>
-													Marked reviewed
-												</span>
-											{/if}
-											<button
-												type="button"
-												class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 py-[8px] text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(3,141,143,0.25)] transition-[filter] duration-150 hover:brightness-105"
-												onclick={openQualtrics}
-											>
-												<i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
-												Open evaluation form
-											</button>
-										</div>
 									</div>
 								</div>
 							</div>
