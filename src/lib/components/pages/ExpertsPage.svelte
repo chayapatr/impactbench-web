@@ -1,0 +1,813 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { marked } from 'marked';
+	import {
+		loadTaxonomy,
+		loadModels,
+		loadBenchmarkData,
+		loadScenarioIndex,
+		loadMetricCriteria,
+		loadMetricMeta,
+		loadScenarioDetail
+	} from '$lib/data';
+	import {
+		appState,
+		setData,
+		setScenarioIndex,
+		setMetricCriteria,
+		setMetricMeta
+	} from '$lib/store.svelte';
+	import type { ScenarioDetail, ScenarioMeta } from '$lib/types';
+	import {
+		MOCK_EXPERT_USER,
+		EXPERT_BENCHMARK_SLUG,
+		EXPERT_QUALTRICS_URL,
+		loadExpertModelMapping,
+		type MaskedModel
+	} from '$lib/expert-config';
+
+	// ── Types ─────────────────────────────────────────────────────
+	interface ExpertMetric {
+		id: string;
+		name: string;
+	}
+	interface MetricFeedback {
+		relevance: '' | '1' | '2' | '3' | '4';
+		relevanceEdit: string;
+		labelDifferent: '' | 'no' | 'yes' | 'not-sure';
+		labelEdit: string;
+		examplesAdequate: '' | 'no' | 'yes' | 'not-sure';
+		examplesEdit: string;
+		other: string;
+		submitted: boolean;
+	}
+	interface MetricProgress {
+		feedback: MetricFeedback;
+		/** keys of form `${scenarioId}__${modelId}` that the expert has evaluated */
+		evaluated: Set<string>;
+	}
+
+	// ── State ─────────────────────────────────────────────────────
+	let loading = $state(true);
+	let loadError = $state<string | null>(null);
+
+	let maskedModels: MaskedModel[] = $state([]);
+	let expertMetrics: ExpertMetric[] = $state([]);
+	let progress: Record<string, MetricProgress> = $state({});
+	let unlocked: Set<string> = $state(new Set());
+
+	let selectedMetricIdx = $state(0);
+	let phase: 'feedback' | 'scenario' = $state('feedback');
+	let scenarioIdx = $state(0);
+	let modelIdx = $state(0);
+
+	let conversationDetail: ScenarioDetail | null = $state(null);
+	let conversationLoading = $state(false);
+	let conversationError = $state(false);
+
+	// Mock auth
+	let signedIn = $state(true);
+	let userMenuOpen = $state(false);
+
+	// ── Derived helpers ───────────────────────────────────────────
+	const selectedMetric = $derived(expertMetrics[selectedMetricIdx] ?? null);
+	const selectedMetricProgress = $derived(
+		selectedMetric ? progress[selectedMetric.id] : null
+	);
+	const selectedMetricScenarios = $derived<ScenarioMeta[]>(
+		selectedMetric ? (appState.scenarioIndex?.[selectedMetric.id] ?? []) : []
+	);
+	const currentScenario = $derived(selectedMetricScenarios[scenarioIdx] ?? null);
+	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
+
+	const canAdvance = $derived(() => {
+		if (!selectedMetricProgress) return false;
+		if (phase === 'feedback') return selectedMetricProgress.feedback.submitted;
+		if (phase === 'scenario' && currentScenario && currentMaskedModel) {
+			return selectedMetricProgress.evaluated.has(
+				`${currentScenario.scenario_id}__${currentMaskedModel.id}`
+			);
+		}
+		return false;
+	});
+
+	// ── Init ──────────────────────────────────────────────────────
+	onMount(async () => {
+		try {
+			const [taxonomy, models, benchmarkData] = await Promise.all([
+				loadTaxonomy(),
+				loadModels(),
+				loadBenchmarkData()
+			]);
+			setData(taxonomy, models, benchmarkData);
+
+			const [scenarioIndex, criteria, meta, mapping] = await Promise.all([
+				loadScenarioIndex(),
+				loadMetricCriteria(),
+				loadMetricMeta(),
+				loadExpertModelMapping(fetch, models)
+			]);
+			setScenarioIndex(scenarioIndex);
+			setMetricCriteria(criteria);
+			setMetricMeta(meta);
+			maskedModels = mapping;
+
+			// Filter to humanebench × social-relationships metrics, alphabetically
+			const subarea = taxonomy.areas
+				.flatMap((a) => a.subareas)
+				.find((s) => s.id === MOCK_EXPERT_USER.subareaId);
+			const list: ExpertMetric[] = (subarea?.metrics ?? [])
+				.filter((m) => m.id.startsWith(`${EXPERT_BENCHMARK_SLUG}__`))
+				.map((m) => ({ id: m.id, name: m.name }))
+				.sort((a, b) => a.name.localeCompare(b.name));
+			expertMetrics = list;
+
+			progress = Object.fromEntries(
+				list.map((m) => [m.id, blankProgress()])
+			) as Record<string, MetricProgress>;
+			if (list.length > 0) unlocked = new Set([list[0].id]);
+
+			loading = false;
+		} catch (e) {
+			loadError = e instanceof Error ? e.message : String(e);
+			loading = false;
+		}
+	});
+
+	function blankProgress(): MetricProgress {
+		return {
+			feedback: {
+				relevance: '',
+				relevanceEdit: '',
+				labelDifferent: '',
+				labelEdit: '',
+				examplesAdequate: '',
+				examplesEdit: '',
+				other: '',
+				submitted: false
+			},
+			evaluated: new Set()
+		};
+	}
+
+	// ── Conversation loading ──────────────────────────────────────
+	$effect(() => {
+		if (phase !== 'scenario') return;
+		if (!currentScenario || !currentMaskedModel) return;
+		void loadConversation(
+			currentScenario.benchmark,
+			currentScenario.scenario_id,
+			currentMaskedModel.id
+		);
+	});
+
+	async function loadConversation(benchmark: string, scenarioId: string, modelId: string) {
+		conversationDetail = null;
+		conversationError = false;
+		conversationLoading = true;
+		try {
+			conversationDetail = await loadScenarioDetail(benchmark, modelId, scenarioId);
+		} catch {
+			conversationError = true;
+		} finally {
+			conversationLoading = false;
+		}
+	}
+
+	// ── Navigation actions ────────────────────────────────────────
+	function selectMetric(idx: number) {
+		if (idx < 0 || idx >= expertMetrics.length) return;
+		const m = expertMetrics[idx];
+		if (!unlocked.has(m.id)) return;
+		selectedMetricIdx = idx;
+		phase = progress[m.id].feedback.submitted ? 'scenario' : 'feedback';
+		scenarioIdx = 0;
+		modelIdx = 0;
+	}
+
+	function submitFeedback() {
+		if (!selectedMetric) return;
+		progress[selectedMetric.id].feedback.submitted = true;
+	}
+
+	function markCurrentEvaluated() {
+		if (!selectedMetric || !currentScenario || !currentMaskedModel) return;
+		const key = `${currentScenario.scenario_id}__${currentMaskedModel.id}`;
+		progress[selectedMetric.id].evaluated.add(key);
+		// trigger reactivity on the Set
+		progress[selectedMetric.id].evaluated = new Set(progress[selectedMetric.id].evaluated);
+	}
+
+	function openQualtrics() {
+		markCurrentEvaluated();
+		if (typeof window !== 'undefined') {
+			window.open(EXPERT_QUALTRICS_URL, '_blank', 'noopener,noreferrer');
+		}
+	}
+
+	function goNext() {
+		if (!canAdvance()) return;
+		if (phase === 'feedback') {
+			phase = 'scenario';
+			scenarioIdx = 0;
+			modelIdx = 0;
+			return;
+		}
+		// scenario phase: advance model, then scenario, then metric
+		if (modelIdx < maskedModels.length - 1) {
+			modelIdx += 1;
+			return;
+		}
+		if (scenarioIdx < selectedMetricScenarios.length - 1) {
+			scenarioIdx += 1;
+			modelIdx = 0;
+			return;
+		}
+		// Metric complete → unlock next and jump to it
+		const nextIdx = selectedMetricIdx + 1;
+		if (nextIdx < expertMetrics.length) {
+			unlocked.add(expertMetrics[nextIdx].id);
+			unlocked = new Set(unlocked);
+			selectMetric(nextIdx);
+		}
+	}
+
+	function goBack() {
+		if (phase === 'scenario') {
+			if (modelIdx > 0) {
+				modelIdx -= 1;
+				return;
+			}
+			if (scenarioIdx > 0) {
+				scenarioIdx -= 1;
+				modelIdx = maskedModels.length - 1;
+				return;
+			}
+			phase = 'feedback';
+		}
+	}
+
+	// ── Auth mock ─────────────────────────────────────────────────
+	function toggleUserMenu() {
+		userMenuOpen = !userMenuOpen;
+	}
+	function logOut() {
+		signedIn = false;
+		userMenuOpen = false;
+		if (typeof window !== 'undefined') window.location.href = '/';
+	}
+	function logIn() {
+		// Mock: just flip back to signed-in state.
+		signedIn = true;
+		userMenuOpen = false;
+	}
+
+	function closeMenuOnOutside(e: MouseEvent) {
+		const target = e.target as HTMLElement | null;
+		if (!target?.closest?.('.expert-user-menu')) userMenuOpen = false;
+	}
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		if (!userMenuOpen) return;
+		window.addEventListener('click', closeMenuOnOutside);
+		return () => window.removeEventListener('click', closeMenuOnOutside);
+	});
+
+	// ── Small helpers ─────────────────────────────────────────────
+	const metricCriteriaText = $derived(
+		selectedMetric ? (appState.metricCriteria?.[selectedMetric.id] ?? '') : ''
+	);
+	const isEvaluatedAll = $derived((metricId: string) => {
+		const scenarios = appState.scenarioIndex?.[metricId] ?? [];
+		const total = scenarios.length * maskedModels.length;
+		const done = progress[metricId]?.evaluated.size ?? 0;
+		return total > 0 && done >= total && (progress[metricId]?.feedback.submitted ?? false);
+	});
+</script>
+
+<div class="flex min-h-screen flex-col bg-[#fafaf9] text-[#1a1a1a]">
+	<!-- ── Header ─────────────────────────────────────────────── -->
+	<header
+		class="flex h-[60px] flex-shrink-0 items-center justify-between border-b border-[#e5e7eb] bg-white px-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+	>
+		<a href="https://www.mit.edu/" target="_blank" rel="noopener noreferrer" aria-label="MIT">
+			<img src="/mit.svg" alt="MIT" class="pointer-events-none h-5 w-auto select-none" />
+		</a>
+
+		<div class="expert-user-menu relative">
+			<button
+				class="flex cursor-pointer items-center gap-[10px] rounded-full border border-[#e5e7eb] bg-white py-[6px] pr-3 pl-[6px] text-left transition-colors duration-150 hover:border-[#00b3b0]"
+				onclick={toggleUserMenu}
+				aria-haspopup="menu"
+				aria-expanded={userMenuOpen}
+			>
+				<span
+					class="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-[12px] font-bold text-white"
+				>
+					{signedIn ? MOCK_EXPERT_USER.name.split(' ').map((s) => s[0]).join('').slice(0, 2) : '?'}
+				</span>
+				<span class="flex flex-col leading-tight">
+					<span class="text-[13px] font-semibold text-[#111827]">
+						{signedIn ? MOCK_EXPERT_USER.name : 'Signed out'}
+					</span>
+					<span class="text-[11px] text-[#6b7280]">
+						{signedIn ? MOCK_EXPERT_USER.subareaLabel : 'Click to sign in'}
+					</span>
+				</span>
+				<i class="fa-solid fa-chevron-down text-[10px] text-[#9ca3af]"></i>
+			</button>
+
+			{#if userMenuOpen}
+				<div
+					class="absolute top-[calc(100%+6px)] right-0 z-[120] w-[220px] overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.1)]"
+					role="menu"
+				>
+					{#if signedIn}
+						<div class="border-b border-[#f3f4f6] px-4 py-[10px]">
+							<div class="text-[12px] font-semibold text-[#111827]">
+								{MOCK_EXPERT_USER.name}
+							</div>
+							<div class="text-[11px] text-[#6b7280]">
+								{MOCK_EXPERT_USER.subareaLabel} expert
+							</div>
+						</div>
+						<button
+							class="flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-4 py-[10px] text-left text-[13px] text-[#374151] hover:bg-[#f9fafb]"
+							onclick={logOut}
+						>
+							<i class="fa-solid fa-right-from-bracket text-[11px] text-[#9ca3af]"></i>
+							Log out
+						</button>
+					{:else}
+						<button
+							class="flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-4 py-[10px] text-left text-[13px] text-[#374151] hover:bg-[#f9fafb]"
+							onclick={logIn}
+						>
+							<i class="fa-solid fa-right-to-bracket text-[11px] text-[#9ca3af]"></i>
+							Log back in
+						</button>
+					{/if}
+				</div>
+			{/if}
+		</div>
+	</header>
+
+	<!-- ── Body ───────────────────────────────────────────────── -->
+	<main class="flex flex-1 overflow-hidden">
+		{#if loading}
+			<div class="flex flex-1 items-center justify-center text-[#9ca3af]">
+				<i class="fa-solid fa-spinner fa-spin mr-2"></i>
+				Loading expert workspace…
+			</div>
+		{:else if loadError}
+			<div class="flex flex-1 items-center justify-center text-[#dc2626]">
+				Failed to load: {loadError}
+			</div>
+		{:else}
+			<!-- Left: 320px metric navigation -->
+			<aside
+				class="flex w-[320px] flex-shrink-0 flex-col overflow-hidden border-r border-[#e5e7eb] bg-white"
+			>
+				<div class="border-b border-[#f3f4f6] px-5 pt-4 pb-3">
+					<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+						Your queue
+					</div>
+					<div class="mt-[2px] text-[14px] font-[700] text-[#111827]">
+						{MOCK_EXPERT_USER.subareaLabel} · HumaneBench
+					</div>
+					<div class="mt-[2px] text-[11px] text-[#6b7280]">
+						{unlocked.size} of {expertMetrics.length} unlocked
+					</div>
+				</div>
+				<ol class="flex-1 overflow-y-auto py-2">
+					{#each expertMetrics as m, i (m.id)}
+						{@const isUnlocked = unlocked.has(m.id)}
+						{@const isSelected = i === selectedMetricIdx}
+						{@const isDone = isEvaluatedAll(m.id)}
+						<li>
+							<button
+								type="button"
+								class="group flex w-full items-start gap-3 px-5 py-3 text-left transition-colors duration-150
+									{isSelected ? 'bg-[#e0f7f7]' : isUnlocked ? 'hover:bg-[#f9fafb]' : ''}"
+								class:cursor-pointer={isUnlocked}
+								class:cursor-not-allowed={!isUnlocked}
+								disabled={!isUnlocked}
+								onclick={() => selectMetric(i)}
+							>
+								<span
+									class="mt-[2px] inline-flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold
+										{isDone
+										? 'bg-[#16a34a] text-white'
+										: isSelected
+											? 'bg-[#00b3b0] text-white'
+											: isUnlocked
+												? 'border border-[#d1d5db] text-[#6b7280]'
+												: 'border border-[#e5e7eb] text-[#c4c9d1]'}"
+								>
+									{#if isDone}
+										<i class="fa-solid fa-check text-[10px]"></i>
+									{:else if !isUnlocked}
+										<i class="fa-solid fa-lock text-[9px]"></i>
+									{:else}
+										{i + 1}
+									{/if}
+								</span>
+								<span
+									class="flex-1 text-[13px] leading-[1.4] {isUnlocked
+										? isSelected
+											? 'font-semibold text-[#0f4f50]'
+											: 'text-[#111827]'
+										: 'select-none text-[#c4c9d1] blur-[2px]'}"
+								>
+									{m.name}
+								</span>
+							</button>
+						</li>
+					{/each}
+				</ol>
+			</aside>
+
+			<!-- Right: workspace -->
+			<section class="flex flex-1 flex-col overflow-hidden">
+				{#if selectedMetric && selectedMetricProgress}
+					<!-- Metric header -->
+					<div class="flex-shrink-0 border-b border-[#e5e7eb] bg-white px-8 pt-5 pb-4">
+						<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+							Metric {selectedMetricIdx + 1} of {expertMetrics.length} · {MOCK_EXPERT_USER.subareaLabel}
+						</div>
+						<h1 class="mt-[3px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]">
+							{selectedMetric.name}
+						</h1>
+						{#if metricCriteriaText}
+							<p class="mt-[6px] max-w-[720px] text-[13px] leading-[1.6] text-[#4b5563]">
+								{metricCriteriaText}
+							</p>
+						{/if}
+
+						<!-- Phase tabs -->
+						<div class="mt-4 flex gap-1 border-b border-transparent">
+							<button
+								class="cursor-pointer border-b-[2px] px-3 py-[6px] text-[12px] font-semibold transition-colors duration-150
+									{phase === 'feedback'
+									? 'border-[#00b3b0] text-[#00b3b0]'
+									: 'border-transparent text-[#6b7280] hover:text-[#111827]'}"
+								onclick={() => (phase = 'feedback')}
+							>
+								<i class="fa-solid fa-clipboard-question mr-1.5 text-[11px]"></i>
+								Metric feedback
+								{#if selectedMetricProgress.feedback.submitted}
+									<i class="fa-solid fa-check ml-1 text-[10px] text-[#16a34a]"></i>
+								{/if}
+							</button>
+							{#each selectedMetricScenarios as sc, sIdx (sc.scenario_id)}
+								{@const modelsDone = maskedModels.filter((mm) =>
+									selectedMetricProgress.evaluated.has(`${sc.scenario_id}__${mm.id}`)
+								).length}
+								<button
+									class="cursor-pointer border-b-[2px] px-3 py-[6px] text-[12px] font-semibold transition-colors duration-150
+										{phase === 'scenario' && scenarioIdx === sIdx
+										? 'border-[#00b3b0] text-[#00b3b0]'
+										: 'border-transparent text-[#6b7280] hover:text-[#111827]'}"
+									onclick={() => {
+										phase = 'scenario';
+										scenarioIdx = sIdx;
+										modelIdx = 0;
+									}}
+								>
+									Scenario {sIdx + 1}
+									<span class="ml-1 text-[10px] font-normal text-[#9ca3af]">
+										({modelsDone}/{maskedModels.length})
+									</span>
+								</button>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Phase body -->
+					<div class="flex-1 overflow-y-auto bg-[#fafaf9] px-8 py-6">
+						{#if phase === 'feedback'}
+							<div class="mx-auto max-w-[720px] rounded-[14px] border border-[#e5e7eb] bg-white p-8">
+								<h2 class="text-[16px] font-[700] text-[#111827]">Metric feedback</h2>
+								<p class="mt-1 text-[13px] text-[#6b7280]">
+									Please share your expert view on this metric before evaluating the scenarios.
+								</p>
+
+								<!-- Q1: Relevance -->
+								<div class="mt-6">
+									<label class="text-[13px] font-semibold text-[#111827]">
+										How relevant is the “{selectedMetric.name}” metric for assessing the “{MOCK_EXPERT_USER.subareaLabel}”
+										subarea goal?
+									</label>
+									<div class="mt-3 grid grid-cols-4 gap-3">
+										{#each [
+											{ v: '1', h: '1', s: 'Not Relevant' },
+											{ v: '2', h: '2', s: 'Somewhat relevant (needs major revision)' },
+											{ v: '3', h: '3', s: 'Quite relevant (needs minor revision)' },
+											{ v: '4', h: '4', s: 'Highly relevant' }
+										] as opt (opt.v)}
+											<label
+												class="flex cursor-pointer flex-col items-center gap-2 rounded-[10px] border p-3 text-center transition-colors duration-150
+													{selectedMetricProgress.feedback.relevance === opt.v
+													? 'border-[#00b3b0] bg-[#e0f7f7]'
+													: 'border-[#e5e7eb] hover:border-[#9ca3af]'}"
+											>
+												<span class="text-[13px] font-bold text-[#111827]">{opt.h}</span>
+												<span class="text-[11px] leading-[1.35] text-[#4b5563]">{opt.s}</span>
+												<input
+													type="radio"
+													name="relevance"
+													value={opt.v}
+													bind:group={selectedMetricProgress.feedback.relevance}
+													class="sr-only"
+												/>
+											</label>
+										{/each}
+									</div>
+								</div>
+
+								<div class="mt-5">
+									<label class="text-[13px] font-medium text-[#111827]" for="mf-relevance-edit">
+										If you selected 1, 2, or 3, how would you modify the metric so it better captures the subarea goal? If you selected 4, you can leave this blank.
+									</label>
+									<textarea
+										id="mf-relevance-edit"
+										rows="3"
+										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
+										bind:value={selectedMetricProgress.feedback.relevanceEdit}
+									></textarea>
+								</div>
+
+								<!-- Q2: Labeling -->
+								<div class="mt-8">
+									<div class="text-[13px] font-semibold text-[#111827]">
+										Do you think this metric should be labeled, defined, or described differently?
+									</div>
+									<div class="mt-3 flex flex-col gap-2">
+										{#each [
+											{ v: 'no', s: 'No' },
+											{ v: 'yes', s: 'Yes' },
+											{ v: 'not-sure', s: 'Not sure' }
+										] as opt (opt.v)}
+											<label
+												class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+													{selectedMetricProgress.feedback.labelDifferent === opt.v
+													? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+													: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+											>
+												<input
+													type="radio"
+													name="label-different"
+													value={opt.v}
+													bind:group={selectedMetricProgress.feedback.labelDifferent}
+													class="accent-[#00b3b0]"
+												/>
+												{opt.s}
+											</label>
+										{/each}
+									</div>
+								</div>
+
+								<div class="mt-5">
+									<label class="text-[13px] font-medium text-[#111827]" for="mf-label-edit">
+										If you selected “yes” or “not sure”, how would you recommend labeling, defining, or describing it differently? If you selected “no”, you can leave this blank.
+									</label>
+									<textarea
+										id="mf-label-edit"
+										rows="3"
+										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
+										bind:value={selectedMetricProgress.feedback.labelEdit}
+									></textarea>
+								</div>
+
+								<!-- Q3: Examples -->
+								<div class="mt-8">
+									<div class="text-[13px] font-semibold text-[#111827]">
+										Do you think the examples provided are adequate and appropriate for the metric?
+									</div>
+									<div class="mt-3 flex flex-col gap-2">
+										{#each [
+											{ v: 'no', s: 'No' },
+											{ v: 'yes', s: 'Yes' },
+											{ v: 'not-sure', s: 'Not sure' }
+										] as opt (opt.v)}
+											<label
+												class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+													{selectedMetricProgress.feedback.examplesAdequate === opt.v
+													? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+													: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+											>
+												<input
+													type="radio"
+													name="examples-adequate"
+													value={opt.v}
+													bind:group={selectedMetricProgress.feedback.examplesAdequate}
+													class="accent-[#00b3b0]"
+												/>
+												{opt.s}
+											</label>
+										{/each}
+									</div>
+								</div>
+
+								<div class="mt-5">
+									<label class="text-[13px] font-medium text-[#111827]" for="mf-examples-edit">
+										If you selected “no” or “not sure,” how would you recommend modifying the examples to make them more adequate or appropriate? If you selected “yes”, you can leave this blank.
+									</label>
+									<textarea
+										id="mf-examples-edit"
+										rows="3"
+										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
+										bind:value={selectedMetricProgress.feedback.examplesEdit}
+									></textarea>
+								</div>
+
+								<div class="mt-8">
+									<label class="text-[13px] font-semibold text-[#111827]" for="mf-other">
+										Do you have any other feedback about this metric? Please feel free to include relevant citations that either support the metric’s current conceptualization or share contrasting information.
+									</label>
+									<textarea
+										id="mf-other"
+										rows="4"
+										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
+										bind:value={selectedMetricProgress.feedback.other}
+									></textarea>
+								</div>
+
+								<div class="mt-6 flex items-center justify-between">
+									<span class="text-[12px] text-[#6b7280]">
+										{selectedMetricProgress.feedback.submitted
+											? 'Feedback saved. You can still edit it before continuing.'
+											: 'Save your feedback to continue to the scenarios.'}
+									</span>
+									<button
+										type="button"
+										class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-50"
+										disabled={!selectedMetricProgress.feedback.relevance}
+										onclick={submitFeedback}
+									>
+										<i class="fa-solid fa-check text-[11px]"></i>
+										{selectedMetricProgress.feedback.submitted ? 'Update feedback' : 'Save feedback'}
+									</button>
+								</div>
+							</div>
+						{:else if currentScenario && currentMaskedModel}
+							{@const evalKey = `${currentScenario.scenario_id}__${currentMaskedModel.id}`}
+							{@const isReviewed = selectedMetricProgress.evaluated.has(evalKey)}
+							<div class="mx-auto max-w-[820px]">
+								<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
+									<div
+										class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+									>
+										Scenario {scenarioIdx + 1} · {currentMaskedModel.label}
+									</div>
+									<div class="mt-1 text-[15px] font-[700] text-[#111827]">
+										{currentScenario.title}
+									</div>
+
+									<!-- Model chips (masked) -->
+									<div class="mt-4 flex flex-wrap gap-[6px]">
+										{#each maskedModels as mm, mIdx (mm.id)}
+											{@const done = selectedMetricProgress.evaluated.has(
+												`${currentScenario.scenario_id}__${mm.id}`
+											)}
+											<button
+												type="button"
+												class="inline-flex cursor-pointer items-center gap-[6px] rounded-[6px] border px-[10px] py-[4px] text-[12px] font-medium transition-colors duration-150
+													{mIdx === modelIdx
+													? 'border-[#00b3b0] bg-[#e0f7f7] text-[#00b3b0]'
+													: 'border-[#e5e7eb] text-[#6b7280] hover:border-[#9ca3af]'}"
+												onclick={() => (modelIdx = mIdx)}
+											>
+												{#if done}
+													<i class="fa-solid fa-check text-[10px] text-[#16a34a]"></i>
+												{:else}
+													<span class="inline-block h-[6px] w-[6px] rounded-full bg-[#d1d5db]"></span>
+												{/if}
+												{mm.label}
+											</button>
+										{/each}
+									</div>
+
+									<!-- Conversation -->
+									<div class="mt-6 border-t border-[#f3f4f6] pt-5">
+										{#if conversationLoading}
+											<div class="flex items-center gap-2 text-[#9ca3af]">
+												<i class="fa-solid fa-spinner fa-spin"></i>
+												<span class="text-[13px]">Loading conversation…</span>
+											</div>
+										{:else if conversationError}
+											<p class="text-[13px] text-[#dc2626]">Failed to load conversation.</p>
+										{:else if conversationDetail}
+											{@const turns = conversationDetail.transcript ?? []}
+											{#if conversationDetail.persona}
+												<div class="mb-4 text-[12px] leading-relaxed text-[#374151]">
+													{conversationDetail.persona}
+												</div>
+											{/if}
+											<div class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+												Conversation
+											</div>
+											{#each turns as turn, i (i)}
+												<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
+													<div
+														class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}"
+													>
+														{turn.role === 'user' ? 'User' : currentMaskedModel.label}
+													</div>
+													<div
+														class="prose prose-sm inline-block max-w-[88%] rounded-xl px-3 py-2 text-left text-[12px]
+															{turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}"
+													>
+														{@html marked.parse(turn.content)}
+													</div>
+												</div>
+											{/each}
+										{/if}
+									</div>
+
+									<!-- Evaluation call-to-action -->
+									<div
+										class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[#99e7e5] bg-[#e6f9f8] px-5 py-4"
+									>
+										<div class="min-w-0">
+											<div class="text-[13px] font-semibold text-[#0f4f50]">
+												Evaluate {currentMaskedModel.label}'s response to this scenario
+											</div>
+											<div class="mt-[2px] text-[12px] text-[#0f4f50]/80">
+												Complete the evaluation form, then return here and click Next.
+											</div>
+										</div>
+										<div class="flex items-center gap-3">
+											{#if isReviewed}
+												<span class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#16a34a]">
+													<i class="fa-solid fa-check-circle text-[13px]"></i>
+													Marked reviewed
+												</span>
+											{/if}
+											<button
+												type="button"
+												class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 py-[8px] text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(3,141,143,0.25)] transition-[filter] duration-150 hover:brightness-105"
+												onclick={openQualtrics}
+											>
+												<i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+												Open evaluation form
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						{:else}
+							<p class="text-[13px] text-[#9ca3af]">
+								No scenarios available for this metric.
+							</p>
+						{/if}
+					</div>
+				{:else}
+					<div class="flex flex-1 items-center justify-center text-[#9ca3af]">
+						<p class="text-[13px]">Select a metric from the left to begin.</p>
+					</div>
+				{/if}
+			</section>
+		{/if}
+	</main>
+
+	<!-- ── Bottom bar ────────────────────────────────────────── -->
+	{#if !loading && !loadError && selectedMetric}
+		<footer
+			class="flex h-[64px] flex-shrink-0 items-center justify-between border-t border-[#e5e7eb] bg-white px-6"
+		>
+			<div class="flex items-center gap-3 text-[12px] text-[#6b7280]">
+				<button
+					type="button"
+					class="inline-flex cursor-pointer items-center gap-1.5 rounded-[6px] border border-[#e5e7eb] bg-white px-3 py-[6px] text-[12px] font-medium text-[#374151] transition-colors duration-150 hover:border-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-40"
+					onclick={goBack}
+					disabled={phase === 'feedback'}
+				>
+					<i class="fa-solid fa-arrow-left text-[10px]"></i>
+					Back
+				</button>
+				<span>
+					{#if phase === 'feedback'}
+						Metric {selectedMetricIdx + 1} of {expertMetrics.length} · Metric feedback
+					{:else if currentScenario && currentMaskedModel}
+						Metric {selectedMetricIdx + 1} of {expertMetrics.length} · Scenario {scenarioIdx + 1} of {selectedMetricScenarios.length} · {currentMaskedModel.label} ({modelIdx + 1}/{maskedModels.length})
+					{/if}
+				</span>
+			</div>
+
+			<button
+				type="button"
+				class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-40"
+				disabled={!canAdvance()}
+				onclick={goNext}
+			>
+				{#if phase === 'scenario' && modelIdx === maskedModels.length - 1 && scenarioIdx === selectedMetricScenarios.length - 1}
+					Finish metric & unlock next
+				{:else}
+					Next
+				{/if}
+				<i class="fa-solid fa-arrow-right text-[11px]"></i>
+			</button>
+		</footer>
+	{/if}
+</div>
