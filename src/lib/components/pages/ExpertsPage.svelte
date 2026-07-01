@@ -391,7 +391,7 @@
 			<section class="flex flex-1 flex-col overflow-hidden">
 				{#if selectedMetric && selectedMetricProgress}
 					<!-- Metric header -->
-					<div class="flex-shrink-0 border-b border-[#e5e7eb] bg-white px-8 pt-5 pb-4">
+					<div class="flex-shrink-0 border-b border-[#e5e7eb] bg-white px-8 pt-5">
 						<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
 							Metric {selectedMetricIdx + 1} of {expertMetrics.length} · {MOCK_EXPERT_USER.subareaLabel}
 						</div>
@@ -405,7 +405,7 @@
 						{/if}
 
 						<!-- Phase tabs -->
-						<div class="mt-4 -ml-3 flex gap-1 border-b border-transparent">
+						<div class="mt-4 -mb-px flex gap-1">
 							<button
 								class="cursor-pointer border-b-[2px] px-3 py-[6px] text-[12px] font-semibold transition-colors duration-150
 									{phase === 'feedback'
