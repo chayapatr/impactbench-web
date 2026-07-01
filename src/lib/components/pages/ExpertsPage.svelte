@@ -285,7 +285,7 @@
 	});
 </script>
 
-<div class="flex min-h-screen flex-col bg-[#fafaf9] text-[#1a1a1a]">
+<div class="flex h-screen flex-col bg-[#fafaf9] text-[#1a1a1a]">
 	<!-- ── Header ─────────────────────────────────────────────── -->
 	<header
 		class="flex h-[60px] flex-shrink-0 items-center justify-between border-b border-[#e5e7eb] bg-white px-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
@@ -774,7 +774,7 @@
 	<!-- ── Bottom bar ────────────────────────────────────────── -->
 	{#if !loading && !loadError && selectedMetric}
 		<footer
-			class="flex h-[64px] flex-shrink-0 items-center justify-between border-t border-[#e5e7eb] bg-white px-6"
+			class="sticky bottom-0 z-[50] flex h-[64px] flex-shrink-0 items-center justify-between border-t border-[#e5e7eb] bg-white px-6 shadow-[0_-1px_3px_rgba(15,23,42,0.05)]"
 		>
 			<div class="flex items-center gap-3 text-[12px] text-[#6b7280]">
 				<button
