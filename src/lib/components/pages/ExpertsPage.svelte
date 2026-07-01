@@ -254,6 +254,14 @@
 			<img src="/mit.svg" alt="MIT" class="pointer-events-none h-5 w-auto select-none" />
 		</a>
 
+		<a
+			href="/"
+			class="ml-3 mr-auto inline-flex items-center gap-1.5 rounded-full bg-[#e0f7f7] px-3 py-[6px] text-[12px] font-semibold text-[#00b3b0] transition-colors duration-150 hover:bg-[#c5eeed]"
+		>
+			<i class="fa-solid fa-house text-[11px]"></i>
+			Home
+		</a>
+
 		<div class="expert-user-menu relative">
 			<button
 				class="flex cursor-pointer items-center gap-[10px] rounded-full border border-[#e5e7eb] bg-white py-[6px] pr-3 pl-[6px] text-left transition-colors duration-150 hover:border-[#00b3b0]"
