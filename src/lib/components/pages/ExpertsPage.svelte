@@ -616,7 +616,7 @@
 							<div class="mx-auto max-w-[820px]">
 								<!-- Evaluation call-to-action (sticky under the tab bar) -->
 								<div
-									class="sticky top-0 z-[20] -mx-8 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#99e7e5] bg-[#e6f9f8] px-8 py-4"
+									class="sticky top-0 z-[20] mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[#99e7e5] bg-[#e6f9f8] px-5 py-4"
 								>
 									<div class="min-w-0">
 										<div class="text-[13px] font-semibold text-[#0f4f50]">
