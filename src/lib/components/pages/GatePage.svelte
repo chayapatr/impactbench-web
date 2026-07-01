@@ -35,7 +35,7 @@
 			: null
 	);
 
-	let activeTab = $state<'request' | 'support' | 'feedback'>('request');
+	let activeTab = $state<'request' | 'expert' | 'support' | 'feedback'>('request');
 	let pwVisible = $state(showPasswordOnMount);
 	let pwValue = $state('');
 	let pwError = $state(false);
@@ -158,17 +158,54 @@
 	const APPS_SCRIPT_URL =
 		'https://script.google.com/macros/s/AKfycbzreHbqgqwXZVM1Lgm_Uw93xakvLi9dcqKsrwQThNM-dJGrGjDn76TcCQ8XniALwWKs/exec';
 
-	let formStates = $state({ request: 'idle', support: 'idle', feedback: 'idle' } as Record<
-		string,
-		string
-	>);
+	let formStates = $state({
+		request: 'idle',
+		expert: 'idle',
+		support: 'idle',
+		feedback: 'idle'
+	} as Record<string, string>);
+
+	const EXPERTISE_SUBAREAS: { id: string; label: string }[] = [
+		{ id: 'safety-protection', label: 'Safety & Protection' },
+		{ id: 'social-relationships', label: 'Social Relationships' },
+		{ id: 'education-career-finance', label: 'Education, Career & Finance' },
+		{ id: 'mental-wellbeing', label: 'Mental Wellbeing' },
+		{ id: 'autonomy-preservation', label: 'Autonomy Preservation' },
+		{ id: 'creativity-cognitive-expression', label: 'Creativity & Cognitive Expression' },
+		{ id: 'self-determination', label: 'Self-Determination' },
+		{ id: 'learning', label: 'Learning' }
+	];
+
+	let expertCvFile = $state<File | null>(null);
+	let expertCvDragging = $state(false);
+
+	function onExpertCvSelected(e: Event) {
+		const input = e.currentTarget as HTMLInputElement;
+		expertCvFile = input.files && input.files[0] ? input.files[0] : null;
+	}
+
+	function onExpertCvDrop(e: DragEvent) {
+		e.preventDefault();
+		expertCvDragging = false;
+		const f = e.dataTransfer?.files?.[0];
+		if (f) expertCvFile = f;
+	}
+
+	function clearExpertCv() {
+		expertCvFile = null;
+		const input = document.getElementById('gex-cv') as HTMLInputElement | null;
+		if (input) input.value = '';
+	}
 
 	let surveyVisible = $state(false);
 	function openSurvey() {
 		surveyVisible = true;
 	}
 
-	async function submitForm(formId: string, tabKey: 'request' | 'support' | 'feedback') {
+	async function submitForm(
+		formId: string,
+		tabKey: 'request' | 'expert' | 'support' | 'feedback'
+	) {
 		const form = document.getElementById(formId) as HTMLFormElement | null;
 		if (!form || !form.checkValidity()) {
 			form?.reportValidity();
@@ -176,6 +213,7 @@
 		}
 		const FORM_TYPE_LABELS: Record<string, string> = {
 			request: 'Access',
+			expert: 'Expert',
 			support: 'Support',
 			feedback: 'Feedback'
 		};
@@ -185,7 +223,10 @@
 			if (!input.name && !input.id) continue;
 			const key = input.name || input.id;
 			if (input.type === 'checkbox') data[key] = (input as HTMLInputElement).checked ? 'yes' : 'no';
-			else data[key] = input.value;
+			else if (input.type === 'file') {
+				const f = (input as HTMLInputElement).files?.[0];
+				data[key] = f ? f.name : '';
+			} else data[key] = input.value;
 		}
 		formStates[tabKey] = 'loading';
 		const params = new URLSearchParams(data).toString();
@@ -197,7 +238,7 @@
 		}
 	}
 
-	function openTab(tab: 'request' | 'support' | 'feedback') {
+	function openTab(tab: 'request' | 'expert' | 'support' | 'feedback') {
 		activeTab = tab;
 		const el = document.getElementById('gate-tabs-section');
 		if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -205,8 +246,9 @@
 		if (window.location.hash) history.replaceState(null, '', window.location.pathname);
 	}
 
-	const HASH_TAB_MAP: Record<string, 'request' | 'support' | 'feedback'> = {
+	const HASH_TAB_MAP: Record<string, 'request' | 'expert' | 'support' | 'feedback'> = {
 		'#access': 'request',
+		'#expert': 'expert',
 		'#support': 'support',
 		'#feedback': 'feedback',
 		'#survey': 'feedback'
@@ -427,7 +469,7 @@
 				class="mb-7 flex w-full flex-wrap gap-1.5 rounded-[14px] bg-[#f3f4f6] p-1.5"
 				role="tablist"
 			>
-				{#each [['request', 'fa-key', 'Request Access'], ['support', 'fa-hand-holding-heart', 'Support Benchmarking Efforts'], ['feedback', 'fa-comment-dots', 'Feedback']] as [tab, icon, label] (tab)}
+				{#each [['request', 'fa-key', 'Request Access'], ['expert', 'fa-user-check', 'Be an Expert'], ['support', 'fa-hand-holding-heart', 'Support Benchmarking Efforts'], ['feedback', 'fa-comment-dots', 'Feedback']] as [tab, icon, label] (tab)}
 					<button
 						class="inline-flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none px-4 py-[11px] text-[14px] font-semibold whitespace-nowrap transition-all duration-[180ms]
 							{activeTab === tab
@@ -542,6 +584,175 @@
 										<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
 									{:else}
 										<i class="fa-solid fa-paper-plane"></i> Submit Request
+									{/if}
+								</button>
+							</form>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Be an Expert -->
+			{:else if activeTab === 'expert'}
+				<div>
+					<h2 class="form-section-title">Be an Expert</h2>
+					<p class="form-section-desc">
+						Share your domain expertise so we can invite you to help evaluate AI systems on the
+						impact areas you know best. Reviewers are matched to specific metrics based on the
+						subareas of expertise selected below.
+					</p>
+					<div class="form-card">
+						{#if formStates.expert === 'success'}
+							<div class="px-5 py-10 text-center">
+								<div class="mb-4 text-[3rem]">🧠</div>
+								<h3 class="m-0 mb-2 text-[1.25rem] font-bold text-[#111827]">Thank you!</h3>
+								<p class="m-0 text-[14px] text-[#6b7280]">
+									We'll review your submission and reach out about matching metrics.
+								</p>
+							</div>
+						{:else}
+							<form
+								id="gate-expert-form"
+								class="flex flex-col gap-6"
+								novalidate
+								onsubmit={(e) => {
+									e.preventDefault();
+									submitForm('gate-expert-form', 'expert');
+								}}
+							>
+								<div class="form-group">
+									<label class="form-label" for="gex-name"
+										>Full name <span class="text-[#dc2626]">*</span></label
+									>
+									<input
+										class="form-input"
+										type="text"
+										id="gex-name"
+										name="full_name"
+										autocomplete="name"
+										required
+									/>
+								</div>
+
+								<div class="form-group">
+									<label class="form-label" for="gex-email"
+										>E-mail address <span class="text-[#dc2626]">*</span></label
+									>
+									<input
+										class="form-input"
+										type="email"
+										id="gex-email"
+										name="email"
+										autocomplete="email"
+										required
+									/>
+								</div>
+
+								<div class="form-group">
+									<label class="form-label" for="gex-job"
+										>Job title <span class="text-[#dc2626]">*</span></label
+									>
+									<input
+										class="form-input"
+										type="text"
+										id="gex-job"
+										name="job_title"
+										autocomplete="organization-title"
+										required
+									/>
+								</div>
+
+								<div class="form-group">
+									<label class="form-label" for="gex-website"
+										>Website <span class="font-normal text-[#9ca3af]">(if applicable)</span></label
+									>
+									<input
+										class="form-input"
+										type="url"
+										id="gex-website"
+										name="website"
+										placeholder="https://"
+										autocomplete="url"
+									/>
+								</div>
+
+								<div class="form-group">
+									<span class="form-label"
+										>CV upload <span class="font-normal text-[#9ca3af]">(if applicable)</span></span
+									>
+									<label
+										for="gex-cv"
+										class="cv-dropzone {expertCvDragging ? 'is-dragging' : ''}"
+										ondragover={(e) => {
+											e.preventDefault();
+											expertCvDragging = true;
+										}}
+										ondragleave={() => (expertCvDragging = false)}
+										ondrop={onExpertCvDrop}
+									>
+										{#if expertCvFile}
+											<span class="cv-dropzone-filename">{expertCvFile.name}</span>
+											<button
+												type="button"
+												class="cv-dropzone-clear"
+												onclick={(e) => {
+													e.preventDefault();
+													clearExpertCv();
+												}}>Remove</button
+											>
+										{:else}
+											<span>Drop files or click here to upload</span>
+										{/if}
+										<input
+											id="gex-cv"
+											name="cv_filename"
+											type="file"
+											accept=".pdf,.doc,.docx"
+											class="sr-only"
+											onchange={onExpertCvSelected}
+										/>
+									</label>
+								</div>
+
+								<div class="form-group">
+									<span class="form-label"
+										>Areas of expertise <span class="font-normal text-[#6b7280]"
+											>(feel free to select multiple areas)</span
+										></span
+									>
+									<div class="flex flex-col gap-2">
+										{#each EXPERTISE_SUBAREAS as area (area.id)}
+											<label class="expertise-check">
+												<input type="checkbox" name={`expertise_${area.id}`} />
+												<span>{area.label}</span>
+											</label>
+										{/each}
+									</div>
+								</div>
+
+								<div class="form-group">
+									<label class="form-label" for="gex-expertise"
+										>What makes you an expert in the topic(s) you selected above? Describe your
+										expertise, including any relevant educational degrees and work experience:
+										<span class="text-[#dc2626]">*</span></label
+									>
+									<textarea
+										class="form-input min-h-[120px] resize-y leading-[1.6]"
+										id="gex-expertise"
+										name="expertise_description"
+										rows="4"
+										required
+									></textarea>
+								</div>
+
+								<button
+									type="submit"
+									class="btn-submit"
+									disabled={formStates.expert === 'loading'}
+								>
+									{#if formStates.expert === 'loading'}
+										<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
+									{:else}
+										<i class="fa-solid fa-paper-plane"></i> Submit
 									{/if}
 								</button>
 							</form>
@@ -1205,6 +1416,91 @@
 		opacity: 0.6;
 		cursor: not-allowed;
 		transform: none;
+	}
+
+	/* Visually-hidden file input */
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	/* CV drop zone */
+	.cv-dropzone {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		min-height: 96px;
+		padding: 20px;
+		border: 1.5px dashed #d1d5db;
+		border-radius: 10px;
+		background: #fafaf9;
+		color: #6b7280;
+		font-size: 14px;
+		text-align: center;
+		cursor: pointer;
+		transition:
+			border-color 0.15s,
+			background 0.15s,
+			color 0.15s;
+	}
+	.cv-dropzone:hover,
+	.cv-dropzone.is-dragging {
+		border-color: #00b3b0;
+		background: #f0fbfa;
+		color: #0f4f50;
+	}
+	.cv-dropzone-filename {
+		font-weight: 600;
+		color: #111827;
+		word-break: break-all;
+	}
+	.cv-dropzone-clear {
+		background: transparent;
+		border: none;
+		color: #dc2626;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+		padding: 4px 8px;
+		border-radius: 6px;
+	}
+	.cv-dropzone-clear:hover {
+		background: #fef2f2;
+	}
+
+	/* Expertise checkbox rows */
+	.expertise-check {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 12px;
+		border: 1.5px solid #e5e7eb;
+		border-radius: 8px;
+		background: #fafaf9;
+		font-size: 14px;
+		color: #111827;
+		cursor: pointer;
+		transition:
+			border-color 0.15s,
+			background 0.15s;
+	}
+	.expertise-check:hover {
+		border-color: #00b3b0;
+		background: #f0fbfa;
+	}
+	.expertise-check input[type='checkbox'] {
+		width: 16px;
+		height: 16px;
+		accent-color: #00b3b0;
+		cursor: pointer;
 	}
 
 	/* Partner logos */
