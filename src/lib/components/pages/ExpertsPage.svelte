@@ -80,17 +80,6 @@
 	const currentScenario = $derived(selectedMetricScenarios[scenarioIdx] ?? null);
 	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
 
-	const canAdvance = $derived(() => {
-		if (!selectedMetricProgress) return false;
-		if (phase === 'feedback') return selectedMetricProgress.feedback.submitted;
-		if (phase === 'scenario' && currentScenario && currentMaskedModel) {
-			return selectedMetricProgress.evaluated.has(
-				`${currentScenario.scenario_id}__${currentMaskedModel.id}`
-			);
-		}
-		return false;
-	});
-
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
 		try {
@@ -205,47 +194,18 @@
 		}
 	}
 
-	function goNext() {
-		if (!canAdvance()) return;
-		if (phase === 'feedback') {
-			phase = 'scenario';
-			scenarioIdx = 0;
-			modelIdx = 0;
-			return;
-		}
-		// scenario phase: advance model, then scenario, then metric
-		if (modelIdx < maskedModels.length - 1) {
-			modelIdx += 1;
-			return;
-		}
-		if (scenarioIdx < selectedMetricScenarios.length - 1) {
-			scenarioIdx += 1;
-			modelIdx = 0;
-			return;
-		}
-		// Metric complete → unlock next and jump to it
+	// ── Auto-unlock ───────────────────────────────────────────────
+	// When the current metric's feedback + every scenario/model pair is done,
+	// unlock the next metric in the queue so the sidebar reveals it.
+	$effect(() => {
+		if (!selectedMetric) return;
+		if (!isEvaluatedAll(selectedMetric.id)) return;
 		const nextIdx = selectedMetricIdx + 1;
-		if (nextIdx < expertMetrics.length) {
-			unlocked.add(expertMetrics[nextIdx].id);
-			unlocked = new Set(unlocked);
-			selectMetric(nextIdx);
-		}
-	}
-
-	function goBack() {
-		if (phase === 'scenario') {
-			if (modelIdx > 0) {
-				modelIdx -= 1;
-				return;
-			}
-			if (scenarioIdx > 0) {
-				scenarioIdx -= 1;
-				modelIdx = maskedModels.length - 1;
-				return;
-			}
-			phase = 'feedback';
-		}
-	}
+		if (nextIdx >= expertMetrics.length) return;
+		const nextId = expertMetrics[nextIdx].id;
+		if (unlocked.has(nextId)) return;
+		unlocked = new Set([...unlocked, nextId]);
+	});
 
 	// ── Auth mock ─────────────────────────────────────────────────
 	function toggleUserMenu() {
@@ -770,44 +730,4 @@
 			</section>
 		{/if}
 	</main>
-
-	<!-- ── Bottom bar ────────────────────────────────────────── -->
-	{#if !loading && !loadError && selectedMetric}
-		<footer
-			class="sticky bottom-0 z-[50] flex h-[64px] flex-shrink-0 items-center justify-between border-t border-[#e5e7eb] bg-white px-6 shadow-[0_-1px_3px_rgba(15,23,42,0.05)]"
-		>
-			<div class="flex items-center gap-3 text-[12px] text-[#6b7280]">
-				<button
-					type="button"
-					class="inline-flex cursor-pointer items-center gap-1.5 rounded-[6px] border border-[#e5e7eb] bg-white px-3 py-[6px] text-[12px] font-medium text-[#374151] transition-colors duration-150 hover:border-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-40"
-					onclick={goBack}
-					disabled={phase === 'feedback'}
-				>
-					<i class="fa-solid fa-arrow-left text-[10px]"></i>
-					Back
-				</button>
-				<span>
-					{#if phase === 'feedback'}
-						Metric {selectedMetricIdx + 1} of {expertMetrics.length} · Metric feedback
-					{:else if currentScenario && currentMaskedModel}
-						Metric {selectedMetricIdx + 1} of {expertMetrics.length} · Scenario {scenarioIdx + 1} of {selectedMetricScenarios.length} · {currentMaskedModel.label} ({modelIdx + 1}/{maskedModels.length})
-					{/if}
-				</span>
-			</div>
-
-			<button
-				type="button"
-				class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-40"
-				disabled={!canAdvance()}
-				onclick={goNext}
-			>
-				{#if phase === 'scenario' && modelIdx === maskedModels.length - 1 && scenarioIdx === selectedMetricScenarios.length - 1}
-					Finish metric & unlock next
-				{:else}
-					Next
-				{/if}
-				<i class="fa-solid fa-arrow-right text-[11px]"></i>
-			</button>
-		</footer>
-	{/if}
 </div>
