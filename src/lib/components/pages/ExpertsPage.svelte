@@ -405,7 +405,7 @@
 						{/if}
 
 						<!-- Phase tabs -->
-						<div class="mt-4 flex gap-1 border-b border-transparent">
+						<div class="mt-4 -ml-3 flex gap-1 border-b border-transparent">
 							<button
 								class="cursor-pointer border-b-[2px] px-3 py-[6px] text-[12px] font-semibold transition-colors duration-150
 									{phase === 'feedback'
