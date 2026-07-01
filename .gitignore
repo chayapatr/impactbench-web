@@ -22,3 +22,6 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .generated/
+
+# Generated data artifacts
+static/data/metric-subarea-map.json
