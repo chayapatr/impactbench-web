@@ -692,7 +692,7 @@
 								</div>
 							</div>
 						{:else if currentScenario && currentMaskedModel}
-							<div class="mx-auto flex max-w-[1240px] flex-col gap-6 lg:flex-row lg:items-start">
+							<div class="mx-auto flex max-w-[1280px] flex-col gap-6 lg:flex-row">
 								<!-- Left: scenario + conversation -->
 								<div class="min-w-0 flex-1">
 									<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
@@ -769,9 +769,9 @@
 								</div>
 
 								<!-- Right: evaluation form -->
-								<aside class="w-full flex-shrink-0 lg:w-[400px]">
+								<aside class="w-full flex-shrink-0 lg:w-[440px]">
 									<div
-										class="sticky top-0 max-h-[calc(100vh-120px)] overflow-y-auto rounded-[14px] border border-[#e5e7eb] bg-white p-5"
+										class="sticky top-0 max-h-[calc(100vh-160px)] overflow-y-auto rounded-[14px] border border-[#e5e7eb] bg-white p-5"
 									>
 										<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
 											Evaluation
