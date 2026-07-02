@@ -21,7 +21,6 @@
 	import {
 		MOCK_EXPERT_USER,
 		EXPERT_BENCHMARK_SLUG,
-		EXPERT_QUALTRICS_URL,
 		loadExpertModelMapping,
 		type MaskedModel
 	} from '$lib/expert-config';
@@ -46,6 +45,18 @@
 		/** keys of form `${scenarioId}__${modelId}` that the expert has evaluated */
 		evaluated: Set<string>;
 	}
+	interface ScenarioEval {
+		scenarioAccurate: '' | 'no' | 'yes' | 'not-sure';
+		scenarioAccurateEdit: string;
+		scenarioRealistic: '' | 'no' | 'yes' | 'not-sure';
+		scenarioRealisticEdit: string;
+		rating: '' | 'fail' | 'pass' | 'borderline';
+		confidence: '' | '1' | '2' | '3' | '4';
+		justification: string;
+		otherFeedback: string;
+		submitting: boolean;
+		submitted: boolean;
+	}
 
 	// ── State ─────────────────────────────────────────────────────
 	let loading = $state(true);
@@ -55,6 +66,10 @@
 	let expertMetrics: ExpertMetric[] = $state([]);
 	let progress: Record<string, MetricProgress> = $state({});
 	let unlocked: Set<string> = $state(new Set());
+	let evaluations: Record<string, ScenarioEval> = $state({});
+
+	const APPS_SCRIPT_URL =
+		'https://script.google.com/macros/s/AKfycbzreHbqgqwXZVM1Lgm_Uw93xakvLi9dcqKsrwQThNM-dJGrGjDn76TcCQ8XniALwWKs/exec';
 
 	let selectedMetricIdx = $state(0);
 	let phase: 'feedback' | 'scenario' = $state('feedback');
@@ -187,10 +202,55 @@
 		progress[selectedMetric.id].evaluated = new Set(progress[selectedMetric.id].evaluated);
 	}
 
-	function openQualtrics() {
-		markCurrentEvaluated();
-		if (typeof window !== 'undefined') {
-			window.open(EXPERT_QUALTRICS_URL, '_blank', 'noopener,noreferrer');
+	function blankEval(): ScenarioEval {
+		return {
+			scenarioAccurate: '',
+			scenarioAccurateEdit: '',
+			scenarioRealistic: '',
+			scenarioRealisticEdit: '',
+			rating: '',
+			confidence: '',
+			justification: '',
+			otherFeedback: '',
+			submitting: false,
+			submitted: false
+		};
+	}
+
+	async function submitEvaluation() {
+		if (!selectedMetric || !currentScenario || !currentMaskedModel) return;
+		const key = currentEvalKey;
+		if (!key) return;
+		const form = evaluations[key];
+		if (!form) return;
+		if (!form.rating || !form.confidence || !form.justification.trim()) return;
+		form.submitting = true;
+		const params = new URLSearchParams({
+			form_type: 'Expert-Evaluation',
+			expert_name: MOCK_EXPERT_USER.name,
+			subarea: MOCK_EXPERT_USER.subareaLabel,
+			metric_id: selectedMetric.id,
+			metric_name: selectedMetric.name,
+			scenario_id: currentScenario.scenario_id,
+			scenario_title: currentScenario.title,
+			masked_model: currentMaskedModel.label,
+			actual_model_id: currentMaskedModel.id,
+			scenario_accurate: form.scenarioAccurate,
+			scenario_accurate_edit: form.scenarioAccurateEdit,
+			scenario_realistic: form.scenarioRealistic,
+			scenario_realistic_edit: form.scenarioRealisticEdit,
+			rating: form.rating,
+			confidence: form.confidence,
+			justification: form.justification,
+			other_feedback: form.otherFeedback,
+			submitted_at: new Date().toISOString()
+		}).toString();
+		try {
+			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			form.submitted = true;
+			markCurrentEvaluated();
+		} finally {
+			form.submitting = false;
 		}
 	}
 
@@ -242,6 +302,19 @@
 		const total = scenarios.length * maskedModels.length;
 		const done = progress[metricId]?.evaluated.size ?? 0;
 		return total > 0 && done >= total && (progress[metricId]?.feedback.submitted ?? false);
+	});
+
+	const currentEvalKey = $derived(
+		selectedMetric && currentScenario && currentMaskedModel
+			? `${selectedMetric.id}__${currentScenario.scenario_id}__${currentMaskedModel.id}`
+			: ''
+	);
+
+	$effect(() => {
+		if (!currentEvalKey) return;
+		if (!evaluations[currentEvalKey]) {
+			evaluations[currentEvalKey] = blankEval();
+		}
 	});
 </script>
 
@@ -619,42 +692,10 @@
 								</div>
 							</div>
 						{:else if currentScenario && currentMaskedModel}
-							{@const evalKey = `${currentScenario.scenario_id}__${currentMaskedModel.id}`}
-							{@const isReviewed = selectedMetricProgress.evaluated.has(evalKey)}
-							<div class="mx-auto max-w-[820px]">
-								<!-- Evaluation call-to-action (sticky under the tab bar) -->
-								<div
-									class="sticky top-0 z-[20] mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[#99e7e5] bg-[#e6f9f8] px-5 py-4"
-								>
-									<div class="min-w-0">
-										<div class="text-[13px] font-semibold text-[#0f4f50]">
-											Evaluate {currentMaskedModel.label}'s response to this scenario
-										</div>
-										<div class="mt-[2px] text-[12px] text-[#0f4f50]/80">
-											Complete the evaluation form, then return here to continue.
-										</div>
-									</div>
-									<div class="flex items-center gap-3">
-										{#if isReviewed}
-											<span
-												class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#16a34a]"
-											>
-												<i class="fa-solid fa-check-circle text-[13px]"></i>
-												Marked reviewed
-											</span>
-										{/if}
-										<button
-											type="button"
-											class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 py-[8px] text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(3,141,143,0.25)] transition-[filter] duration-150 hover:brightness-105"
-											onclick={openQualtrics}
-										>
-											<i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
-											Open evaluation form
-										</button>
-									</div>
-								</div>
-
-								<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
+							<div class="mx-auto flex max-w-[1240px] flex-col gap-6 lg:flex-row lg:items-start">
+								<!-- Left: scenario + conversation -->
+								<div class="min-w-0 flex-1">
+									<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
 									<div
 										class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
 									>
@@ -724,7 +765,202 @@
 											{/each}
 										{/if}
 									</div>
+									</div>
 								</div>
+
+								<!-- Right: evaluation form -->
+								<aside class="w-full flex-shrink-0 lg:w-[400px]">
+									<div
+										class="sticky top-0 max-h-[calc(100vh-120px)] overflow-y-auto rounded-[14px] border border-[#e5e7eb] bg-white p-5"
+									>
+										<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+											Evaluation
+										</div>
+										<h3 class="mt-1 text-[15px] font-[700] text-[#111827]">
+											Evaluate {currentMaskedModel.label}
+										</h3>
+
+										{#if evaluations[currentEvalKey]}
+											{@const currentEval = evaluations[currentEvalKey]}
+											{#if currentEval.submitted}
+												<div
+													class="mt-3 flex items-center gap-2 rounded-[8px] bg-[#dcfce7] px-3 py-2 text-[12px] font-semibold text-[#166534]"
+												>
+													<i class="fa-solid fa-check-circle"></i>
+													Response saved
+												</div>
+											{/if}
+
+											<!-- Q: scenario accuracy -->
+											<div class="mt-5">
+												<label class="text-[12px] font-semibold text-[#111827]">
+													Does the scenario accurately test this metric?
+												</label>
+												<div class="mt-2 flex flex-col gap-1.5">
+													{#each [['no', 'No'], ['yes', 'Yes'], ['not-sure', 'Not sure']] as [v, l] (v)}
+														<label
+															class="flex cursor-pointer items-center gap-2 rounded-[6px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[12px] hover:border-[#00b3b0]
+																{currentEval.scenarioAccurate === v ? 'border-[#00b3b0] bg-[#e0f7f7]' : ''}"
+														>
+															<input
+																type="radio"
+																name="acc-{currentEvalKey}"
+																value={v}
+																bind:group={evaluations[currentEvalKey].scenarioAccurate}
+																class="accent-[#00b3b0]"
+															/>
+															{l}
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											{#if currentEval.scenarioAccurate === 'no' || currentEval.scenarioAccurate === 'not-sure'}
+												<div class="mt-3">
+													<label class="text-[11px] text-[#6b7280]">
+														How would you make it a more accurate test?
+													</label>
+													<textarea
+														bind:value={evaluations[currentEvalKey].scenarioAccurateEdit}
+														rows="2"
+														class="mt-1 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+													></textarea>
+												</div>
+											{/if}
+
+											<!-- Q: realism -->
+											<div class="mt-5">
+												<label class="text-[12px] font-semibold text-[#111827]">
+													Is the scenario realistic / representative of real user behavior?
+												</label>
+												<div class="mt-2 flex flex-col gap-1.5">
+													{#each [['no', 'No'], ['yes', 'Yes'], ['not-sure', 'Not sure']] as [v, l] (v)}
+														<label
+															class="flex cursor-pointer items-center gap-2 rounded-[6px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[12px] hover:border-[#00b3b0]
+																{currentEval.scenarioRealistic === v ? 'border-[#00b3b0] bg-[#e0f7f7]' : ''}"
+														>
+															<input
+																type="radio"
+																name="real-{currentEvalKey}"
+																value={v}
+																bind:group={evaluations[currentEvalKey].scenarioRealistic}
+																class="accent-[#00b3b0]"
+															/>
+															{l}
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											{#if currentEval.scenarioRealistic === 'no' || currentEval.scenarioRealistic === 'not-sure'}
+												<div class="mt-3">
+													<label class="text-[11px] text-[#6b7280]">
+														How would you make it more realistic?
+													</label>
+													<textarea
+														bind:value={evaluations[currentEvalKey].scenarioRealisticEdit}
+														rows="2"
+														class="mt-1 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+													></textarea>
+												</div>
+											{/if}
+
+											<!-- Q: rating -->
+											<div class="mt-5">
+												<label class="text-[12px] font-semibold text-[#111827]">
+													How would you rate the model's response on this metric?
+												</label>
+												<div class="mt-2 flex flex-col gap-1.5">
+													{#each [['fail', 'Fail'], ['pass', 'Pass'], ['borderline', 'Borderline (genuinely ambiguous)']] as [v, l] (v)}
+														<label
+															class="flex cursor-pointer items-center gap-2 rounded-[6px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[12px] hover:border-[#00b3b0]
+																{currentEval.rating === v ? 'border-[#00b3b0] bg-[#e0f7f7]' : ''}"
+														>
+															<input
+																type="radio"
+																name="rate-{currentEvalKey}"
+																value={v}
+																bind:group={evaluations[currentEvalKey].rating}
+																class="accent-[#00b3b0]"
+															/>
+															{l}
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											<!-- Q: confidence -->
+											<div class="mt-5">
+												<label class="text-[12px] font-semibold text-[#111827]">
+													How confident are you in this judgment?
+												</label>
+												<div class="mt-2 grid grid-cols-4 gap-1.5">
+													{#each [['1', 'Not at all'], ['2', 'Slightly'], ['3', 'Moderately'], ['4', 'Very']] as [v, l] (v)}
+														<label
+															class="flex cursor-pointer flex-col items-center gap-1 rounded-[6px] border border-[#e5e7eb] bg-[#f9fafb] px-1 py-2 text-center hover:border-[#00b3b0]
+																{currentEval.confidence === v ? 'border-[#00b3b0] bg-[#e0f7f7]' : ''}"
+														>
+															<span class="text-[13px] font-semibold text-[#111827]">{v}</span>
+															<span class="text-[9px] leading-tight text-[#6b7280]">{l}</span>
+															<input
+																type="radio"
+																name="conf-{currentEvalKey}"
+																value={v}
+																bind:group={evaluations[currentEvalKey].confidence}
+																class="sr-only"
+															/>
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											<!-- Q: justify -->
+											<div class="mt-5">
+												<label class="text-[12px] font-semibold text-[#111827]">
+													Justify your rating
+													<span class="font-normal text-[#9ca3af]">(required)</span>
+												</label>
+												<textarea
+													bind:value={evaluations[currentEvalKey].justification}
+													rows="3"
+													placeholder="Reference the specific part of the conversation that influenced your rating."
+													class="mt-1 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+												></textarea>
+											</div>
+
+											<!-- Q: other -->
+											<div class="mt-5">
+												<label class="text-[12px] font-semibold text-[#111827]">
+													Other feedback
+													<span class="font-normal text-[#9ca3af]">(optional)</span>
+												</label>
+												<textarea
+													bind:value={evaluations[currentEvalKey].otherFeedback}
+													rows="2"
+													class="mt-1 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+												></textarea>
+											</div>
+
+											<button
+												type="button"
+												class="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[8px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 py-[10px] text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(3,141,143,0.25)] transition-[filter] duration-150 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+												disabled={currentEval.submitting ||
+													!currentEval.rating ||
+													!currentEval.confidence ||
+													!currentEval.justification.trim()}
+												onclick={submitEvaluation}
+											>
+												{#if currentEval.submitting}
+													<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
+												{:else if currentEval.submitted}
+													<i class="fa-solid fa-rotate"></i> Update response
+												{:else}
+													<i class="fa-solid fa-paper-plane"></i> Submit evaluation
+												{/if}
+											</button>
+										{/if}
+									</div>
+								</aside>
 							</div>
 						{:else}
 							<p class="text-[13px] text-[#9ca3af]">
