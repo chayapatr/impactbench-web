@@ -49,7 +49,6 @@ export interface AIModel {
 	provider: string;
 	version: string;
 	releaseYear: number;
-	qualityBase: number;
 	description?: string;
 }
 

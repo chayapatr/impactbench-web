@@ -1,34 +1,6 @@
 {
   "models": [
     {
-      "id": "deepseek-v3",
-      "name": "DeepSeek V3.2",
-      "provider": "DeepSeek",
-      "version": "deepseek-v3",
-      "releaseYear": 2025
-    },
-    {
-      "id": "llama-4",
-      "name": "Llama 4 Maverick",
-      "provider": "Meta",
-      "version": "llama-4",
-      "releaseYear": 2025
-    },
-    {
-      "id": "mistral-small-3",
-      "name": "Mistral Small 3.2",
-      "provider": "Mistral",
-      "version": "mistral-small-3",
-      "releaseYear": 2025
-    },
-    {
-      "id": "qwen3-80b",
-      "name": "Qwen3 80B",
-      "provider": "Alibaba",
-      "version": "qwen3-80b",
-      "releaseYear": 2025
-    },
-    {
       "id": "claude-haiku-4-5",
       "name": "Claude Haiku 4.5",
       "provider": "Anthropic",
@@ -47,6 +19,13 @@
       "name": "Claude Sonnet 4.6",
       "provider": "Anthropic",
       "version": "claude-sonnet-4-6",
+      "releaseYear": 2025
+    },
+    {
+      "id": "deepseek-v3",
+      "name": "DeepSeek V3.2",
+      "provider": "DeepSeek",
+      "version": "deepseek-v3",
       "releaseYear": 2025
     },
     {
@@ -96,6 +75,27 @@
       "name": "Grok 4.1 (Reasoning)",
       "provider": "xAI",
       "version": "grok-4-1-reasoning",
+      "releaseYear": 2025
+    },
+    {
+      "id": "llama-4",
+      "name": "Llama 4 Maverick",
+      "provider": "Meta",
+      "version": "llama-4",
+      "releaseYear": 2025
+    },
+    {
+      "id": "mistral-small-3",
+      "name": "Mistral Small 3.2",
+      "provider": "Mistral",
+      "version": "mistral-small-3",
+      "releaseYear": 2025
+    },
+    {
+      "id": "qwen3-80b",
+      "name": "Qwen3 80B",
+      "provider": "Alibaba",
+      "version": "qwen3-80b",
       "releaseYear": 2025
     }
   ]
