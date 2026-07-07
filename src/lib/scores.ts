@@ -62,6 +62,28 @@ export function scoreToLetterGrade(score: number): string {
 	return 'F';
 }
 
+export function letterGradeRange(score: number): { lower: number; upper: number } | null {
+	if (!Number.isFinite(score)) return null;
+	const bands: Array<[number, number]> = [
+		[0.95, 1.0],
+		[0.9, 0.95],
+		[0.85, 0.9],
+		[0.8, 0.85],
+		[0.75, 0.8],
+		[0.7, 0.75],
+		[0.65, 0.7],
+		[0.6, 0.65],
+		[0.55, 0.6],
+		[0.5, 0.55],
+		[0.45, 0.5],
+		[0.4, 0.45]
+	];
+	for (const [lo, hi] of bands) {
+		if (score >= lo) return { lower: lo, upper: hi };
+	}
+	return { lower: 0, upper: 0.4 };
+}
+
 export function scoreToArcValue(score: number, floor = 0.1): number {
 	return Math.max(Math.abs(score - 0.5), floor);
 }

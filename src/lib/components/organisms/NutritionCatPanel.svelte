@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { appState, openScenarioPanel, scenarioPanelState } from '$lib/store.svelte';
-	import { scorePillStyle, scoreColors } from '$lib/scores';
+	import { scorePillStyle, scoreColors, letterGradeRange } from '$lib/scores';
 	import { filterScenariosByAge, getScores } from '$lib/utils';
 	import { STATIC_MITIGATION_TIPS } from '$lib/model-tips';
 	import type { ScenarioMeta } from '$lib/types';
@@ -93,6 +93,24 @@
 									What we measure
 								</div> -->
 								<div class="text-[12px] leading-relaxed text-[#6b7280]">{catDef.description}</div>
+							</div>
+						{/if}
+						{@const gradeRange = letterGradeRange(catScore)}
+						{#if gradeRange}
+							<div
+								class="mt-[10px] rounded-[16px] border px-[12px] py-[8px] text-[11px] leading-[1.5] text-[#4b5563]"
+								style="background:{colors.light};border-color:{colors.border}"
+							>
+								This item, <span class="font-semibold">&ldquo;{catDef.label}&rdquo;</span> was
+								graded a
+								<span class="font-semibold" style="color:{colors.color}"
+									>{scoreToLetterGrade(catScore)}</span
+								>
+								because it returned an average of
+								<span class="font-semibold"
+									>{gradeRange.lower.toFixed(2)}&ndash;{gradeRange.upper.toFixed(2)}</span
+								>
+								on the following metrics.
 							</div>
 						{/if}
 					{/snippet}

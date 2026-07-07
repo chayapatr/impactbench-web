@@ -110,6 +110,9 @@
 	let selectedIds = $state<string[]>([]);
 	let compareMode = $state(false);
 
+	// ───── Grade legend modal ─────
+	let showLegendModal = $state(false);
+
 	const isSelected = $derived((id: string) => selectedIds.includes(id));
 
 	function toggleSelect(id: string) {
@@ -317,6 +320,15 @@
 			{/if}
 
 			{#if !isLoading && focusedCard}
+				<button
+					type="button"
+					class="nl-legend-btn nl-legend-btn--corner"
+					onclick={() => (showLegendModal = true)}
+					title="How to interpret the AI Nutrition Label"
+				>
+					<i class="fa-regular fa-circle-question" aria-hidden="true"></i>
+					<span>How to interpret</span>
+				</button>
 				<label
 					class="nl-select-checkbox nl-select-checkbox--corner"
 					title={isSelected(focusedCard.id) ? 'Remove from comparison' : 'Add to comparison'}
@@ -517,6 +529,76 @@
 
 
 </div>
+
+{#if showLegendModal}
+	<div
+		class="nl-legend-overlay"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="nl-legend-title"
+		onclick={() => (showLegendModal = false)}
+		onkeydown={(e) => e.key === 'Escape' && (showLegendModal = false)}
+		tabindex="-1"
+	>
+		<div
+			class="nl-legend-modal"
+			role="document"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			tabindex="-1"
+		>
+			<button
+				type="button"
+				class="nl-legend-close"
+				aria-label="Close"
+				onclick={() => (showLegendModal = false)}
+			>
+				<i class="fa-solid fa-xmark"></i>
+			</button>
+			<h2 id="nl-legend-title" class="nl-legend-title">
+				How to interpret the AI Nutrition Label
+			</h2>
+			<p class="nl-legend-lede">
+				Each label summarizes how a model behaves across dozens of measurable behaviors, grouped
+				into categories like <em>&ldquo;Avoids Factual Hallucination.&rdquo;</em> The letter grade
+				you see next to a category is a composite &mdash; the average of the individual metrics
+				inside it.
+			</p>
+
+			<div class="nl-legend-section">
+				<div class="nl-legend-section-label">What the grades mean</div>
+				<ul class="nl-legend-scale">
+					<li>
+						<span class="nl-legend-grade" style="color:#16a34a">A / B</span>
+						<span class="nl-legend-range">0.75&ndash;1.00</span>
+						<span class="nl-legend-copy">Strong &mdash; the model reliably handles this dimension well.</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#d97706">C</span>
+						<span class="nl-legend-range">0.55&ndash;0.75</span>
+						<span class="nl-legend-copy">Moderate &mdash; mixed results, with clear room to improve.</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#6b7280">D</span>
+						<span class="nl-legend-range">0.45&ndash;0.55</span>
+						<span class="nl-legend-copy">Borderline &mdash; roughly a coin flip on whether the behavior appears.</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#dc2626">F</span>
+						<span class="nl-legend-range">below 0.45</span>
+						<span class="nl-legend-copy">Concerning &mdash; consistent gaps you should factor into your use.</span>
+					</li>
+				</ul>
+			</div>
+
+			<p class="nl-legend-footnote">
+				Want to see what's actually being measured? Click any category or metric in the label to
+				open its details, view the individual scenarios it was tested on, and read mitigation
+				tips.
+			</p>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.nl-page {
@@ -1820,5 +1902,168 @@
 		.nl-center {
 			padding: 18px;
 		}
+	}
+
+	/* ───── Legend / "How to interpret" button ───── */
+	.nl-legend-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
+		padding: 7px 14px;
+		border-radius: 999px;
+		cursor: pointer;
+		font-family: Arial, sans-serif;
+		font-size: 11.5px;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		color: #374151;
+		box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.18);
+		transition: all 150ms ease;
+	}
+	.nl-legend-btn i {
+		font-size: 12px;
+		color: #6b7280;
+	}
+	.nl-legend-btn:hover {
+		background: #f9fafb;
+		color: #111827;
+	}
+	.nl-legend-btn:hover i {
+		color: #111827;
+	}
+	.nl-legend-btn--corner {
+		position: absolute;
+		top: 16px;
+		right: 148px;
+		z-index: 250;
+	}
+
+	/* ───── Legend modal ───── */
+	.nl-legend-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 1000;
+		background: rgba(15, 23, 42, 0.55);
+		backdrop-filter: blur(2px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 24px;
+		animation: nlLegendFade 160ms ease-out;
+	}
+	@keyframes nlLegendFade {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	.nl-legend-modal {
+		position: relative;
+		width: 100%;
+		max-width: 520px;
+		max-height: calc(100vh - 48px);
+		overflow-y: auto;
+		background: #ffffff;
+		border-radius: 20px;
+		padding: 28px 28px 24px;
+		box-shadow:
+			0 24px 60px -20px rgba(15, 23, 42, 0.35),
+			0 10px 24px -12px rgba(15, 23, 42, 0.2);
+		font-family: Arial, sans-serif;
+		color: #1f2937;
+	}
+	.nl-legend-close {
+		position: absolute;
+		top: 14px;
+		right: 14px;
+		width: 30px;
+		height: 30px;
+		border: none;
+		background: transparent;
+		border-radius: 50%;
+		cursor: pointer;
+		color: #6b7280;
+		font-size: 14px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 120ms ease;
+	}
+	.nl-legend-close:hover {
+		background: #f3f4f6;
+		color: #111827;
+	}
+	.nl-legend-title {
+		margin: 0 32px 10px 0;
+		font-family: 'Source Serif Pro', Georgia, serif;
+		font-size: 20px;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		color: #0f172a;
+	}
+	.nl-legend-lede {
+		margin: 0 0 18px;
+		font-size: 13px;
+		line-height: 1.55;
+		color: #4b5563;
+	}
+	.nl-legend-lede em {
+		font-style: italic;
+		color: #374151;
+	}
+	.nl-legend-section {
+		border-top: 1px solid #f3f4f6;
+		padding-top: 14px;
+		margin-bottom: 14px;
+	}
+	.nl-legend-section-label {
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: #9ca3af;
+		margin-bottom: 10px;
+	}
+	.nl-legend-scale {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.nl-legend-scale li {
+		display: grid;
+		grid-template-columns: 52px 88px 1fr;
+		align-items: baseline;
+		gap: 10px;
+		padding: 8px 10px;
+		background: #f9fafb;
+		border-radius: 12px;
+	}
+	.nl-legend-grade {
+		font-weight: 800;
+		font-size: 15px;
+		letter-spacing: -0.01em;
+	}
+	.nl-legend-range {
+		font-size: 11px;
+		color: #6b7280;
+		font-variant-numeric: tabular-nums;
+	}
+	.nl-legend-copy {
+		font-size: 12.5px;
+		line-height: 1.5;
+		color: #374151;
+	}
+	.nl-legend-footnote {
+		margin: 4px 0 0;
+		font-size: 12px;
+		line-height: 1.55;
+		color: #6b7280;
 	}
 </style>
