@@ -255,7 +255,7 @@
 		padding-top: 8px;
 		border-top: 1px solid #d1d5db;
 		font-family: Arial, sans-serif;
-		font-size: 10px;
+		font-size: 12.5px;
 		line-height: 1.35;
 		color: #4b5563;
 	}

@@ -1516,7 +1516,7 @@
 		padding-top: 8px;
 		border-top: 1px solid #d1d5db;
 		font-family: Arial, sans-serif;
-		font-size: 8.5px;
+		font-size: 11px;
 		line-height: 1.35;
 		color: #4b5563;
 	}

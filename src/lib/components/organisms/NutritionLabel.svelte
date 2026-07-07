@@ -222,7 +222,7 @@
 						{c.focusInterpretation}. This preview summarizes the active deep-dive context from the human flourishing benchmark.
 					</p>
 
-					<div class="mt-3 pt-2 border-t border-gray-200 text-[9px] leading-snug text-gray-500">
+					<div class="mt-3 pt-2 border-t border-gray-200 text-[11px] leading-snug text-gray-500">
 						<p class="m-0">
 							This is part of the Open Benchmark of AI Impact on Humans (ImpactBench) led by
 							researchers at the MIT Media Lab, USC Marshall Neely Center, The Psychology of
