@@ -453,7 +453,7 @@
 					blind spots to note might be.
 				</p>
 				<img
-					src="/impactbench10.png"
+					src="/homepage_nutritionlabel.jpg"
 					alt="Personalized ImpactBench nutrition label"
 					class="block h-auto w-full"
 				/>
