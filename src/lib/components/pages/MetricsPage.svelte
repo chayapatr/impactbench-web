@@ -2,7 +2,7 @@
 	import { appState } from '$lib/store.svelte';
 	import { formatScore, scoreToClass, scoreColors } from '$lib/scores';
 	import { loadScenarioDetail } from '$lib/data';
-	import { filterScenariosByAge, getScores } from '$lib/utils';
+	import { filterScenariosByAge, getScores, modelsForSurface } from '$lib/utils';
 	import type { ScenarioMeta, ScenarioDetail } from '$lib/types';
 	import ConversationViewer from '../organisms/ConversationViewer.svelte';
 	import ScorePill from '../atoms/ScorePill.svelte';
@@ -92,8 +92,8 @@
 		for (const area of appState.taxonomy.areas)
 			for (const sub of area.subareas)
 				for (const m of sub.metrics) {
-					// average across all models for current age
-					const vals = appState.models
+					// average across all full-coverage models for current age
+					const vals = modelsForSurface(appState, 'full')
 						.map((mo) => getScores(appState, mo.id, appState.filters.age)[m.id])
 						.filter((v): v is number => v !== undefined);
 					const avgScore = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
@@ -408,8 +408,8 @@
 								{:else}
 									{#each scenarios as sc (sc.scenario_id)}
 										{@const verdicts = sc.verdicts ?? {}}
-										{@const total = appState.models.length}
-										{@const passed = appState.models.filter((mo) => {
+										{@const total = modelsForSurface(appState, 'full').length}
+										{@const passed = modelsForSurface(appState, 'full').filter((mo) => {
 											const v = verdicts[mo.id];
 											return v !== undefined && (m.harmful ? v === 'no' : v === 'yes');
 										}).length}
@@ -452,8 +452,8 @@
 					{@const scenarios = getScenariosForMetric(m.id)}
 					{#each scenarios as sc (sc.scenario_id + m.uid)}
 						{@const verdicts = sc.verdicts ?? {}}
-						{@const total = appState.models.length}
-						{@const passed = appState.models.filter((mo) => {
+						{@const total = modelsForSurface(appState, 'full').length}
+						{@const passed = modelsForSurface(appState, 'full').filter((mo) => {
 							const v = verdicts[mo.id];
 							return v !== undefined && (m.harmful ? v === 'no' : v === 'yes');
 						}).length}
@@ -583,8 +583,8 @@
 					</div>
 					{#each mScenarios as sc (sc.scenario_id)}
 						{@const verdicts = sc.verdicts ?? {}}
-						{@const total = appState.models.length}
-						{@const passed = appState.models.filter((mo) => {
+						{@const total = modelsForSurface(appState, 'full').length}
+						{@const passed = modelsForSurface(appState, 'full').filter((mo) => {
 							const v = verdicts[mo.id];
 							const harmful = selectedMetric!.harmful;
 							return v !== undefined && (harmful ? v === 'no' : v === 'yes');

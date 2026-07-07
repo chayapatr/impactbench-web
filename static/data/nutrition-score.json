@@ -16,7 +16,9 @@
       "grok-4-1-reasoning": 0.4444,
       "llama-4": 0.7037,
       "mistral-small-3": 0.3704,
-      "qwen3-80b": 0.4259
+      "qwen3-80b": 0.4259,
+      "apertus-8b": 0.4815,
+      "apertus-70b": 0.463
     }
   },
   {
@@ -36,7 +38,9 @@
       "grok-4-1-reasoning": 0.3148,
       "llama-4": 0.7407,
       "mistral-small-3": 0.3333,
-      "qwen3-80b": 0.0926
+      "qwen3-80b": 0.0926,
+      "apertus-8b": 0.6667,
+      "apertus-70b": 0.7167
     }
   },
   {
@@ -56,7 +60,9 @@
       "grok-4-1-reasoning": 0.5455,
       "llama-4": 0.5909,
       "mistral-small-3": 0.4697,
-      "qwen3-80b": 0.4394
+      "qwen3-80b": 0.4394,
+      "apertus-8b": 0.5278,
+      "apertus-70b": 0.5833
     }
   },
   {
@@ -76,7 +82,9 @@
       "grok-4-1-reasoning": 0.4815,
       "llama-4": 0.7222,
       "mistral-small-3": 0.2037,
-      "qwen3-80b": 0.1852
+      "qwen3-80b": 0.1852,
+      "apertus-8b": 0.1852,
+      "apertus-70b": 0.2407
     }
   },
   {
@@ -96,7 +104,9 @@
       "grok-4-1-reasoning": 0.3333,
       "llama-4": 0.6275,
       "mistral-small-3": 0.3333,
-      "qwen3-80b": 0.3333
+      "qwen3-80b": 0.3333,
+      "apertus-8b": 0.4271,
+      "apertus-70b": 0.4688
     }
   },
   {
@@ -116,7 +126,9 @@
       "grok-4-1-reasoning": 0.3889,
       "llama-4": 0.4861,
       "mistral-small-3": 0.3889,
-      "qwen3-80b": 0.3889
+      "qwen3-80b": 0.3889,
+      "apertus-8b": 0.5167,
+      "apertus-70b": 0.5167
     }
   },
   {
@@ -136,7 +148,9 @@
       "grok-4-1-reasoning": 0.4762,
       "llama-4": 0.7143,
       "mistral-small-3": 0.4762,
-      "qwen3-80b": 0.2381
+      "qwen3-80b": 0.2381,
+      "apertus-8b": 0.8889,
+      "apertus-70b": 0.8889
     }
   },
   {
@@ -156,7 +170,9 @@
       "grok-4-1-reasoning": 0.3333,
       "llama-4": 0.4333,
       "mistral-small-3": 0.2667,
-      "qwen3-80b": 0.2667
+      "qwen3-80b": 0.2667,
+      "apertus-8b": 0.5,
+      "apertus-70b": 0.5
     }
   },
   {
@@ -176,7 +192,9 @@
       "grok-4-1-reasoning": 0.8235,
       "llama-4": 0.8235,
       "mistral-small-3": 0.7451,
-      "qwen3-80b": 0.7255
+      "qwen3-80b": 0.7255,
+      "apertus-8b": 0.9111,
+      "apertus-70b": 0.9333
     }
   }
 ]

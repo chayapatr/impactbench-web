@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { appState, setFilters } from '$lib/store.svelte';
-	import { getModelName, getScores } from '$lib/utils';
+	import { getModelName } from '$lib/utils';
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
@@ -43,11 +43,10 @@
 		const harmful = scored.filter((c) => c.label.startsWith('Avoids'));
 		const positive = scored.filter((c) => c.label.startsWith('Promotes'));
 
-		// Overall = average of all 451 metrics (same as sidebar)
-		const allMetricScores = Object.values(getScores(appState, modelId, currentAge));
-		const overall = allMetricScores.length
-			? allMetricScores.reduce((s, v) => s + v, 0) / allMetricScores.length
-			: scored.reduce((s, c) => s + c.score, 0) / scored.length;
+		// Overall = average of the 9 nutritional-label category scores, for every
+		// model — not the full taxonomy average, so partial-coverage models
+		// (nutritional-label-only) rank on the same basis as full-coverage ones.
+		const overall = scored.reduce((s, c) => s + c.score, 0) / scored.length;
 
 		const worst = [...scored].sort((a, b) => a.score - b.score).slice(0, 3)
 			.map((c) => ({ name: c.label, score: c.score }));
@@ -200,9 +199,10 @@
 		</div>
 	{/if}
 
-	<!-- LEFT: Leaderboard (same as Explore) -->
+	<!-- LEFT: Leaderboard (same as Explore, but lists every model with
+	     nutrition-label data — not just full-taxonomy ones) -->
 	<aside class="nl-left">
-		<Leaderboard onModelSelect={handleLocalModelSelect} />
+		<Leaderboard onModelSelect={handleLocalModelSelect} surface="all" />
 	</aside>
 
 	<!-- CENTER: Nutritional Label carousel or compare view -->

@@ -1,8 +1,18 @@
 import type { appState as AppStateInstance } from '$lib/store.svelte';
-import type { Area, Subarea, Metric, ScenarioMeta } from '$lib/types';
+import type { Area, Subarea, Metric, ScenarioMeta, AIModel, ModelSurface } from '$lib/types';
 import { averageScore } from '$lib/scores';
 
 type AppState = typeof AppStateInstance;
+
+// Models are tagged with which surfaces they have real data for (see
+// ModelSurface) — 'full' models show up on Explore/Metrics, everything else
+// is scoped to pages that only need the nutritional-label metric subset.
+// Pass 'all' to skip filtering entirely (e.g. the Nutritional Label page,
+// which wants every model that has data for it, regardless of surface tag).
+export function modelsForSurface(appState: AppState, surface: ModelSurface | 'all'): AIModel[] {
+	if (surface === 'all') return appState.models;
+	return appState.models.filter((m) => m.surfaces.includes(surface));
+}
 
 /**
  * Convert a possibly snake_case identifier into a human-readable sentence-case

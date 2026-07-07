@@ -2,6 +2,8 @@
 	import { appState, leaderboardState, sidebarState, scenarioPanelState, setFilters } from '$lib/store.svelte';
 	import { makeBenchmarkKey } from '$lib/data';
 	import { formatScore } from '$lib/scores';
+	import { modelsForSurface } from '$lib/utils';
+	import type { ModelSurface } from '$lib/types';
 
 	const AGE_OPTIONS = [
 		{ value: 'adult', label: 'Adult (18+)' },
@@ -10,9 +12,14 @@
 
 	interface Props {
 		onModelSelect: (modelId: string) => void;
+		// Which models to list. 'full' (default) matches Explore's taxonomy-wide
+		// ranking; 'all' includes surface-restricted models too (e.g. the
+		// Nutritional Label page, where their partial-taxonomy split score is
+		// still meaningful for whatever metrics do overlap).
+		surface?: ModelSurface | 'all';
 	}
 
-	let { onModelSelect }: Props = $props();
+	let { onModelSelect, surface = 'full' }: Props = $props();
 
 	// Derive context from sidebar nav stack
 	const _navContextValue = $derived.by(() => {
@@ -77,16 +84,31 @@
 		return { avg, pos, neg };
 	}
 
+	// Nutritional Label ranking: average of the 9 nutrition-label category
+	// scores, same basis as the label card's "Overall" (NutritionLabelPage's
+	// buildLabelData) — works identically for full-taxonomy and
+	// nutritional-label-only models, unlike computeSplitScore's taxonomy walk.
+	function computeNutritionScore(modelId: string): { avg: number; pos: number; neg: number } {
+		const scores = appState.nutritionScore
+			.map((c) => c.models[modelId])
+			.filter((v): v is number => v !== undefined);
+		const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0.5;
+		return { avg, pos: avg, neg: avg };
+	}
+
 	const ranked = $derived(() => {
 		const ctx = navContext();
 		const areaId = ctx.mode === 'area' ? ctx.areaId : null;
 		const subareaId = ctx.mode === 'subarea' ? ctx.subareaId : null;
 		const metricId = (ctx.mode === 'metric' || ctx.mode === 'scenario') ? ctx.metricId : null;
+		const useNutritionScore = surface === 'all';
 
-		return appState.models
+		return modelsForSurface(appState, surface)
 			.map((m) => ({
 				model: m,
-				split: computeSplitScore(m.id, areaId, subareaId, metricId)
+				split: useNutritionScore
+					? computeNutritionScore(m.id)
+					: computeSplitScore(m.id, areaId, subareaId, metricId)
 			}))
 			.sort((a, b) => b.split.avg - a.split.avg);
 	});

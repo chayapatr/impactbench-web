@@ -43,12 +43,19 @@ export interface Taxonomy {
 
 // ===== Model Types =====
 
+// 'full' models have complete taxonomy-wide benchmark coverage and appear on
+// Explore/Metrics. 'nutritional-label' models were only evaluated on the
+// small nutritional-label metric subset and appear on the Nutritional Label
+// page only.
+export type ModelSurface = 'full' | 'nutritional-label';
+
 export interface AIModel {
 	id: string;
 	name: string;
 	provider: string;
 	version: string;
 	releaseYear: number;
+	surfaces: ModelSurface[];
 	description?: string;
 }
 

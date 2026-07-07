@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { appState } from '$lib/store.svelte';
 	import { marked } from 'marked';
+	import { modelsForSurface } from '$lib/utils';
 	import type { ScenarioDetail } from '$lib/types';
 
 	interface Props {
@@ -84,7 +85,7 @@
 	<!-- Model switcher -->
 	{#if showModelSwitcher}
 		<div class="mb-4 flex flex-wrap gap-[5px]">
-			{#each appState.models as model (model.id)}
+			{#each modelsForSurface(appState, 'full') as model (model.id)}
 				{@const verdict2 = appState.scenarioIndex?.[metricId]?.find(
 					(sc) => sc.scenario_id === scenarioId
 				)?.verdicts?.[model.id]}

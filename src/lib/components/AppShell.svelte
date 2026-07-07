@@ -33,6 +33,7 @@
 		type ThemeMetricItem
 	} from '$lib/store.svelte';
 	import { makeBenchmarkKey } from '$lib/data';
+	import { modelsForSurface } from '$lib/utils';
 	import ControlBar from '$lib/components/molecules/ControlBar.svelte';
 	import Tooltip from '$lib/components/molecules/Tooltip.svelte';
 	import Sunburst from '$lib/components/organisms/Sunburst.svelte';
@@ -320,7 +321,7 @@
 			// All metric IDs flat (for sidebar/label score)
 			const allFlatMetricIds = constructMetricIds.flat();
 
-			const allModelScores = appState.models
+			const allModelScores = modelsForSurface(appState, 'full')
 				.map((m) => {
 					const constructScores = getConstructScoresForModel(m.id, constructMetricIds);
 					const avg = constructScores.length
@@ -394,7 +395,7 @@
 
 	function renderSmartRankings(constructMetricIds: string[][]) {
 		const allFlatMetricIds = constructMetricIds.flat();
-		const ranked = appState.models
+		const ranked = modelsForSurface(appState, 'full')
 			.map((m) => {
 				const key = makeBenchmarkKey(m.id, appState.filters.age);
 				const scores = appState.benchmarkData[key];
