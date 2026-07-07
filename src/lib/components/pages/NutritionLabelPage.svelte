@@ -161,6 +161,7 @@
 				useCORS: true
 			});
 			const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+			pdf.setProperties({ title: 'Nutrition Label' });
 			const pw = pdf.internal.pageSize.getWidth();
 			const ph = pdf.internal.pageSize.getHeight();
 			const margin = 28;
@@ -382,7 +383,7 @@
 								}
 							}}
 						>
-							<div class="nutrition-label" bind:this={cardRefs[card.id]}>
+							<div class="nutrition-label" class:nutrition-label--pdf={pdfMode} bind:this={cardRefs[card.id]}>
 								<div class="nutrition-headline">AI Nutrition Label</div>
 
 								<div class="nutrition-model-block">
@@ -439,6 +440,27 @@
 										</button>
 									{/each}
 								</div>
+
+								{#if pdfMode}
+									<div class="nl-grade-legend">
+										<div class="nl-grade-legend-heading">How grades were compiled</div>
+										<ul class="nl-grade-legend-list">
+											<li><span style="color:#16a34a">A+</span> 0.95&ndash;1.00</li>
+											<li><span style="color:#16a34a">A</span> 0.90&ndash;0.95</li>
+											<li><span style="color:#16a34a">A&minus;</span> 0.85&ndash;0.90</li>
+											<li><span style="color:#16a34a">B+</span> 0.80&ndash;0.85</li>
+											<li><span style="color:#16a34a">B</span> 0.75&ndash;0.80</li>
+											<li><span style="color:#d97706">B&minus;</span> 0.70&ndash;0.75</li>
+											<li><span style="color:#d97706">C+</span> 0.65&ndash;0.70</li>
+											<li><span style="color:#d97706">C</span> 0.60&ndash;0.65</li>
+											<li><span style="color:#d97706">C&minus;</span> 0.55&ndash;0.60</li>
+											<li><span style="color:#6b7280">D+</span> 0.50&ndash;0.55</li>
+											<li><span style="color:#6b7280">D</span> 0.45&ndash;0.50</li>
+											<li><span style="color:#dc2626">D&minus;</span> 0.40&ndash;0.45</li>
+											<li><span style="color:#dc2626">F</span> below 0.40</li>
+										</ul>
+									</div>
+								{/if}
 
 								<div class="nl-source-footer">
 									<p>
@@ -1668,6 +1690,51 @@
 	.nl-source-footer-link a {
 		color: #0f766e;
 		text-decoration: underline;
+	}
+
+	/* Grade legend + spacing tweaks that only apply in the exported PDF */
+	.nutrition-label--pdf .nl-trait-row,
+	.nutrition-label--pdf .nl-trait-row--btn {
+		padding-top: 7px;
+		padding-bottom: 6px;
+	}
+	.nutrition-label--pdf .nl-trait-name {
+		line-height: 1.35;
+	}
+	.nl-grade-legend {
+		margin-top: 10px;
+		padding-top: 8px;
+		border-top: 1px solid #d1d5db;
+		font-family: Arial, sans-serif;
+		color: #374151;
+	}
+	.nl-grade-legend-heading {
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #6b7280;
+		margin-bottom: 5px;
+	}
+	.nl-grade-legend-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 3px 10px;
+		font-size: 9.5px;
+		line-height: 1.25;
+	}
+	.nl-grade-legend-list li {
+		display: flex;
+		align-items: baseline;
+		gap: 5px;
+	}
+	.nl-grade-legend-list li span {
+		font-family: 'Arial Black', Arial, sans-serif;
+		font-weight: 900;
+		min-width: 18px;
 	}
 
 	.nutrition-footnote {
