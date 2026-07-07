@@ -397,38 +397,46 @@
 									<div class="nutrition-score-label">Overall Impact</div>
 									<div class="nutrition-score-value">
 										<span class="nutrition-grade-wrap">
+											{#if !pdfMode}
+												<button
+													type="button"
+													class="nutrition-info-btn"
+													aria-label="How this grade was calculated"
+													aria-describedby={`nl-overall-tt-${card.id}`}
+												>
+													<i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+												</button>
+											{/if}
 											<span
 												class="nutrition-grade-value"
 												style="color:{scoreColor(ld.overall)}"
-												tabindex="0"
-												aria-describedby={pdfMode ? undefined : `nl-overall-tt-${card.id}`}
 											>
 												{scoreToLetterGrade(ld.overall)}
 											</span>
-											{#if !pdfMode}
-												{@const range = letterGradeRange(ld.overall)}
-												{#if range}
-													<span
-														class="nutrition-grade-tt"
-														id={`nl-overall-tt-${card.id}`}
-														role="tooltip"
-													>
-														This model was graded a
-														<span
-															class="nutrition-grade-tt-strong"
-															style="color:{scoreColor(ld.overall)}"
-															>{scoreToLetterGrade(ld.overall)}</span>
-														because it returned an average of
-														<span class="nutrition-grade-tt-strong"
-															>{range.lower.toFixed(2)}&ndash;{range.upper.toFixed(2)}</span>
-														on the following metric categories.
-													</span>
-												{/if}
-											{/if}
 										</span>
 										<span class="nutrition-score-numeric">{fmtScore(ld.overall)}</span>
 									</div>
 								</div>
+								{#if !pdfMode}
+									{@const range = letterGradeRange(ld.overall)}
+									{#if range}
+										<span
+											class="nutrition-grade-tt"
+											id={`nl-overall-tt-${card.id}`}
+											role="tooltip"
+										>
+											This model was graded a
+											<span
+												class="nutrition-grade-tt-strong"
+												style="color:{scoreColor(ld.overall)}"
+												>{scoreToLetterGrade(ld.overall)}</span>
+											because it returned an average of
+											<span class="nutrition-grade-tt-strong"
+												>{range.lower.toFixed(2)}&ndash;{range.upper.toFixed(2)}</span>
+											on the following metric categories.
+										</span>
+									{/if}
+								{/if}
 								<div class="smart-nl-overall-track" aria-hidden="true">
 									<div
 										class="smart-nl-overall-marker"
@@ -1464,7 +1472,7 @@
 		border: none;
 		padding: 0;
 		margin: 0;
-		color: #d1d5db;
+		color: #9ca3af;
 		font-size: 14px;
 		line-height: 1;
 		cursor: help;
@@ -1472,7 +1480,7 @@
 	}
 	.nutrition-info-btn:hover,
 	.nutrition-info-btn:focus-visible {
-		color: #6b7280;
+		color: #374151;
 		outline: none;
 	}
 	.nutrition-grade-tt {
