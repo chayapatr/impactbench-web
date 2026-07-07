@@ -65,31 +65,36 @@
 		const modelId = modelName || 'imported-model';
 		const scoresById = new Map(scores.map((s) => [s.id, s]));
 
-		// ── models / benchmarkData (per-metric scores, flat, for the sunburst) ──
-		const flatScores: Record<string, number> = {};
+		// ── per-metric average score, across all of its scenarios ──
+		const metricScoreAcc = new Map<string, number[]>();
 		for (const row of conversations) {
 			const s = scoresById.get(row.id);
 			if (s?.score == null) continue;
-			const meta = METRIC_MAP[row.metric_id];
-			if (!meta) continue;
-			for (const cat of meta.categories) {
-				flatScores[`${cat}__${row.metric_id}`] = s.score;
+			if (!METRIC_MAP[row.metric_id]) continue;
+			if (!metricScoreAcc.has(row.metric_id)) metricScoreAcc.set(row.metric_id, []);
+			metricScoreAcc.get(row.metric_id)!.push(s.score);
+		}
+		const metricAvg = new Map(
+			[...metricScoreAcc.entries()].map(([mid, vals]) => [mid, vals.reduce((a, b) => a + b, 0) / vals.length])
+		);
+
+		// ── models / benchmarkData (per-metric scores, flat, for the sunburst) ──
+		const flatScores: Record<string, number> = {};
+		for (const [mid, avg] of metricAvg) {
+			for (const cat of METRIC_MAP[mid].categories) {
+				flatScores[`${cat}__${mid}`] = avg;
 			}
 		}
 		const benchmarkData = Object.fromEntries(
 			['child', 'adult'].map((age) => [makeBenchmarkKey(modelId, age), flatScores])
 		);
 
-		// ── nutritionScore (per-category avg for this one model) ──
+		// ── nutritionScore (per-category avg of its metrics' averages, for this one model) ──
 		const catScoreAcc = new Map<string, number[]>();
-		for (const row of conversations) {
-			const s = scoresById.get(row.id);
-			if (s?.score == null) continue;
-			const meta = METRIC_MAP[row.metric_id];
-			if (!meta) continue;
-			for (const cat of meta.categories) {
+		for (const [mid, avg] of metricAvg) {
+			for (const cat of METRIC_MAP[mid].categories) {
 				if (!catScoreAcc.has(cat)) catScoreAcc.set(cat, []);
-				catScoreAcc.get(cat)!.push(s.score);
+				catScoreAcc.get(cat)!.push(avg);
 			}
 		}
 		const nutritionScore = CATEGORY_ORDER.filter((c) => catScoreAcc.has(c)).map((catId) => {
@@ -102,25 +107,19 @@
 		});
 
 		// ── nutritionCat (per-category metric breakdown, for the drill-down panel) ──
-		const catMetricAcc = new Map<string, Map<string, number[]>>();
-		for (const row of conversations) {
-			const s = scoresById.get(row.id);
-			if (s?.score == null) continue;
-			const meta = METRIC_MAP[row.metric_id];
-			if (!meta) continue;
-			for (const cat of meta.categories) {
-				if (!catMetricAcc.has(cat)) catMetricAcc.set(cat, new Map());
-				const byMetric = catMetricAcc.get(cat)!;
-				if (!byMetric.has(row.metric_id)) byMetric.set(row.metric_id, []);
-				byMetric.get(row.metric_id)!.push(s.score);
+		const catMetrics = new Map<string, Set<string>>();
+		for (const mid of metricAvg.keys()) {
+			for (const cat of METRIC_MAP[mid].categories) {
+				if (!catMetrics.has(cat)) catMetrics.set(cat, new Set());
+				catMetrics.get(cat)!.add(mid);
 			}
 		}
-		const nutritionCat: NutritionCategoryDetail[] = CATEGORY_ORDER.filter((c) => catMetricAcc.has(c)).map(
+		const nutritionCat: NutritionCategoryDetail[] = CATEGORY_ORDER.filter((c) => catMetrics.has(c)).map(
 			(catId) => ({
 				id: catId,
 				label: CATEGORY_LABELS[catId] ?? catId,
 				description: CATEGORY_DESCRIPTIONS[catId],
-				metrics: [...catMetricAcc.get(catId)!.keys()].map((mid) => ({
+				metrics: [...catMetrics.get(catId)!].map((mid) => ({
 					id: mid,
 					name: METRIC_MAP[mid]?.name ?? mid,
 					type: METRIC_MAP[mid]?.type === 'negative' ? 'negative_behavior' : 'positive_behavior'
