@@ -3,6 +3,7 @@
 	import { scorePillStyle, scoreColors, letterGradeRange } from '$lib/scores';
 	import { filterScenariosByAge, getScores } from '$lib/utils';
 	import { STATIC_MITIGATION_TIPS } from '$lib/model-tips';
+	import { NUTRITION_CAT_DESCRIPTIONS } from '$lib/descriptions';
 	import type { ScenarioMeta } from '$lib/types';
 	import BadgeIcon from '$lib/components/atoms/BadgeIcon.svelte';
 	import { scoreToLetterGrade } from '$lib/scores';
@@ -39,6 +40,10 @@
 
 	const colors = $derived(scoreColors(catScore));
 	const gradeRange = $derived(letterGradeRange(catScore));
+	const catDescription = $derived(
+		(catDef?.description && catDef.description.trim()) ||
+			(catId ? (NUTRITION_CAT_DESCRIPTIONS[catId] ?? '') : '')
+	);
 
 	const tips = $derived(STATIC_MITIGATION_TIPS[`${appState.filters.model}|${age}`] ?? []);
 
@@ -86,9 +91,9 @@
 								style="color:{colors.color}">{scoreToLetterGrade(catScore)}</span
 							>
 						</div>
-						{#if catDef.description}
+						{#if catDescription}
 							<div class="mt-[8px]">
-								<div class="text-[12px] leading-relaxed text-[#6b7280]">{catDef.description}</div>
+								<div class="text-[12px] leading-relaxed text-[#6b7280]">{catDescription}</div>
 							</div>
 						{/if}
 						{#if gradeRange}

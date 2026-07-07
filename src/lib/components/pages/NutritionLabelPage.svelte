@@ -320,29 +320,31 @@
 			{/if}
 
 			{#if !isLoading && focusedCard}
-				<button
-					type="button"
-					class="nl-legend-btn nl-legend-btn--corner"
-					onclick={() => (showLegendModal = true)}
-					title="How to interpret the AI Nutrition Label"
-				>
-					<i class="fa-regular fa-circle-question" aria-hidden="true"></i>
-					<span>How to interpret</span>
-				</button>
-				<label
-					class="nl-select-checkbox nl-select-checkbox--corner"
-					title={isSelected(focusedCard.id) ? 'Remove from comparison' : 'Add to comparison'}
-				>
-					<input
-						type="checkbox"
-						checked={isSelected(focusedCard.id)}
-						onchange={() => toggleSelect(focusedCard.id)}
-					/>
-					<span class="nl-select-box" aria-hidden="true">
-						<i class="fa-solid fa-check"></i>
-					</span>
-					<span class="nl-select-label">Compare</span>
-				</label>
+				<div class="nl-corner-actions">
+					<button
+						type="button"
+						class="nl-legend-btn"
+						onclick={() => (showLegendModal = true)}
+						title="How to interpret the AI Nutrition Label"
+					>
+						<i class="fa-regular fa-circle-question" aria-hidden="true"></i>
+						<span>How to interpret</span>
+					</button>
+					<label
+						class="nl-select-checkbox"
+						title={isSelected(focusedCard.id) ? 'Remove from comparison' : 'Add to comparison'}
+					>
+						<input
+							type="checkbox"
+							checked={isSelected(focusedCard.id)}
+							onchange={() => toggleSelect(focusedCard.id)}
+						/>
+						<span class="nl-select-box" aria-hidden="true">
+							<i class="fa-solid fa-check"></i>
+						</span>
+						<span class="nl-select-label">Compare</span>
+					</label>
+				</div>
 			{/if}
 
 			<div class="nl-carousel-wrap">
@@ -869,6 +871,15 @@
 		top: 16px;
 		right: 16px;
 		z-index: 250;
+	}
+	.nl-corner-actions {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		z-index: 250;
+		display: flex;
+		align-items: center;
+		gap: 8px;
 	}
 	.nl-select-checkbox:hover {
 		background: #f9fafb;
@@ -1937,10 +1948,10 @@
 	.nl-legend-btn {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
 		background: #ffffff;
 		border: 1px solid #e5e7eb;
-		padding: 7px 14px;
+		padding: 7px 14px 7px 10px;
 		border-radius: 999px;
 		cursor: pointer;
 		font-family: inherit;
