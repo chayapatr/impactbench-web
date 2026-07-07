@@ -163,7 +163,23 @@
 			const ratio = Math.min((pw - margin * 2) / canvas.width, (ph - margin * 2) / canvas.height);
 			const w = canvas.width * ratio;
 			const h = canvas.height * ratio;
-			pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pw - w) / 2, (ph - h) / 2, w, h);
+			const originX = (pw - w) / 2;
+			const originY = (ph - h) / 2;
+			pdf.addImage(canvas.toDataURL('image/png'), 'PNG', originX, originY, w, h);
+			// Overlay clickable link annotations on top of the rasterized image
+			const labelRect = labelEl.getBoundingClientRect();
+			const ptPerDom = w / labelRect.width;
+			const anchors = labelEl.querySelectorAll<HTMLAnchorElement>('a[href]');
+			for (const a of anchors) {
+				const r = a.getBoundingClientRect();
+				pdf.link(
+					originX + (r.left - labelRect.left) * ptPerDom,
+					originY + (r.top - labelRect.top) * ptPerDom,
+					r.width * ptPerDom,
+					r.height * ptPerDom,
+					{ url: a.href }
+				);
+			}
 			const slug = currentModelName
 				.toLowerCase()
 				.replace(/[^a-z0-9]+/g, '-')

@@ -32,7 +32,22 @@
 			const ratio = Math.min((pw - margin * 2) / canvas.width, (ph - margin * 2) / canvas.height);
 			const w = canvas.width * ratio;
 			const h = canvas.height * ratio;
-			pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pw - w) / 2, (ph - h) / 2, w, h);
+			const originX = (pw - w) / 2;
+			const originY = (ph - h) / 2;
+			pdf.addImage(canvas.toDataURL('image/png'), 'PNG', originX, originY, w, h);
+			const cardRect = cardEl.getBoundingClientRect();
+			const ptPerDom = w / cardRect.width;
+			const anchors = cardEl.querySelectorAll<HTMLAnchorElement>('a[href]');
+			for (const a of anchors) {
+				const r = a.getBoundingClientRect();
+				pdf.link(
+					originX + (r.left - cardRect.left) * ptPerDom,
+					originY + (r.top - cardRect.top) * ptPerDom,
+					r.width * ptPerDom,
+					r.height * ptPerDom,
+					{ url: a.href }
+				);
+			}
 			const slug = (opts.topModels[activeIdx]?.name ?? 'smart-nutrition')
 				.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/, '');
 			pdf.save(`${slug}.pdf`);
