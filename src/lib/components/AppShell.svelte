@@ -693,12 +693,7 @@
 						class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white shadow-[-4px_0_12px_-6px_rgba(0,0,0,0.08)]"
 					>
 						<div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto">
-							<ScenarioPanel
-								metricId={scenarioPanelState.metricId}
-								scenarioMeta={scenarioPanelState.scenarioMeta}
-								backLabel="Close"
-								onBack={closeScenarioPanel}
-							/>
+							<ScenarioPanel backLabel="Close" onBack={closeScenarioPanel} />
 						</div>
 					</aside>
 				{/if}
@@ -736,12 +731,7 @@
 						class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white shadow-[-4px_0_12px_-6px_rgba(0,0,0,0.08)]"
 					>
 						<div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto">
-							<ScenarioPanel
-								metricId={scenarioPanelState.metricId}
-								scenarioMeta={scenarioPanelState.scenarioMeta}
-								backLabel="Close"
-								onBack={closeScenarioPanel}
-							/>
+							<ScenarioPanel backLabel="Close" onBack={closeScenarioPanel} />
 						</div>
 					</aside>
 				{/if}
