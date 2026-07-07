@@ -178,7 +178,7 @@
 
 	// Helpers
 	function fmtScore(s: number): string {
-		return (s >= 0 ? '+' : '') + s.toFixed(2);
+		return s.toFixed(2);
 	}
 	function scoreColor(s: number): string {
 		if (!Number.isFinite(s)) return '#6b7280';
@@ -329,7 +329,7 @@
 						{@const abs = Math.abs(offset)}
 						{@const hidden = abs > 2}
 						{@const ld = card.data}
-						{@const overallPct = Math.max(0, Math.min(100, ((ld.overall + 1) / 2) * 100))}
+						{@const overallPct = Math.max(0, Math.min(100, ld.overall * 100))}
 						<div
 							class="nl-carousel-card"
 							class:nl-carousel-card--focus={offset === 0}
@@ -366,7 +366,6 @@
 									</div>
 								</div>
 								<div class="smart-nl-overall-track" aria-hidden="true">
-									<div class="smart-nl-overall-zero"></div>
 									<div
 										class="smart-nl-overall-marker"
 										style="left:{overallPct}%;background:{scoreColor(ld.overall)}"
@@ -1256,14 +1255,6 @@
 		border-radius: 999px;
 		background: #e5e7eb;
 		margin: 5px 0 1px;
-	}
-	.smart-nl-overall-zero {
-		position: absolute;
-		left: 50%;
-		top: -3px;
-		bottom: -3px;
-		width: 1px;
-		background: #6b7280;
 	}
 	.smart-nl-overall-marker {
 		position: absolute;

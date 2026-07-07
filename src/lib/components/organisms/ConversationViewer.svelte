@@ -37,8 +37,6 @@
 
 	const criteria = $derived(appState.metricCriteria?.[metricId] ?? '');
 	const isHarmful = $derived(behaviorType === 'restrain_harm' && measurement === 'presence');
-
-	let reasoningOpen = $state(false);
 </script>
 
 {#if loading}
@@ -113,32 +111,18 @@
 		</div>
 	{/if}
 
-	<!-- Verdict — badge always visible, reasoning accordion -->
+	<!-- Verdict — badge and reasoning always visible -->
 	{#if pass !== null}
 		<div class="mb-4">
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-2">
-					<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-						Verdict
-					</div>
-					<span
-						class="rounded-full px-2 py-0.5 text-[10px] font-bold"
-						style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
-						>{pass ? 'Pass' : 'Fail'}</span
-					>
-				</div>
-				{#if scenarioDetail.justification}
-					<button
-						class="flex cursor-pointer items-center gap-1 border-none bg-transparent text-[10px] text-[#9ca3af] hover:text-[#6b7280]"
-						onclick={() => (reasoningOpen = !reasoningOpen)}
-					>
-						Reasoning <i
-							class="fa-solid {reasoningOpen ? 'fa-chevron-up' : 'fa-chevron-down'} text-[8px]"
-						></i>
-					</button>
-				{/if}
+			<div class="flex items-center gap-2">
+				<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">Verdict</div>
+				<span
+					class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+					style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
+					>{pass ? 'Pass' : 'Fail'}</span
+				>
 			</div>
-			{#if reasoningOpen && scenarioDetail.justification}
+			{#if scenarioDetail.justification}
 				<div class="prose prose-sm mt-2 max-w-none text-[12px] leading-loose text-[#6b7280]">
 					{@html marked.parse(scenarioDetail.justification)}
 				</div>
