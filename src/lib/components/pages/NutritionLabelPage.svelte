@@ -427,7 +427,7 @@
 
 								<div class="nl-source-footer">
 									<p>
-										This is part of the Open Benchmark of AI Impact on Humans (ImpactBench) led by
+										This label is part of the Open Benchmark of AI Impact on Humans (ImpactBench) led by
 										researchers at the MIT Media Lab, USC Marshall Neely Center, The Psychology of
 										Technology Institute, and UC Berkeley.
 									</p>
