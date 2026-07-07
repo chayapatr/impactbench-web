@@ -44,15 +44,20 @@
 		justification?: string;
 	}
 
-	let conversations: ConversationRow[] = $state([]);
-	let scores: ScoreRow[] = $state([]);
-	let modelName: string = $state('');
-	let importError: string | null = $state(null);
-	let dragging = $state(false);
-	let ready = $state(false);
-
-	// Local lookup for the conversation viewer — built once on import.
-	let scenarioDetails: Map<string, ScenarioDetail> = $state(new Map());
+	// All of /viewer's own local bookkeeping lives on this one object —
+	// distinct from the global appState calls below, which exist only
+	// because NutritionLabelPage/NutritionCatPanel read appState directly
+	// (out of scope to change here; see the design spec).
+	let viewerState = $state({
+		conversations: [] as ConversationRow[],
+		scores: [] as ScoreRow[],
+		modelName: '',
+		importError: null as string | null,
+		dragging: false,
+		ready: false,
+		// Local lookup for the conversation viewer — built once on import.
+		scenarioDetails: new Map<string, ScenarioDetail>()
+	});
 
 	function ageOf(row: ConversationRow): 'child' | 'adult' {
 		const raw = row.demographic?.age ?? '';
@@ -62,12 +67,12 @@
 	async function buildAppState() {
 		const taxonomy = await loadTaxonomy();
 
-		const modelId = modelName || 'imported-model';
-		const scoresById = new Map(scores.map((s) => [s.id, s]));
+		const modelId = viewerState.modelName || 'imported-model';
+		const scoresById = new Map(viewerState.scores.map((s) => [s.id, s]));
 
 		// ── per-metric average score, across all of its scenarios ──
 		const metricScoreAcc = new Map<string, number[]>();
-		for (const row of conversations) {
+		for (const row of viewerState.conversations) {
 			const s = scoresById.get(row.id);
 			if (s?.score == null) continue;
 			if (!METRIC_MAP[row.metric_id]) continue;
@@ -129,8 +134,8 @@
 
 		// ── scenarioIndex (metric id -> scenario metas, for the panel's scenario list) ──
 		const scenarioIndex: Record<string, ScenarioMeta[]> = {};
-		scenarioDetails = new Map();
-		for (const row of conversations) {
+		viewerState.scenarioDetails = new Map();
+		for (const row of viewerState.conversations) {
 			const s = scoresById.get(row.id);
 			const meta: ScenarioMeta = {
 				scenario_id: row.id,
@@ -142,7 +147,7 @@
 			if (!scenarioIndex[row.metric_id]) scenarioIndex[row.metric_id] = [];
 			scenarioIndex[row.metric_id].push(meta);
 
-			scenarioDetails.set(row.id, {
+			viewerState.scenarioDetails.set(row.id, {
 				id: row.id,
 				metric_id: row.metric_id,
 				metric_name: METRIC_MAP[row.metric_id]?.name ?? row.metric_id,
@@ -163,43 +168,43 @@
 		setScenarioIndex(scenarioIndex);
 		setFilters({ model: modelId, age: 'adult' });
 
-		ready = true;
+		viewerState.ready = true;
 	}
 
 	async function handleFiles(files: FileList | null) {
 		if (!files) return;
-		importError = null;
+		viewerState.importError = null;
 		for (const file of Array.from(files)) {
 			try {
 				const text = await file.text();
 				const json = JSON.parse(text);
 				if (file.name.includes('conversations') || (Array.isArray(json) && json[0]?.transcript)) {
-					conversations = json;
-					if (json[0]?.target?.id) modelName = json[0].target.id;
+					viewerState.conversations = json;
+					if (json[0]?.target?.id) viewerState.modelName = json[0].target.id;
 				} else if (file.name.includes('scores') || (Array.isArray(json) && json[0]?.justification !== undefined)) {
-					scores = json;
-					if (!modelName && json[0]?.target_model) modelName = json[0].target_model;
+					viewerState.scores = json;
+					if (!viewerState.modelName && json[0]?.target_model) viewerState.modelName = json[0].target_model;
 				}
 			} catch (e) {
-				importError = `Failed to parse ${file.name}: ${(e as Error).message}`;
+				viewerState.importError = `Failed to parse ${file.name}: ${(e as Error).message}`;
 			}
 		}
-		if (conversations.length && scores.length) {
+		if (viewerState.conversations.length && viewerState.scores.length) {
 			await buildAppState();
 		}
 	}
 
 	function onDrop(e: DragEvent) {
 		e.preventDefault();
-		dragging = false;
+		viewerState.dragging = false;
 		handleFiles(e.dataTransfer?.files ?? null);
 	}
 
 	function reset() {
-		conversations = [];
-		scores = [];
-		modelName = '';
-		ready = false;
+		viewerState.conversations = [];
+		viewerState.scores = [];
+		viewerState.modelName = '';
+		viewerState.ready = false;
 		closeScenarioPanel();
 	}
 
@@ -220,7 +225,7 @@
 </svelte:head>
 
 <div class="single-card flex h-screen w-screen overflow-hidden bg-[#fafaf9]">
-	{#if !ready}
+	{#if !viewerState.ready}
 		<div class="flex flex-1 items-center justify-center p-8">
 			<div class="w-full max-w-lg">
 				<h1 class="mb-1 text-2xl font-black tracking-tight">Nutritional Label</h1>
@@ -233,14 +238,14 @@
 
 				<label
 					class="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 transition-colors"
-					class:border-[#00b3b0]={dragging}
-					class:bg-[#f0fafa]={dragging}
-					class:border-[#d1d5db]={!dragging}
+					class:border-[#00b3b0]={viewerState.dragging}
+					class:bg-[#f0fafa]={viewerState.dragging}
+					class:border-[#d1d5db]={!viewerState.dragging}
 					ondragover={(e) => {
 						e.preventDefault();
-						dragging = true;
+						viewerState.dragging = true;
 					}}
-					ondragleave={() => (dragging = false)}
+					ondragleave={() => (viewerState.dragging = false)}
 					ondrop={onDrop}
 				>
 					<i class="fa-solid fa-file-import text-3xl text-[#9ca3af]"></i>
@@ -256,18 +261,18 @@
 
 				<div class="mt-4 flex gap-4 text-xs text-[#9ca3af]">
 					<span class="flex items-center gap-1">
-						<i class="fa-solid {conversations.length ? 'fa-circle-check text-green-600' : 'fa-circle'}"
+						<i class="fa-solid {viewerState.conversations.length ? 'fa-circle-check text-green-600' : 'fa-circle'}"
 						></i>
-						conversations.json {conversations.length ? `(${conversations.length} rows)` : ''}
+						conversations.json {viewerState.conversations.length ? `(${viewerState.conversations.length} rows)` : ''}
 					</span>
 					<span class="flex items-center gap-1">
-						<i class="fa-solid {scores.length ? 'fa-circle-check text-green-600' : 'fa-circle'}"></i>
-						scores.json {scores.length ? `(${scores.length} rows)` : ''}
+						<i class="fa-solid {viewerState.scores.length ? 'fa-circle-check text-green-600' : 'fa-circle'}"></i>
+						scores.json {viewerState.scores.length ? `(${viewerState.scores.length} rows)` : ''}
 					</span>
 				</div>
 
-				{#if importError}
-					<p class="mt-3 text-xs text-red-600">{importError}</p>
+				{#if viewerState.importError}
+					<p class="mt-3 text-xs text-red-600">{viewerState.importError}</p>
 				{/if}
 			</div>
 		</div>
@@ -299,7 +304,7 @@
 					<LocalScenarioPanel
 						metricId={scenarioPanelState.metricId}
 						scenarioMeta={scenarioPanelState.scenarioMeta}
-						scenarioDetail={scenarioDetails.get(scenarioPanelState.scenarioMeta.scenario_id) ?? null}
+						scenarioDetail={viewerState.scenarioDetails.get(scenarioPanelState.scenarioMeta.scenario_id) ?? null}
 						backLabel="Close"
 						onBack={closeScenarioPanel}
 					/>
