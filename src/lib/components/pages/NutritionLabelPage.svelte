@@ -559,42 +559,74 @@
 				How to interpret the AI Nutrition Label
 			</h2>
 			<p class="nl-legend-lede">
-				Each label summarizes how a model behaves across dozens of measurable behaviors, grouped
-				into categories like <em>&ldquo;Avoids Factual Hallucination.&rdquo;</em> The letter grade
-				you see next to a category is a composite &mdash; the average of the individual metrics
-				inside it.
+				Each label summarizes how a model behaves across various metrics, grouped into
+				categories like <em>&ldquo;Avoids Factual Hallucination&rdquo;</em>. The letter grade you
+				see next to it is a composite. For individual metric performance, click on the category
+				to learn more.
 			</p>
 
 			<div class="nl-legend-section">
-				<div class="nl-legend-section-label">What the grades mean</div>
 				<ul class="nl-legend-scale">
 					<li>
-						<span class="nl-legend-grade" style="color:#16a34a">A / B</span>
-						<span class="nl-legend-range">0.75&ndash;1.00</span>
-						<span class="nl-legend-copy">Strong &mdash; the model reliably handles this dimension well.</span>
+						<span class="nl-legend-grade" style="color:#16a34a">A+</span>
+						<span class="nl-legend-range">0.95&ndash;1.00</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#16a34a">A</span>
+						<span class="nl-legend-range">0.90&ndash;0.95</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#16a34a">A&minus;</span>
+						<span class="nl-legend-range">0.85&ndash;0.90</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#16a34a">B+</span>
+						<span class="nl-legend-range">0.80&ndash;0.85</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#16a34a">B</span>
+						<span class="nl-legend-range">0.75&ndash;0.80</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#d97706">B&minus;</span>
+						<span class="nl-legend-range">0.70&ndash;0.75</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#d97706">C+</span>
+						<span class="nl-legend-range">0.65&ndash;0.70</span>
 					</li>
 					<li>
 						<span class="nl-legend-grade" style="color:#d97706">C</span>
-						<span class="nl-legend-range">0.55&ndash;0.75</span>
-						<span class="nl-legend-copy">Moderate &mdash; mixed results, with clear room to improve.</span>
+						<span class="nl-legend-range">0.60&ndash;0.65</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#d97706">C&minus;</span>
+						<span class="nl-legend-range">0.55&ndash;0.60</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#6b7280">D+</span>
+						<span class="nl-legend-range">0.50&ndash;0.55</span>
 					</li>
 					<li>
 						<span class="nl-legend-grade" style="color:#6b7280">D</span>
-						<span class="nl-legend-range">0.45&ndash;0.55</span>
-						<span class="nl-legend-copy">Borderline &mdash; roughly a coin flip on whether the behavior appears.</span>
+						<span class="nl-legend-range">0.45&ndash;0.50</span>
+					</li>
+					<li>
+						<span class="nl-legend-grade" style="color:#dc2626">D&minus;</span>
+						<span class="nl-legend-range">0.40&ndash;0.45</span>
 					</li>
 					<li>
 						<span class="nl-legend-grade" style="color:#dc2626">F</span>
-						<span class="nl-legend-range">below 0.45</span>
-						<span class="nl-legend-copy">Concerning &mdash; consistent gaps you should factor into your use.</span>
+						<span class="nl-legend-range">below 0.40</span>
 					</li>
 				</ul>
 			</div>
 
 			<p class="nl-legend-footnote">
-				Want to see what's actually being measured? Click any category or metric in the label to
-				open its details, view the individual scenarios it was tested on, and read mitigation
-				tips.
+				To explore more metrics and scenarios, check out the
+				<a href="/explore" class="nl-legend-link" onclick={() => (showLegendModal = false)}
+					>Explore</a
+				> tab.
 			</p>
 		</div>
 	</div>
@@ -825,10 +857,9 @@
 		border-radius: 999px;
 		cursor: pointer;
 		user-select: none;
-		font-family: Arial, sans-serif;
-		font-size: 11.5px;
-		font-weight: 600;
-		letter-spacing: 0.02em;
+		font-family: inherit;
+		font-size: 12px;
+		font-weight: 700;
 		color: #374151;
 		box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.18);
 		transition: all 150ms ease;
@@ -1013,12 +1044,10 @@
 		gap: 8px;
 	}
 	.nl-strip-clear {
-		padding: 7px 12px;
-		font-family: Arial, sans-serif;
-		font-size: 11px;
+		padding: 8px 16px;
+		font-family: inherit;
+		font-size: 12px;
 		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
 		color: #6b7280;
 		background: transparent;
 		border: 1px solid #d1d5db;
@@ -1034,10 +1063,10 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
-		padding: 9px 18px;
-		font-family: 'Arial Black', Arial, sans-serif;
+		padding: 8px 18px;
+		font-family: inherit;
 		font-size: 12px;
-		letter-spacing: 0.02em;
+		font-weight: 700;
 		background: #00b3b0;
 		color: #ffffff;
 		border: 2px solid #00b3b0;
@@ -1914,10 +1943,9 @@
 		padding: 7px 14px;
 		border-radius: 999px;
 		cursor: pointer;
-		font-family: Arial, sans-serif;
-		font-size: 11.5px;
-		font-weight: 600;
-		letter-spacing: 0.02em;
+		font-family: inherit;
+		font-size: 12px;
+		font-weight: 700;
 		color: #374151;
 		box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.18);
 		transition: all 150ms ease;
@@ -2032,22 +2060,22 @@
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 6px 10px;
 	}
 	.nl-legend-scale li {
 		display: grid;
-		grid-template-columns: 52px 88px 1fr;
+		grid-template-columns: 40px 1fr;
 		align-items: baseline;
-		gap: 10px;
-		padding: 8px 10px;
+		gap: 8px;
+		padding: 6px 10px;
 		background: #f9fafb;
-		border-radius: 12px;
+		border-radius: 10px;
 	}
 	.nl-legend-grade {
 		font-weight: 800;
-		font-size: 15px;
+		font-size: 14px;
 		letter-spacing: -0.01em;
 	}
 	.nl-legend-range {
@@ -2055,15 +2083,19 @@
 		color: #6b7280;
 		font-variant-numeric: tabular-nums;
 	}
-	.nl-legend-copy {
-		font-size: 12.5px;
-		line-height: 1.5;
-		color: #374151;
-	}
 	.nl-legend-footnote {
 		margin: 4px 0 0;
 		font-size: 12px;
 		line-height: 1.55;
 		color: #6b7280;
+	}
+	.nl-legend-link {
+		color: #0f766e;
+		font-weight: 700;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	.nl-legend-link:hover {
+		color: #115e59;
 	}
 </style>
