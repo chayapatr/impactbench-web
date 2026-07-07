@@ -29,3 +29,6 @@ static/data/metric-subarea-map.json
 # Expert view: private model-name mask (kept out of git so the /experts
 # mock doesn't publicly reveal which model is behind "Model N").
 static/data/expert-model-mapping.json
+
+# Local git worktrees for isolated feature work
+.worktrees/
