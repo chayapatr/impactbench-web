@@ -15,8 +15,7 @@ export const appState = $state({
 	nutritionCat: [] as NutritionCategoryDetail[],
 	filters: { model: 'claude-haiku-4-5', age: 'adult' } as FilterState,
 	loading: true,
-	error: null as string | null,
-	showGate: false // will be set from sessionStorage on mount
+	error: null as string | null
 });
 
 export function setData(taxonomy: Taxonomy, models: AIModel[], benchmarkData: BenchmarkData) {
