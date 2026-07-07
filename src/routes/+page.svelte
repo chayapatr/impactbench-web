@@ -61,12 +61,19 @@
 	let surveyOpen = $state(false);
 	const isSmartMode = $derived(leaderboardState.smartRanked.length > 0);
 
-	// Deep link params — parsed immediately (browser-only), consumed after auth
+	// Deep link params — parsed immediately (browser-only), consumed after auth.
+	// The tab can come from either a real path (/explore) or ?tab=explore — a
+	// path takes precedence since that's what a direct route render provides.
+	const ROUTABLE_TABS = new Set(['explore', 'metrics', 'nutrition']);
 	const _initialParams =
 		typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+	const _initialPathTab =
+		typeof window !== 'undefined' ? window.location.pathname.replace(/^\/+/, '') : '';
 	let pendingDeepMetric = $state<string | null>(_initialParams?.get('metric') ?? null);
 	let pendingDeepScenario = $state<string | null>(_initialParams?.get('scenario') ?? null);
-	let pendingDeepTab = $state<string | null>(_initialParams?.get('tab') ?? null);
+	let pendingDeepTab = $state<string | null>(
+		(ROUTABLE_TABS.has(_initialPathTab) ? _initialPathTab : null) ?? _initialParams?.get('tab') ?? null
+	);
 
 	let sunburstRef: Sunburst | undefined = $state();
 
@@ -93,6 +100,18 @@
 	$effect(() => {
 		void activeTab;
 		closeScenarioPanel();
+	});
+
+	// Keep the URL path in sync with the active tab so /explore, /metrics,
+	// /nutrition are real shareable links (refresh, back/forward, copy-paste).
+	// Uses replaceState directly (not SvelteKit's goto) to avoid a full
+	// navigation/remount of this page on every tab switch.
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const path = ROUTABLE_TABS.has(activeTab) ? `/${activeTab}` : '/';
+		if (window.location.pathname !== path) {
+			history.replaceState(history.state, '', path + window.location.search);
+		}
 	});
 
 	// Derived hierarchy data for sunburst
@@ -444,19 +463,23 @@
 		});
 	}
 
-	const LOCKED_TABS = new Set(['explore', 'metrics', 'nutrition']);
-
 	// Incremented each time a locked tab is clicked to (re-)trigger the
-	// password modal on the gate page. Seeded to 1 when a deep link is
-	// present so the modal auto-opens on first mount.
+	// password modal on the gate page. Seeded to 1 when a deep link (a metric,
+	// a scenario, or a locked-tab route like /explore) is present so the modal
+	// auto-opens on first mount — signals to the visitor why they're on the
+	// gate instead of where they meant to go.
 	let gatePasswordRequest = $state(
-		_initialParams?.get('metric') || _initialParams?.get('scenario') ? 1 : 0
+		_initialParams?.get('metric') ||
+			_initialParams?.get('scenario') ||
+			(pendingDeepTab && ROUTABLE_TABS.has(pendingDeepTab))
+			? 1
+			: 0
 	);
 
 	function handleTabChange(tab: string) {
 		if (tab === 'home') {
 			showGate = true;
-		} else if (LOCKED_TABS.has(tab) && !isAuthenticated) {
+		} else if (ROUTABLE_TABS.has(tab) && !isAuthenticated) {
 			showGate = true;
 			// Remember which locked tab the user wanted so we can land them
 			// there (not on the default Explore) after they enter the password.
