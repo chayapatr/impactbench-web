@@ -22,7 +22,6 @@
 		setNutritionScore,
 		setNutritionCat,
 		sidebarState,
-		sidebarPush,
 		sidebarNavigateTo,
 		sidebarNavigateToMetric,
 		sidebarNavigateToSmartFocus,
