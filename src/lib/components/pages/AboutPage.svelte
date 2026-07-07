@@ -392,53 +392,17 @@
 
 				<div class="text-col">
 					<p class="section-body">
-						Beyond the aggregate view, ImpactBench generates personalized AI nutrition labels: users
-						specify who they are, including age band, context of use, and constructs they care most
-						about, and the system produces a label tailored to that profile. Parents evaluating a
-						companion app for a teenager, educators considering a tutoring product, and clinicians
-						assessing a mental-health chatbot can each obtain a view of model behavior calibrated to
-						the population and risk profile they are responsible for. The aim is calibrated trust
-						rather than simplified confidence: labels communicate what was tested, which populations
-						were represented, and where the benchmark is least informative.
+						Beyond the aggregate view, ImpactBench generates AI nutrition labels that help you
+						understand overall model impact at a glance. Nine categories of metrics are shown:
+						whether this model avoids negative impact on humans (Avoids Factual Hallucination,
+						Avoids Sexual & Intimate Behavior, Avoids Sycophancy, Avoids Toxicity), and promotes
+						positive impact on humans (Promotes Agency, Promotes Learning & Skill Development,
+						Promotes Social Interaction, Promotes Creativity, Promotes Wellbeing). This ensures
+						that anyone, from parents evaluating a companion app, to educators considering a
+						tutoring product, can learn about a model's performance at a glance and share it with
+						others.
 					</p>
 				</div>
-
-				<figure class="img-full">
-					<div class="img-frame">
-						<img
-							src="/impactbench8.png"
-							alt="Personalized focus areas with the 'Smart Explore' feature"
-						/><button
-							type="button"
-							class="img-expand"
-							aria-label="Expand image"
-							onclick={() =>
-								openLightbox(
-									'/impactbench8.png',
-									"Personalized focus areas with the 'Smart Explore' feature"
-								)}
-						>
-							<svg
-								width="14"
-								height="14"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								aria-hidden="true"
-								><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line
-									x1="21"
-									y1="3"
-									x2="14"
-									y2="10"
-								/><line x1="3" y1="21" x2="10" y2="14" /></svg
-							>
-						</button>
-					</div>
-					<figcaption>Personalized focus areas with the 'Smart Explore' feature.</figcaption>
-				</figure>
 
 				<figure class="img-full">
 					<div class="img-frame">
