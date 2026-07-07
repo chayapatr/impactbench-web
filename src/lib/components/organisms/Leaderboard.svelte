@@ -89,8 +89,9 @@
 	// buildLabelData) — works identically for full-taxonomy and
 	// nutritional-label-only models, unlike computeSplitScore's taxonomy walk.
 	function computeNutritionScore(modelId: string): { avg: number; pos: number; neg: number } {
+		const age = appState.filters.age;
 		const scores = appState.nutritionScore
-			.map((c) => c.models[modelId])
+			.map((c) => c.models[modelId]?.[age])
 			.filter((v): v is number => v !== undefined);
 		const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0.5;
 		return { avg, pos: avg, neg: avg };

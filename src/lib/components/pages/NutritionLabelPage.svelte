@@ -34,9 +34,10 @@
 	function buildLabelData(modelId: string): LabelData | null {
 		const cats = appState.nutritionScore;
 		if (!cats.length) return null;
+		const age = appState.filters.age;
 
 		const scored: NutritionCategory[] = cats
-			.map((c) => ({ id: c.id, label: c.label, score: c.models[modelId] ?? NaN }))
+			.map((c) => ({ id: c.id, label: c.label, score: c.models[modelId]?.[age] ?? NaN }))
 			.filter((c) => !isNaN(c.score));
 
 		if (!scored.length) return null;

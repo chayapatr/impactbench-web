@@ -49,7 +49,7 @@ export async function loadMetricMeta(): Promise<Record<string, import('./types')
 export interface NutritionCategory {
 	id: string;
 	label: string;
-	models: Record<string, number>;
+	models: Record<string, { adult: number; child: number }>;
 }
 
 export async function loadNutritionScore(): Promise<NutritionCategory[]> {

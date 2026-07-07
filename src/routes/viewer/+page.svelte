@@ -104,10 +104,11 @@
 		}
 		const nutritionScore = CATEGORY_ORDER.filter((c) => catScoreAcc.has(c)).map((catId) => {
 			const vals = catScoreAcc.get(catId)!;
+			const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
 			return {
 				id: catId,
 				label: CATEGORY_LABELS[catId] ?? catId,
-				models: { [modelId]: vals.reduce((a, b) => a + b, 0) / vals.length }
+				models: { [modelId]: { adult: avg, child: avg } }
 			};
 		});
 
