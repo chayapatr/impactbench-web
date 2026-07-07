@@ -91,11 +91,6 @@
 								style="color:{colors.color}">{scoreToLetterGrade(catScore)}</span
 							>
 						</div>
-						{#if catDescription}
-							<div class="mt-[8px]">
-								<div class="text-[12px] leading-relaxed text-[#6b7280]">{catDescription}</div>
-							</div>
-						{/if}
 						{#if gradeRange}
 							<div
 								class="mt-[10px] rounded-[16px] border px-[12px] py-[8px] text-[11px] leading-[1.5] text-[#4b5563]"
@@ -111,6 +106,11 @@
 									>{gradeRange.lower.toFixed(2)}&ndash;{gradeRange.upper.toFixed(2)}</span
 								>
 								on the following metrics.
+							</div>
+						{/if}
+						{#if catDescription}
+							<div class="mt-[10px]">
+								<div class="text-[12px] leading-relaxed text-[#6b7280]">{catDescription}</div>
 							</div>
 						{/if}
 					{/snippet}
