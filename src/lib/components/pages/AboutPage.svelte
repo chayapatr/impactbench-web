@@ -407,14 +407,17 @@
 				<figure class="img-full">
 					<div class="img-frame">
 						<img
-							src="/impactbench6.png"
+							src="/aboutpage_updatedJul.jpg"
 							alt="Comparative results across leading AI systems"
 						/><button
 							type="button"
 							class="img-expand"
 							aria-label="Expand image"
 							onclick={() =>
-								openLightbox('/impactbench6.png', 'Comparative results across leading AI systems')}
+								openLightbox(
+									'/aboutpage_updatedJul.jpg',
+									'Comparative results across leading AI systems'
+								)}
 						>
 							<svg
 								width="14"
