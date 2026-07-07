@@ -810,6 +810,7 @@
 		cursor: default;
 		filter: blur(0);
 		opacity: 1;
+		overflow: visible;
 	}
 	.nl-carousel-card:not(.nl-carousel-card--focus) {
 		filter: blur(0.6px);
@@ -1374,6 +1375,7 @@
 
 	/* ───── Nutrition label card (compact, matches SmartNutritionLabel style) ───── */
 	.nutrition-label {
+		position: relative;
 		background: #ffffff;
 		border: 3px solid #000000;
 		color: #111111;
@@ -1452,11 +1454,31 @@
 		position: relative;
 		display: inline-flex;
 		align-items: center;
+		gap: 6px;
+	}
+	.nutrition-info-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		padding: 0;
+		margin: 0;
+		color: #d1d5db;
+		font-size: 14px;
+		line-height: 1;
+		cursor: help;
+		transition: color 120ms ease;
+	}
+	.nutrition-info-btn:hover,
+	.nutrition-info-btn:focus-visible {
+		color: #6b7280;
+		outline: none;
 	}
 	.nutrition-grade-tt {
 		position: absolute;
-		top: calc(100% + 8px);
-		right: 0;
+		top: 88px;
+		left: calc(100% + 16px);
 		z-index: 500;
 		width: 240px;
 		padding: 10px 12px;
@@ -1478,12 +1500,12 @@
 		transition:
 			opacity 120ms ease,
 			transform 120ms ease;
-		transform: translateY(-4px);
+		transform: translateX(-4px);
 	}
-	.nutrition-grade-wrap:hover .nutrition-grade-tt,
-	.nutrition-grade-value:focus-visible + .nutrition-grade-tt {
+	.nutrition-label:has(.nutrition-info-btn:hover) .nutrition-grade-tt,
+	.nutrition-label:has(.nutrition-info-btn:focus-visible) .nutrition-grade-tt {
 		opacity: 1;
-		transform: translateY(0);
+		transform: translateX(0);
 	}
 	.nutrition-grade-tt-strong {
 		font-weight: 700;
