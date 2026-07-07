@@ -1472,7 +1472,7 @@
 		border: none;
 		padding: 0;
 		margin: 0;
-		color: #9ca3af;
+		color: #cbd5e1;
 		font-size: 14px;
 		line-height: 1;
 		cursor: help;
@@ -1480,7 +1480,7 @@
 	}
 	.nutrition-info-btn:hover,
 	.nutrition-info-btn:focus-visible {
-		color: #374151;
+		color: #6b7280;
 		outline: none;
 	}
 	.nutrition-grade-tt {
