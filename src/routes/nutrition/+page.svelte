@@ -2,7 +2,7 @@
 	// Real, shareable path for the Nutritional Label tab. See
 	// src/routes/explore/+page.svelte. (Not to be confused with /viewer, the
 	// standalone drop-your-own-JSON conversation viewer.)
-	import RootPage from '../+page.svelte';
+	import AppShell from '$lib/components/AppShell.svelte';
 </script>
 
-<RootPage />
+<AppShell initialTab="nutrition" />

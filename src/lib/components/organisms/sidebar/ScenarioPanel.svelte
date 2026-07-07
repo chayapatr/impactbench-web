@@ -1,21 +1,26 @@
 <script lang="ts">
-	import { appState, sidebarBack } from '$lib/store.svelte';
+	import { appState, sidebarBack, scenarioPanelState } from '$lib/store.svelte';
 	import { loadScenarioDetail } from '$lib/data';
 	import { getModelName, findMetricInTaxonomy } from '$lib/utils';
-	import type { ScenarioMeta, ScenarioDetail } from '$lib/types';
+	import type { ScenarioDetail } from '$lib/types';
 	import ConversationViewer from '$lib/components/organisms/ConversationViewer.svelte';
 	import StickyHeader from '$lib/components/molecules/StickyHeader.svelte';
 	import ColoredBanner from '$lib/components/molecules/ColoredBanner.svelte';
 
 	interface Props {
-		metricId: string;
-		scenarioMeta: ScenarioMeta;
 		backLabel: string;
 		onBack?: () => void;
 	}
 
-	let { metricId, scenarioMeta, backLabel, onBack }: Props = $props();
+	let { backLabel, onBack }: Props = $props();
 	const handleBack = $derived(onBack ?? sidebarBack);
+
+	// scenarioPanelState.metricId / .scenarioMeta are guaranteed non-null by
+	// the {#if scenarioPanelState.open && ...} guard around every place this
+	// component is rendered (see AppShell.svelte) — non-null assertions here
+	// mirror that invariant rather than re-checking it.
+	const metricId = $derived(scenarioPanelState.metricId!);
+	const scenarioMeta = $derived(scenarioPanelState.scenarioMeta!);
 
 	const _metric = $derived(findMetricInTaxonomy(appState, metricId)?.metric);
 
