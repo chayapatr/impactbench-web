@@ -5,7 +5,7 @@
 	import Leaderboard from '../organisms/Leaderboard.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
-	import { scoreToLetterGrade } from '$lib/scores';
+	import { scoreToLetterGrade, letterGradeRange } from '$lib/scores';
 
 	interface Props {
 		onTabChange?: (tab: string) => void;
@@ -396,8 +396,35 @@
 								<div class="nutrition-score-row">
 									<div class="nutrition-score-label">Overall Impact</div>
 									<div class="nutrition-score-value">
-										<span class="nutrition-grade-value" style="color:{scoreColor(ld.overall)}">
-											{scoreToLetterGrade(ld.overall)}
+										<span class="nutrition-grade-wrap">
+											<span
+												class="nutrition-grade-value"
+												style="color:{scoreColor(ld.overall)}"
+												tabindex="0"
+												aria-describedby={pdfMode ? undefined : `nl-overall-tt-${card.id}`}
+											>
+												{scoreToLetterGrade(ld.overall)}
+											</span>
+											{#if !pdfMode}
+												{@const range = letterGradeRange(ld.overall)}
+												{#if range}
+													<span
+														class="nutrition-grade-tt"
+														id={`nl-overall-tt-${card.id}`}
+														role="tooltip"
+													>
+														This model was graded a
+														<span
+															class="nutrition-grade-tt-strong"
+															style="color:{scoreColor(ld.overall)}"
+															>{scoreToLetterGrade(ld.overall)}</span>
+														because it returned an average of
+														<span class="nutrition-grade-tt-strong"
+															>{range.lower.toFixed(2)}&ndash;{range.upper.toFixed(2)}</span>
+														on the following metric categories.
+													</span>
+												{/if}
+											{/if}
 										</span>
 										<span class="nutrition-score-numeric">{fmtScore(ld.overall)}</span>
 									</div>
@@ -1421,6 +1448,47 @@
 		font-weight: 900;
 		letter-spacing: -0.02em;
 	}
+	.nutrition-grade-wrap {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+	.nutrition-grade-tt {
+		position: absolute;
+		top: calc(100% + 8px);
+		right: 0;
+		z-index: 500;
+		width: 240px;
+		padding: 10px 12px;
+		border-radius: 12px;
+		background: #ffffff;
+		border: 1px solid #e5e7eb;
+		box-shadow:
+			0 10px 24px -12px rgba(15, 23, 42, 0.25),
+			0 4px 10px -6px rgba(15, 23, 42, 0.15);
+		font-family: Arial, sans-serif;
+		font-size: 11.5px;
+		line-height: 1.45;
+		font-weight: 400;
+		letter-spacing: 0;
+		color: #4b5563;
+		text-align: left;
+		opacity: 0;
+		pointer-events: none;
+		transition:
+			opacity 120ms ease,
+			transform 120ms ease;
+		transform: translateY(-4px);
+	}
+	.nutrition-grade-wrap:hover .nutrition-grade-tt,
+	.nutrition-grade-value:focus-visible + .nutrition-grade-tt {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	.nutrition-grade-tt-strong {
+		font-weight: 700;
+		color: #111827;
+	}
 	.nutrition-score-numeric {
 		font-size: 12px;
 		line-height: 1;
@@ -1700,6 +1768,12 @@
 	}
 	.nutrition-label--pdf .nl-trait-name {
 		line-height: 1.35;
+	}
+	.nutrition-label--pdf .nutrition-grade-value {
+		transform: translateY(-3px);
+	}
+	.nutrition-label--pdf .nl-trait-heading {
+		margin-top: -2px;
 	}
 	.nl-grade-legend {
 		margin-top: 10px;
