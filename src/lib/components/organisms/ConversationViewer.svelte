@@ -8,8 +8,7 @@
 		metricId: string;
 		metricName: string;
 		subareaName?: string;
-		behaviorType?: 'flourishing' | 'restrain_harm';
-		measurement?: 'presence' | 'absence';
+		metricType?: 'positive' | 'negative';
 		scenarioDetail: ScenarioDetail | null;
 		loading: boolean;
 		error: boolean;
@@ -24,8 +23,7 @@
 		metricId,
 		metricName,
 		subareaName,
-		behaviorType = 'flourishing',
-		measurement = 'presence',
+		metricType = 'positive',
 		scenarioDetail,
 		loading,
 		error,
@@ -37,7 +35,7 @@
 	}: Props = $props();
 
 	const criteria = $derived(appState.metricCriteria?.[metricId] ?? '');
-	const isHarmful = $derived(behaviorType === 'restrain_harm' && measurement === 'presence');
+	const isHarmful = $derived(metricType === 'negative');
 </script>
 
 {#if loading}

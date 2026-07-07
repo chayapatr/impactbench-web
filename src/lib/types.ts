@@ -3,9 +3,7 @@
 export interface Metric {
 	id: string;
 	name: string;
-	harmful: boolean;
-	behavior_type?: 'flourishing' | 'restrain_harm';
-	measurement?: 'presence' | 'absence';
+	type: 'positive' | 'negative';
 	// Optional. Populated from upstream benchmark.yaml `metric_contributor` field
 	// once the data pipeline emits it; safe to read as undefined until then.
 	metric_contributor?: string;
@@ -84,8 +82,7 @@ export interface SunburstNodeData {
 	areaId?: string;
 	subareaId?: string;
 	color?: string;
-	harmful?: boolean;
-	behavior_type?: 'flourishing' | 'restrain_harm';
+	metricType?: 'positive' | 'negative';
 	children?: SunburstNodeData[];
 	value?: number;
 }

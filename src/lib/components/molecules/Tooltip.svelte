@@ -2,6 +2,7 @@
 	import { tooltipState } from '$lib/store.svelte';
 	import { scoreToClass, formatScore } from '$lib/scores';
 	import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
+	import { metricBadge } from '$lib/utils';
 
 	function metricBreakdown(children: { score?: number; children?: { score?: number }[] }[]) {
 		const total = children.length;
@@ -48,10 +49,11 @@
 				<div class="text-[16px] font-[700] text-white leading-[1.2] mb-[6px]" style="font-family:'Source Serif Pro',Georgia,serif">{d.name}</div>
 				{#if desc}<div class="text-[11.5px] text-[#d1d5db] leading-relaxed">{desc}</div>{/if}
 			{:else if d.type === 'metric'}
+				{@const badge = metricBadge(d.metricType)}
 				<div class="text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase mb-[5px]">Behavioral metric</div>
 				<div class="text-[14px] font-[600] text-white leading-[1.3] mb-[5px]">{d.name}</div>
 				<div class="text-[11px] text-[#9ca3af]">
-					<i class="fa-solid {d.behavior_type === 'restrain_harm' ? 'fa-shield' : 'fa-star'} mr-1"></i>{d.behavior_type === 'restrain_harm' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
+					<i class="fa-solid {badge.icon} mr-1"></i>{badge.label}
 				</div>
 			{/if}
 		{:else}
@@ -113,8 +115,9 @@
 					</div>
 				{/if}
 			{:else if d.type === 'metric'}
+				{@const badge = metricBadge(d.metricType)}
 				<div class="text-[11px] text-[#9ca3af]">
-					<i class="fa-solid {d.behavior_type === 'restrain_harm' ? 'fa-shield' : 'fa-star'} mr-1"></i>{d.behavior_type === 'restrain_harm' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
+					<i class="fa-solid {badge.icon} mr-1"></i>{badge.label}
 				</div>
 			{/if}
 		{/if}

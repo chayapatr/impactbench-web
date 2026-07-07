@@ -61,7 +61,7 @@
 				if (subareaId && sub.id !== subareaId) continue;
 				for (const m of sub.metrics) {
 					if (metricId && m.id !== metricId) continue;
-					if ((m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'restrain_harm') negIds.push(m.id);
+					if (m.type === 'negative') negIds.push(m.id);
 					else posIds.push(m.id);
 				}
 			}
@@ -119,7 +119,7 @@
 		return top.type === 'smart-focus' || top.type === 'theme-metrics';
 	});
 
-	// Compute split pos/neg for smart mode using taxonomy behavior_type
+	// Compute split pos/neg for smart mode using taxonomy metric type
 	function computeSmartSplit(modelId: string): { pos: number; neg: number; avg: number } {
 		const key = makeBenchmarkKey(modelId, appState.filters.age);
 		const scores = appState.benchmarkData[key];
@@ -135,7 +135,7 @@
 			for (const sub of area.subareas) {
 				for (const m of sub.metrics) {
 					if (!idSet.has(m.id)) continue;
-					if ((m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'restrain_harm') negIds.push(m.id);
+					if (m.type === 'negative') negIds.push(m.id);
 					else posIds.push(m.id);
 				}
 			}
@@ -309,7 +309,7 @@
 				for (const area of appState.taxonomy?.areas ?? [])
 					for (const sub of area.subareas)
 						for (const m of sub.metrics)
-							if (m.id === ctx.metricId) return m.behavior_type === 'restrain_harm' && m.measurement === 'presence';
+							if (m.id === ctx.metricId) return m.type === 'negative';
 				return false;
 			})() : false}
 			{@const pass = verdict === undefined ? null : isHarmful ? verdict === 'no' : verdict === 'yes'}

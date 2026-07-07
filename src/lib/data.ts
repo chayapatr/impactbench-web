@@ -61,7 +61,7 @@ export async function loadNutritionScore(): Promise<NutritionCategory[]> {
 export interface NutritionMetric {
 	id: string;
 	name: string;
-	type: string;
+	type: 'positive' | 'negative';
 }
 
 export interface NutritionCategoryDetail {
@@ -153,8 +153,7 @@ export function buildHierarchy(
 					areaId: area.id,
 					subareaId: subarea.id,
 					color: area.color,
-					harmful: metric.harmful,
-					behavior_type: metric.behavior_type,
+					metricType: metric.type,
 					score,
 					value: scoreToArcValue(score)
 				};

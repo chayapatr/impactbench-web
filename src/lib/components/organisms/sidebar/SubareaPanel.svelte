@@ -69,12 +69,8 @@
 				: sidebarState.behaviorSort === 'name-asc'
 					? [...metrics].sort((a, b) => a.name.localeCompare(b.name))
 					: metrics}
-	{@const posMetrics = metrics.filter(
-		(m) => (m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'flourishing'
-	)}
-	{@const negMetrics = metrics.filter(
-		(m) => (m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'restrain_harm'
-	)}
+	{@const posMetrics = metrics.filter((m) => m.type === 'positive')}
+	{@const negMetrics = metrics.filter((m) => m.type === 'negative')}
 	{@const posPassed = posMetrics.filter((m) => m.score >= 0.5).length}
 	{@const negPassed = negMetrics.filter((m) => m.score >= 0.5).length}
 
@@ -150,7 +146,7 @@
 					onclick={() => toggleMetric(m.id)}
 				>
 					<BadgeIcon
-						type={(m.behavior_type ?? (m.harmful ? 'restrain_harm' : 'flourishing')) === 'flourishing' ? 'pass' : 'fail'}
+						type={m.type === 'negative' ? 'fail' : 'pass'}
 						variant="metric"
 					/>
 					<span
@@ -206,8 +202,7 @@
 					{:else}
 						{#each expandedScenarios as sc (sc.scenario_id)}
 							{@const rawResult = sc.verdicts?.[appState.filters.model]}
-							{@const _isHarmful =
-								m.behavior_type === 'restrain_harm' && m.measurement === 'presence'}
+							{@const _isHarmful = m.type === 'negative'}
 							{@const pass =
 								rawResult === undefined
 									? null

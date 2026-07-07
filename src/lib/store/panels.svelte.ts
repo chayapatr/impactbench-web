@@ -9,8 +9,7 @@ export interface TooltipData {
 	id: string;
 	description?: string;
 	children?: { id?: string; name?: string; score?: number; children?: { score?: number }[] }[];
-	harmful?: boolean;
-	behavior_type?: 'flourishing' | 'restrain_harm';
+	metricType?: 'positive' | 'negative';
 }
 
 export const tooltipState = $state({

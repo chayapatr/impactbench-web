@@ -21,7 +21,7 @@
 	const withScores = $derived(metrics.filter((m) => scores[m.id] !== undefined));
 	const avgScore = $derived(withScores.length ? withScores.reduce((s, m) => s + (scores[m.id] ?? 0), 0) / withScores.length : 0);
 	const themeColors = $derived(scoreColors(avgScore));
-	const metricsWithScore = $derived(metrics.map((m) => ({ ...m, score: scores[m.id] ?? 0, harmful: false })));
+	const metricsWithScore = $derived(metrics.map((m) => ({ ...m, score: scores[m.id] ?? 0 })));
 	const sorted = $derived([...metricsWithScore].sort((a, b) => b.score - a.score));
 
 	let expandedMetricId: string | null = $state(null);

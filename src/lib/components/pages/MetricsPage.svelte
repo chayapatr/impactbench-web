@@ -73,9 +73,7 @@
 		uid: string;
 		id: string;
 		name: string;
-		harmful: boolean;
-		behavior_type?: 'flourishing' | 'restrain_harm';
-		measurement?: 'presence' | 'absence';
+		type: 'positive' | 'negative';
 		areaId: string;
 		areaName: string;
 		areaIcon: string;
@@ -101,9 +99,7 @@
 						uid: `${sub.id}:${m.id}`,
 						id: m.id,
 						name: m.name,
-						harmful: m.harmful,
-						behavior_type: m.behavior_type,
-						measurement: m.measurement,
+						type: m.type,
 						areaId: area.id,
 						areaName: area.name,
 						areaIcon: area.icon,
@@ -369,8 +365,8 @@
 							>
 								<span
 									class="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] font-[800] flex-shrink-0 leading-none"
-									style={m.harmful ? 'border:1.5px solid #dc2626;color:#dc2626' : 'border:1.5px solid #16a34a;color:#16a34a'}
-								>{m.harmful ? '×' : '+'}</span>
+									style={m.type === 'negative' ? 'border:1.5px solid #dc2626;color:#dc2626' : 'border:1.5px solid #16a34a;color:#16a34a'}
+								>{m.type === 'negative' ? '×' : '+'}</span>
 								<div class="flex-1 min-w-0">
 									<div class="text-[12px] font-medium text-[#1a1a1a] truncate">{m.name}</div>
 									<div class="text-[10px] text-[#9ca3af] truncate mt-[1px]">{m.subareaName}{m.benchmarks.length ? ' · ' + m.benchmarks.map(benchmarkLabel).join(', ') : ''}</div>
@@ -411,7 +407,7 @@
 										{@const total = modelsForSurface(appState, 'full').length}
 										{@const passed = modelsForSurface(appState, 'full').filter((mo) => {
 											const v = verdicts[mo.id];
-											return v !== undefined && (m.harmful ? v === 'no' : v === 'yes');
+											return v !== undefined && (m.type === 'negative' ? v === 'no' : v === 'yes');
 										}).length}
 										<div class="group flex items-center transition-colors duration-150 {selectedScenarioId === sc.scenario_id ? 'bg-[#e0f7f7]' : 'hover:bg-[#f3f4f6]'}" data-rowid={sc.scenario_id}>
 											<button
@@ -455,7 +451,7 @@
 						{@const total = modelsForSurface(appState, 'full').length}
 						{@const passed = modelsForSurface(appState, 'full').filter((mo) => {
 							const v = verdicts[mo.id];
-							return v !== undefined && (m.harmful ? v === 'no' : v === 'yes');
+							return v !== undefined && (m.type === 'negative' ? v === 'no' : v === 'yes');
 						}).length}
 						<div class="group flex items-center border-b border-[#f3f4f6] transition-colors duration-150
 							{selectedScenarioId === sc.scenario_id && selectedMetricForScenario?.uid === m.uid ? 'bg-[#e0f7f7] border-l-[3px] border-l-[#00b3b0]' : 'border-l-[3px] border-l-transparent hover:bg-[#f3f4f6]'}" data-rowid={sc.scenario_id}>
@@ -507,9 +503,9 @@
 					</div>
 					<div class="flex items-center gap-2 mt-[4px]">
 						<span class="text-[11px] text-[#9ca3af]">{selectedMetricForScenario.name}</span>
-						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{selectedMetricForScenario.harmful ? 'background:#fee2e2;color:#dc2626' : 'background:#dcfce7;color:#16a34a'}">
-							<i class="fa-solid {selectedMetricForScenario.harmful ? 'fa-shield-halved' : 'fa-star'} text-[9px]"></i>
-							{selectedMetricForScenario.harmful ? 'Avoiding bad behavior' : 'Promoting good behavior'}
+						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{selectedMetricForScenario.type === 'negative' ? 'background:#fee2e2;color:#dc2626' : 'background:#dcfce7;color:#16a34a'}">
+							<i class="fa-solid {selectedMetricForScenario.type === 'negative' ? 'fa-shield-halved' : 'fa-star'} text-[9px]"></i>
+							{selectedMetricForScenario.type === 'negative' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
 						</span>
 					</div>
 				{/if}
@@ -521,8 +517,7 @@
 						metricId={selectedMetricForScenario.id}
 						metricName={selectedMetricForScenario.name}
 						subareaName={selectedMetricForScenario.subareaName}
-						behaviorType={selectedMetricForScenario.behavior_type}
-						measurement={selectedMetricForScenario.measurement}
+						metricType={selectedMetricForScenario.type}
 						scenarioDetail={conversationDetail}
 						loading={conversationLoading}
 						error={conversationError}
@@ -550,9 +545,9 @@
 					</div>
 					<div class="flex-shrink-0 flex items-center gap-2 pt-[2px]">
 						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold"
-							style={selectedMetric.harmful ? 'background:#fee2e2;color:#dc2626' : 'background:#dcfce7;color:#16a34a'}>
-							<i class="fa-solid {selectedMetric.harmful ? 'fa-shield-halved' : 'fa-star'} text-[9px]"></i>
-							{selectedMetric.harmful ? 'Avoiding bad behavior' : 'Promoting good behavior'}
+							style={selectedMetric.type === 'negative' ? 'background:#fee2e2;color:#dc2626' : 'background:#dcfce7;color:#16a34a'}>
+							<i class="fa-solid {selectedMetric.type === 'negative' ? 'fa-shield-halved' : 'fa-star'} text-[9px]"></i>
+							{selectedMetric.type === 'negative' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
 						</span>
 						<ScorePill score={selectedMetric.avgScore} />
 					</div>
@@ -586,11 +581,11 @@
 						{@const total = modelsForSurface(appState, 'full').length}
 						{@const passed = modelsForSurface(appState, 'full').filter((mo) => {
 							const v = verdicts[mo.id];
-							const harmful = selectedMetric!.harmful;
+							const harmful = selectedMetric!.type === 'negative';
 							return v !== undefined && (harmful ? v === 'no' : v === 'yes');
 						}).length}
 						{@const rawResult = verdicts[appState.filters.model]}
-						{@const isHarmful = selectedMetric!.behavior_type === 'restrain_harm' && selectedMetric!.measurement === 'presence'}
+						{@const isHarmful = selectedMetric!.type === 'negative'}
 						{@const pass = rawResult === undefined ? null : isHarmful ? rawResult === 'no' : rawResult === 'yes'}
 						<button
 							class="flex w-full items-center gap-[8px] border-l-[3px] px-[4px] py-[7px] text-left transition-colors duration-150

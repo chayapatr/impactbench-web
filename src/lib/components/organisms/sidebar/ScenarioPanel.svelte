@@ -45,11 +45,11 @@
 	{#snippet banner()}
 		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" title={_metric?.name ?? metricId}>
 			{#snippet children()}
-				{#if _metric?.behavior_type}
+				{#if _metric?.type}
 					<div class="mb-[6px]">
-						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{_metric.behavior_type === 'restrain_harm' ? 'background:#ede9fe;color:#7c3aed' : 'background:#dbeafe;color:#2563eb'}">
-							<i class="fa-solid {_metric.behavior_type === 'flourishing' ? 'fa-star' : 'fa-shield-halved'} text-[9px]"></i>
-							{_metric.behavior_type === 'flourishing' ? 'Promoting good behavior' : 'Avoiding bad behavior'}
+						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{_metric.type === 'negative' ? 'background:#ede9fe;color:#7c3aed' : 'background:#dbeafe;color:#2563eb'}">
+							<i class="fa-solid {_metric.type === 'negative' ? 'fa-shield-halved' : 'fa-star'} text-[9px]"></i>
+							{_metric.type === 'negative' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
 						</span>
 					</div>
 				{/if}
@@ -76,8 +76,7 @@
 	<ConversationViewer
 		{metricId}
 		metricName={scenarioMeta.title}
-		behaviorType={_metric?.behavior_type}
-		measurement={_metric?.measurement}
+		metricType={_metric?.type}
 		{scenarioDetail}
 		loading={scenarioLoading}
 		error={scenarioError}

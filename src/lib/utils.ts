@@ -14,6 +14,15 @@ export function modelsForSurface(appState: AppState, surface: ModelSurface | 'al
 	return appState.models.filter((m) => m.surfaces.includes(surface));
 }
 
+// Shared visual convention for a metric's positive/negative polarity:
+// positive metrics promote good behavior (star), negative metrics guard
+// against bad behavior (shield).
+export function metricBadge(type: 'positive' | 'negative' | undefined): { icon: string; label: string } {
+	return type === 'negative'
+		? { icon: 'fa-shield', label: 'Avoiding bad behavior' }
+		: { icon: 'fa-star', label: 'Promoting good behavior' };
+}
+
 /**
  * Convert a possibly snake_case identifier into a human-readable sentence-case
  * label. Names that already contain capital letters or whitespace are returned
@@ -69,7 +78,7 @@ export function filterScenariosByAge(appState: AppState, metricId: string): Scen
 export function metricPassFraction(appState: AppState, metricId: string): { passed: number; total: number } {
 	const scenarios = filterScenariosByAge(appState, metricId);
 	const metric = findMetricInTaxonomyRaw(appState, metricId);
-	const isHarmful = metric?.behavior_type === 'restrain_harm' && metric?.measurement === 'presence';
+	const isHarmful = metric?.type === 'negative';
 	const total = scenarios.length;
 	const passed = scenarios.filter((sc) => {
 		const v = sc.verdicts?.[appState.filters.model];

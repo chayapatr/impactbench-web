@@ -127,7 +127,7 @@
 				metrics: [...catMetrics.get(catId)!].map((mid) => ({
 					id: mid,
 					name: METRIC_MAP[mid]?.name ?? mid,
-					type: METRIC_MAP[mid]?.type === 'negative' ? 'negative_behavior' : 'positive_behavior'
+					type: METRIC_MAP[mid]?.type === 'negative' ? 'negative' : 'positive'
 				}))
 			})
 		);

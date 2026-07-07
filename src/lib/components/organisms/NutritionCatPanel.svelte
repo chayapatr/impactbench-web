@@ -112,7 +112,7 @@
 							class="flex min-w-0 flex-1 cursor-pointer items-center gap-[8px] border-none bg-transparent px-[14px] py-[7px] text-left"
 							onclick={() => toggleMetric(m.id)}
 						>
-							<BadgeIcon type={m.type === 'positive_behavior' ? 'pass' : 'fail'} variant="metric" />
+							<BadgeIcon type={m.type === 'positive' ? 'pass' : 'fail'} variant="metric" />
 							<span
 								class="min-w-0 flex-1 text-[12px] text-[#374151] {isExpanded
 									? 'whitespace-normal'
@@ -155,7 +155,7 @@
 							{:else}
 								{#each expandedScenarios as sc (sc.scenario_id)}
 									{@const rawResult = sc.verdicts?.[appState.filters.model]}
-									{@const _isHarmful = m.type === 'negative_behavior'}
+									{@const _isHarmful = m.type === 'negative'}
 									{@const pass =
 										rawResult === undefined
 											? null
