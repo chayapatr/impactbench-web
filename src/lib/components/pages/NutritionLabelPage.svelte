@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { appState, setFilters } from '$lib/store.svelte';
 	import { getModelName } from '$lib/utils';
 	import Leaderboard from '../organisms/Leaderboard.svelte';
@@ -136,6 +137,7 @@
 
 	// ───── PDF export of the center label ─────
 	let saving = $state(false);
+	let pdfMode = $state(false);
 	let labelEl: HTMLElement | undefined = $state();
 	const cardRefs: Record<string, HTMLElement | undefined> = $state({});
 	$effect(() => {
@@ -146,6 +148,8 @@
 	async function savePdf() {
 		if (!labelEl) return;
 		saving = true;
+		pdfMode = true;
+		await tick();
 		try {
 			const canvas = await html2canvas(labelEl, {
 				scale: 2,
@@ -166,6 +170,7 @@
 				.replace(/^-+|-+$/g, '');
 			pdf.save(`${slug}-nutrition-label.pdf`);
 		} finally {
+			pdfMode = false;
 			saving = false;
 		}
 	}
@@ -402,6 +407,20 @@
 											</span>
 										</button>
 									{/each}
+								</div>
+
+								<div class="nl-source-footer">
+									<p>
+										This is part of the Open Benchmark of AI Impact on Humans (ImpactBench) led by
+										researchers at the MIT Media Lab, USC Marshall Neely Center, The Psychology of
+										Technology Institute, and UC Berkeley.
+									</p>
+									{#if pdfMode}
+										<p class="nl-source-footer-link">
+											To learn more, visit
+											<a href="https://impactbench.media.mit.edu">impactbench.media.mit.edu</a>
+										</p>
+									{/if}
 								</div>
 							</div>
 						</div>
@@ -1490,6 +1509,26 @@
 	.nl-trait-chevron {
 		font-size: 8px;
 		color: #9ca3af;
+	}
+
+	.nl-source-footer {
+		margin-top: 10px;
+		padding-top: 8px;
+		border-top: 1px solid #d1d5db;
+		font-family: Arial, sans-serif;
+		font-size: 8.5px;
+		line-height: 1.35;
+		color: #4b5563;
+	}
+	.nl-source-footer p {
+		margin: 0;
+	}
+	.nl-source-footer p + p {
+		margin-top: 4px;
+	}
+	.nl-source-footer-link a {
+		color: #0f766e;
+		text-decoration: underline;
 	}
 
 	.nutrition-footnote {

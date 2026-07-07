@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { nutritionLabelState, appState, sidebarState } from '$lib/store.svelte';
 	import { formatScore, scoreToClass, scoreInterpretation, scorePillStyle } from '$lib/scores';
 
@@ -105,11 +106,14 @@
 	});
 
 	let saving = $state(false);
+	let pdfMode = $state(false);
 	let labelEl: HTMLElement | undefined = $state();
 
 	async function savePdf() {
 		if (!labelEl || !ctx()) return;
 		saving = true;
+		pdfMode = true;
+		await tick();
 		try {
 			const canvas = await html2canvas(labelEl, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
 			const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
@@ -123,6 +127,7 @@
 			const slug = (ctx()?.focusName ?? 'label').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/, '');
 			pdf.save(`${slug}.pdf`);
 		} finally {
+			pdfMode = false;
 			saving = false;
 		}
 	}
@@ -216,6 +221,20 @@
 					<p class="text-[10px] text-gray-400 leading-relaxed">
 						{c.focusInterpretation}. This preview summarizes the active deep-dive context from the human flourishing benchmark.
 					</p>
+
+					<div class="mt-3 pt-2 border-t border-gray-200 text-[9px] leading-snug text-gray-500">
+						<p class="m-0">
+							This is part of the Open Benchmark of AI Impact on Humans (ImpactBench) led by
+							researchers at the MIT Media Lab, USC Marshall Neely Center, The Psychology of
+							Technology Institute, and UC Berkeley.
+						</p>
+						{#if pdfMode}
+							<p class="m-0 mt-1">
+								To learn more, visit
+								<a href="https://impactbench.media.mit.edu" class="text-teal-700 underline">impactbench.media.mit.edu</a>
+							</p>
+						{/if}
+					</div>
 				</div>
 			</div>
 

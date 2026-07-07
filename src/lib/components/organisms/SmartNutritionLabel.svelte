@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { smartNutritionState } from '$lib/store.svelte';
 	import html2canvas from 'html2canvas';
 	import { jsPDF } from 'jspdf';
@@ -14,11 +15,14 @@
 	const activeIdx = $derived(smartNutritionState.activeModelIdx);
 
 	let saving = $state(false);
+	let pdfMode = $state(false);
 	let cardEl: HTMLElement | undefined = $state();
 
 	async function savePdf() {
 		if (!cardEl || !opts) return;
 		saving = true;
+		pdfMode = true;
+		await tick();
 		try {
 			const canvas = await html2canvas(cardEl, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
 			const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
@@ -33,6 +37,7 @@
 				.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/, '');
 			pdf.save(`${slug}.pdf`);
 		} finally {
+			pdfMode = false;
 			saving = false;
 		}
 	}
@@ -152,6 +157,20 @@
 							Generated from your Smart Explore context: "{opts.userText || '(no context provided)'}".
 							Scores derive from scenario evaluations in this benchmark.
 						</div>
+
+						<div class="nl-source-footer">
+							<p>
+								This is part of the Open Benchmark of AI Impact on Humans (ImpactBench) led by
+								researchers at the MIT Media Lab, USC Marshall Neely Center, The Psychology of
+								Technology Institute, and UC Berkeley.
+							</p>
+							{#if pdfMode}
+								<p class="nl-source-footer-link">
+									To learn more, visit
+									<a href="https://impactbench.media.mit.edu">impactbench.media.mit.edu</a>
+								</p>
+							{/if}
+						</div>
 					</div>
 				</div>
 
@@ -231,6 +250,18 @@
 	.nutrition-score-value.orange { color: #ea580c; }
 	.nutrition-score-value.negative { color: #dc2626; }
 	.nutrition-footnote { font-family: Arial, sans-serif; font-size: 11px; line-height: 1.35; }
+	.nl-source-footer {
+		margin-top: 10px;
+		padding-top: 8px;
+		border-top: 1px solid #d1d5db;
+		font-family: Arial, sans-serif;
+		font-size: 10px;
+		line-height: 1.35;
+		color: #4b5563;
+	}
+	.nl-source-footer p { margin: 0; }
+	.nl-source-footer p + p { margin-top: 4px; }
+	.nl-source-footer-link a { color: #0f766e; text-decoration: underline; }
 	.nutrition-actions { border-top: 1px solid #d1d5db; background: #ffffff; padding: 10px 14px; display: flex; justify-content: flex-end; }
 	.nutrition-save-pdf-btn {
 		border: 1.5px solid #111827;
