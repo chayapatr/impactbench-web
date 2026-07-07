@@ -38,6 +38,7 @@
 	);
 
 	const colors = $derived(scoreColors(catScore));
+	const gradeRange = $derived(letterGradeRange(catScore));
 
 	const tips = $derived(STATIC_MITIGATION_TIPS[`${appState.filters.model}|${age}`] ?? []);
 
@@ -87,15 +88,9 @@
 						</div>
 						{#if catDef.description}
 							<div class="mt-[8px]">
-								<!-- <div
-									class="mt-4 mb-[3px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
-								>
-									What we measure
-								</div> -->
 								<div class="text-[12px] leading-relaxed text-[#6b7280]">{catDef.description}</div>
 							</div>
 						{/if}
-						{@const gradeRange = letterGradeRange(catScore)}
 						{#if gradeRange}
 							<div
 								class="mt-[10px] rounded-[16px] border px-[12px] py-[8px] text-[11px] leading-[1.5] text-[#4b5563]"
