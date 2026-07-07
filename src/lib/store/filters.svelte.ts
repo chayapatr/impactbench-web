@@ -1,6 +1,6 @@
 import type { ScenarioIndex, MetricMeta } from '../types';
 import type { NutritionCategory, NutritionCategoryDetail } from '../data';
-import { appState } from './appData';
+import { appState } from './appData.svelte';
 import type { FilterState } from '../types';
 
 // ===== Filters + supporting metadata lookups =====
