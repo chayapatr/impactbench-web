@@ -60,7 +60,13 @@ export function sidebarNavigateToMetric(metricId: string, taxonomy: Taxonomy) {
 export const leaderboardState = $state({
 	selectedAreaId: null as string | null,
 	selectedSubareaId: null as string | null,
-	smartRanked: [] as { id: string; name: string; provider: string; score: number; flatScore: number }[],
+	smartRanked: [] as {
+		id: string;
+		name: string;
+		provider: string;
+		score: number;
+		flatScore: number;
+	}[],
 	smartFocusNode: null as { type: 'smart-focus'; userText: string; themes: SmartTheme[] } | null
 });
 

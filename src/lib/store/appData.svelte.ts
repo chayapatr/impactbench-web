@@ -1,4 +1,11 @@
-import type { Taxonomy, AIModel, BenchmarkData, FilterState, ScenarioIndex, MetricMeta } from '../types';
+import type {
+	Taxonomy,
+	AIModel,
+	BenchmarkData,
+	FilterState,
+	ScenarioIndex,
+	MetricMeta
+} from '../types';
 import type { NutritionCategory, NutritionCategoryDetail } from '../data';
 import { humanizeName } from '../utils';
 

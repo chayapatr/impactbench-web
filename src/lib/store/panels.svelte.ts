@@ -32,10 +32,7 @@ export const scenarioPanelState = $state({
 	scenarioMeta: null as import('../types').ScenarioMeta | null
 });
 
-export function openScenarioPanel(
-	metricId: string,
-	scenarioMeta: import('../types').ScenarioMeta
-) {
+export function openScenarioPanel(metricId: string, scenarioMeta: import('../types').ScenarioMeta) {
 	scenarioPanelState.open = true;
 	scenarioPanelState.metricId = metricId;
 	scenarioPanelState.scenarioMeta = scenarioMeta;

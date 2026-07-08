@@ -8,7 +8,6 @@
 	import { scoreToLetterGrade, letterGradeRange } from '$lib/scores';
 
 	interface Props {
-		onTabChange?: (tab: string) => void;
 		onModelSelect?: (modelId: string) => void;
 		onCatSelect?: (catId: string, modelId: string) => void;
 		loading?: boolean;

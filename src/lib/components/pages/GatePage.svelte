@@ -1,30 +1,11 @@
 <script lang="ts">
-	import { appState } from '$lib/store.svelte';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { appState, authState, unlock } from '$lib/store.svelte';
 	import { buildHierarchy, getScoresForFilter } from '$lib/data';
 	import Sunburst from '../organisms/Sunburst.svelte';
 	import ControlBar from '../molecules/ControlBar.svelte';
 	import FeedbackSurveyModal from '../organisms/FeedbackSurveyModal.svelte';
-
-	interface Props {
-		onEnter: () => void;
-		onTabChange?: (tab: string) => void;
-		isAuthenticated?: boolean;
-		showPasswordOnMount?: boolean;
-		/**
-		 * Incremented by the parent to request the password modal to open
-		 * (e.g. when the user clicks a locked tab in the header while the
-		 * gate page is already mounted).
-		 */
-		passwordRequestNonce?: number;
-	}
-
-	let {
-		onEnter,
-		onTabChange,
-		isAuthenticated = false,
-		showPasswordOnMount = false,
-		passwordRequestNonce = 0
-	}: Props = $props();
 
 	const hierarchyData = $derived(
 		appState.taxonomy && !appState.loading
@@ -36,18 +17,16 @@
 	);
 
 	let activeTab = $state<'request' | 'expert' | 'support' | 'feedback'>('request');
-	let pwVisible = $state(showPasswordOnMount);
+	let pwVisible = $state(false);
 	let pwValue = $state('');
 	let pwError = $state(false);
 
-	// React to external requests to open the password modal (e.g. user clicks
-	// a locked tab in the header while already on the gate page). The parent
-	// increments `passwordRequestNonce` each time it wants to (re)open it.
-	let _seenPwNonce = $state(0);
+	// Where to land after unlocking. The (app) layout's guard bounces locked
+	// pages here as /?next=<intended-path>; when that param is present the
+	// password modal auto-opens so the visitor sees why they were redirected.
+	const nextTarget = $derived(page.url.searchParams.get('next'));
 	$effect(() => {
-		const n = passwordRequestNonce;
-		if (n > 0 && n !== _seenPwNonce && !isAuthenticated) {
-			_seenPwNonce = n;
+		if (nextTarget && !authState.authenticated) {
 			pwVisible = true;
 			pwError = false;
 			pwValue = '';
@@ -124,9 +103,9 @@
 
 	function tryUnlock() {
 		if (pwValue === 'flourishing') {
-			if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('aib-auth', '1');
+			unlock();
 			pwVisible = false;
-			onEnter();
+			goto(nextTarget ?? '/explore');
 		} else {
 			pwError = true;
 			pwValue = '';
@@ -134,6 +113,12 @@
 	}
 
 	function openPwModal() {
+		// Already unlocked (e.g. came back to the homepage via the Home tab):
+		// skip the passcode prompt and go straight in.
+		if (authState.authenticated) {
+			goto(nextTarget ?? '/explore');
+			return;
+		}
 		pwVisible = true;
 		pwError = false;
 		pwValue = '';
@@ -202,10 +187,7 @@
 		surveyVisible = true;
 	}
 
-	async function submitForm(
-		formId: string,
-		tabKey: 'request' | 'expert' | 'support' | 'feedback'
-	) {
+	async function submitForm(formId: string, tabKey: 'request' | 'expert' | 'support' | 'feedback') {
 		const form = document.getElementById(formId) as HTMLFormElement | null;
 		if (!form || !form.checkValidity()) {
 			form?.reportValidity();
@@ -316,17 +298,7 @@
 
 <div class="flex min-h-screen flex-col overflow-x-hidden bg-[#fafaf9]">
 	<!-- Same nav bar as the explore page -->
-	<ControlBar
-		activeTab="home"
-		{isAuthenticated}
-		onTabChange={(tab) => {
-			if (tab === 'home') return;
-			onTabChange?.(tab);
-		}}
-		onSmartExplore={() => {
-			onEnter();
-		}}
-	/>
+	<ControlBar />
 
 	<!-- Hero -->
 	<section
@@ -360,7 +332,7 @@
 				<button class="btn-white" onclick={() => openTab('request')}>
 					<i class="fa-solid fa-key"></i> Request Access
 				</button>
-				<button class="btn-white" onclick={() => onTabChange?.('about')}>
+				<button class="btn-white" onclick={() => goto('/about')}>
 					<i class="fa-solid fa-file-lines"></i> About
 				</button>
 			</div>
@@ -466,10 +438,7 @@
 	<section class="scroll-mt-[92px] bg-white px-7 pt-10 pb-20" id="gate-tabs-section">
 		<div class="mx-auto max-w-[880px]">
 			<!-- Tab nav -->
-			<div
-				class="mb-7 flex w-full flex-wrap gap-1 rounded-[12px] bg-[#f3f4f6] p-1"
-				role="tablist"
-			>
+			<div class="mb-7 flex w-full flex-wrap gap-1 rounded-[12px] bg-[#f3f4f6] p-1" role="tablist">
 				{#each [['request', 'fa-key', 'Request Access'], ['expert', 'fa-user-check', 'Be an Expert'], ['support', 'fa-hand-holding-heart', 'Support Benchmarking Efforts'], ['feedback', 'fa-comment-dots', 'Feedback']] as [tab, icon, label] (tab)}
 					<button
 						class="inline-flex min-w-0 flex-auto cursor-pointer items-center justify-center gap-2 rounded-[8px] border-none px-3 py-[8px] text-[13px] font-semibold whitespace-nowrap transition-all duration-[180ms]
@@ -745,11 +714,7 @@
 									></textarea>
 								</div>
 
-								<button
-									type="submit"
-									class="btn-submit"
-									disabled={formStates.expert === 'loading'}
-								>
+								<button type="submit" class="btn-submit" disabled={formStates.expert === 'loading'}>
 									{#if formStates.expert === 'loading'}
 										<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
 									{:else}

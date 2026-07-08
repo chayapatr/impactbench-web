@@ -17,7 +17,7 @@
 
 	// scenarioPanelState.metricId / .scenarioMeta are guaranteed non-null by
 	// the {#if scenarioPanelState.open && ...} guard around every place this
-	// component is rendered (see AppShell.svelte) — non-null assertions here
+	// component is rendered (the explore and nutrition pages) — non-null assertions here
 	// mirror that invariant rather than re-checking it.
 	const metricId = $derived(scenarioPanelState.metricId!);
 	const scenarioMeta = $derived(scenarioPanelState.scenarioMeta!);

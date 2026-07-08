@@ -39,6 +39,11 @@ export default defineConfig(
 	{
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
-		rules: {}
+		rules: {
+			// The app is served at the domain root with no base path, and nav
+			// targets are often dynamic (?next= redirects), so requiring
+			// resolve() everywhere adds noise without protection.
+			'svelte/no-navigation-without-resolve': 'off'
+		}
 	}
 );

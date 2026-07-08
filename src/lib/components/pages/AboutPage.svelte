@@ -1,21 +1,14 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-
-	interface Props {
-		onTabChange?: (tab: string) => void;
-	}
-
-	let { onTabChange }: Props = $props();
+	import { goto } from '$app/navigation';
 
 	let activeSubtab = $state<string>('pipeline');
 	let pageEl: HTMLElement | undefined = $state();
 
 	function goToSupport(e: MouseEvent) {
 		e.preventDefault();
-		if (typeof window !== 'undefined') {
-			history.replaceState(null, '', window.location.pathname + '#support');
-		}
-		onTabChange?.('home');
+		// The gate/home page opens its Support tab when it mounts with #support.
+		goto('/#support');
 	}
 
 	let lightboxSrc = $state<string | null>(null);

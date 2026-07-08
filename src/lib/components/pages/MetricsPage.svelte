@@ -7,12 +7,6 @@
 	import ConversationViewer from '../organisms/ConversationViewer.svelte';
 	import ScorePill from '../atoms/ScorePill.svelte';
 
-	interface Props {
-		onTabChange: (tab: string) => void;
-	}
-
-	let { onTabChange }: Props = $props();
-
 	// ── Filter state ──────────────────────────────────────────────
 	let selectedAreaId: string | null = $state(null);
 	let selectedSubareaId: string | null = $state(null);
