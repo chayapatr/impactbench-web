@@ -11,7 +11,8 @@ import { modelsForSurface } from '../utils';
 export const smartExploreState = $state({
 	open: false,
 	loading: false,
-	initialText: ''
+	initialText: '',
+	error: null as string | null
 });
 
 const CASPER_API = 'https://casper-production-7f8e.up.railway.app';
@@ -66,17 +67,29 @@ function getConstructScoresForModel(modelId: string, themeMetricIds: string[][])
 	});
 }
 
+const REQUEST_TIMEOUT_MS = 30_000;
+
+// Monotonic token so an older in-flight request can never overwrite the
+// stores after a newer one has been submitted.
+let requestSeq = 0;
+
 export async function runSmartExplore(text: string) {
+	const seq = ++requestSeq;
 	smartExploreState.open = false; // close modal immediately
 	smartExploreState.loading = true;
+	smartExploreState.error = null;
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 	try {
 		const resp = await fetch(CASPER_API + '/query', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ prompt: text, query: text, top_n: 15, per_benchmark_cap: 3 })
+			body: JSON.stringify({ prompt: text, query: text, top_n: 15, per_benchmark_cap: 3 }),
+			signal: controller.signal
 		});
 		if (!resp.ok) throw new Error('Casper API error: ' + resp.status);
 		const data = await resp.json();
+		if (seq !== requestSeq) return; // superseded by a newer request
 
 		interface ParsedMetric {
 			id: string;
@@ -198,7 +211,18 @@ export async function runSmartExplore(text: string) {
 		sidebarNavigateToSmartFocus(text, smartThemes);
 	} catch (err) {
 		console.error('Smart Explore error:', err);
+		if (seq === requestSeq) {
+			// Reopen the modal with the failed prompt so the user sees what
+			// went wrong and can retry.
+			smartExploreState.error =
+				err instanceof DOMException && err.name === 'AbortError'
+					? 'The analysis timed out. Please try again.'
+					: 'Could not analyze your prompt. Please try again.';
+			smartExploreState.initialText = text;
+			smartExploreState.open = true;
+		}
 	} finally {
-		smartExploreState.loading = false;
+		clearTimeout(timeout);
+		if (seq === requestSeq) smartExploreState.loading = false;
 	}
 }

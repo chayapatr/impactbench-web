@@ -22,11 +22,25 @@ import {
 // then the heavier lookups (scenario index, criteria, nutrition data) in
 // the background.
 
-let started = false;
+let pending: Promise<void> | null = null;
 
-export async function initAppData() {
-	if (started) return;
-	started = true;
+// Idempotent: concurrent/repeat callers share the same in-flight load.
+// Awaiting it is also how callers know the initial datasets have landed.
+export function initAppData(): Promise<void> {
+	pending ??= load();
+	return pending;
+}
+
+// Re-fetches everything, for callers that overwrote appState with their own
+// dataset (the /viewer import) and need the real one back on exit.
+export function reloadAppData(): Promise<void> {
+	pending = null;
+	return initAppData();
+}
+
+async function load() {
+	appState.loading = true;
+	appState.error = null;
 
 	try {
 		const [taxonomy, models, benchmarkData] = await Promise.all([
@@ -53,7 +67,7 @@ export async function initAppData() {
 			.catch((e) => console.warn('Failed to load nutrition categories:', e));
 	} catch (err) {
 		// Allow a retry after a failed initial load.
-		started = false;
+		pending = null;
 		appState.error = (err as Error).message;
 		appState.loading = false;
 	}

@@ -45,6 +45,7 @@
 	onSubmit={runSmartExplore}
 	loading={smartExploreState.loading}
 	initialText={smartExploreState.initialText}
+	error={smartExploreState.error}
 />
 <SmartNutritionLabel
 	open={smartNutritionState.open}

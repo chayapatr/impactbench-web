@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { loadTaxonomy, makeBenchmarkKey } from '$lib/data';
 	import type { NutritionCategoryDetail } from '$lib/data';
 	import {
 		appState,
+		initAppData,
+		reloadAppData,
 		setData,
 		setNutritionScore,
 		setNutritionCat,
@@ -63,9 +66,28 @@
 		return raw.toLowerCase().includes('child') || raw.includes('6-17') ? 'child' : 'adult';
 	}
 
+	// buildAppState() below overwrites the app-wide appState with the imported
+	// dataset so NutritionLabelPage & friends can render it. Remember the real
+	// filters and put everything back when the user leaves this route —
+	// /explore etc. are client-side navigations now, so without this they
+	// would show the imported data.
+	let importedIntoGlobalStore = false;
+	let prevFilters: (typeof appState)['filters'] | null = null;
+	onDestroy(() => {
+		if (!importedIntoGlobalStore) return;
+		closeScenarioPanel();
+		if (prevFilters) setFilters(prevFilters);
+		reloadAppData();
+	});
+
 	async function buildAppState() {
+		// Wait out the boot-time load so it can't land after (and clobber)
+		// the imported dataset we're about to write.
+		await initAppData().catch(() => {});
 		const taxonomy = await loadTaxonomy();
 
+		prevFilters = { ...appState.filters };
+		importedIntoGlobalStore = true;
 		const modelId = viewerState.modelName || 'imported-model';
 		const scoresById = new Map(viewerState.scores.map((s) => [s.id, s]));
 
@@ -188,6 +210,11 @@
 
 	async function handleFiles(files: FileList | null) {
 		if (!files) return;
+		// Starting a new import after a completed one: clear the previous
+		// dataset so its rows can't leak into this one. (Partial imports —
+		// conversations and scores dropped one file at a time — keep state
+		// until both halves have arrived.)
+		if (viewerState.ready) reset();
 		viewerState.importError = null;
 		for (const file of Array.from(files)) {
 			try {
@@ -223,7 +250,10 @@
 		viewerState.conversations = [];
 		viewerState.scores = [];
 		viewerState.modelName = '';
+		viewerState.importError = null;
 		viewerState.ready = false;
+		viewerState.scenarioDetails.clear();
+		nutritionCatPanel = null;
 		closeScenarioPanel();
 	}
 

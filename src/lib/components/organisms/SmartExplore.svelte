@@ -5,9 +5,17 @@
 		onSubmit: (text: string) => void;
 		loading?: boolean;
 		initialText?: string;
+		error?: string | null;
 	}
 
-	let { open, onClose, onSubmit, loading = false, initialText = '' }: Props = $props();
+	let {
+		open,
+		onClose,
+		onSubmit,
+		loading = false,
+		initialText = '',
+		error = null
+	}: Props = $props();
 
 	let inputText = $state('');
 
@@ -44,6 +52,13 @@
 				Describe your context or concern. We'll surface the most relevant benchmark dimensions and
 				re-rank models based on your focus.
 			</p>
+
+			{#if error}
+				<p class="se-error" role="alert">
+					<i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+					{error}
+				</p>
+			{/if}
 
 			<label class="se-label" for="se-input">Your context</label>
 			<textarea
@@ -154,6 +169,20 @@
 		color: #6b7280;
 		line-height: 1.55;
 		margin: 0 0 20px;
+	}
+
+	.se-error {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 12.5px;
+		font-weight: 600;
+		color: #dc2626;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 8px;
+		padding: 8px 12px;
+		margin: 0 0 14px;
 	}
 
 	.se-label {
