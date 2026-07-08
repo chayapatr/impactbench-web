@@ -1,4 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	onMount(() => { window.location.replace('/#support'); });
+	onMount(() => {
+		window.location.replace('/#support');
+	});
 </script>

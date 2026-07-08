@@ -30,24 +30,27 @@
 		</span>
 	{/snippet}
 	{#snippet banner()}
-		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" title={metricName}>
-			{#snippet children()}
-				{#if behaviorType}
-					<div class="mb-[6px]">
-						<span
-							class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold"
-							style={behaviorType === 'restrain_harm'
-								? 'background:#ede9fe;color:#7c3aed'
-								: 'background:#dbeafe;color:#2563eb'}
-						>
-							<i class="fa-solid {behaviorType === 'flourishing' ? 'fa-star' : 'fa-shield-halved'} text-[9px]"
-							></i>
-							{behaviorType === 'flourishing' ? 'Promoting good behavior' : 'Avoiding bad behavior'}
-						</span>
-					</div>
-				{/if}
-				<span class="text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]">{metricName}</span>
-			{/snippet}
+		<ColoredBanner color="#6b7280" title={metricName}>
+			{#if behaviorType}
+				<div class="mb-[6px]">
+					<span
+						class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold"
+						style={behaviorType === 'restrain_harm'
+							? 'background:#ede9fe;color:#7c3aed'
+							: 'background:#dbeafe;color:#2563eb'}
+					>
+						<i
+							class="fa-solid {behaviorType === 'flourishing'
+								? 'fa-star'
+								: 'fa-shield-halved'} text-[9px]"
+						></i>
+						{behaviorType === 'flourishing' ? 'Promoting good behavior' : 'Avoiding bad behavior'}
+					</span>
+				</div>
+			{/if}
+			<span class="text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]"
+				>{metricName}</span
+			>
 		</ColoredBanner>
 	{/snippet}
 </StickyHeader>

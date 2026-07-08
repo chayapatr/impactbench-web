@@ -352,8 +352,7 @@
 	}
 	.survey-modal-title {
 		font-family:
-			'Source Serif Pro', 'Cormorant Garamond', 'Iowan Old Style', Georgia, 'Times New Roman',
-			serif;
+			'Source Serif Pro', 'Cormorant Garamond', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
 		font-size: 1.6rem;
 		font-weight: 550;
 		color: #111827;

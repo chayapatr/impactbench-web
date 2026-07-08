@@ -179,4 +179,3 @@ export function buildHierarchy(
 	root.score = averageScore(root.children!.map((c) => c.score ?? 0));
 	return root;
 }
-

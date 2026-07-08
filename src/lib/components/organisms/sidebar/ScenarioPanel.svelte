@@ -33,8 +33,14 @@
 		scenarioLoading = true;
 		scenarioError = false;
 		loadScenarioDetail(scenarioMeta.benchmark, appState.filters.model, scenarioMeta.scenario_id)
-			.then((d) => { scenarioDetail = d; scenarioLoading = false; })
-			.catch(() => { scenarioLoading = false; scenarioError = true; });
+			.then((d) => {
+				scenarioDetail = d;
+				scenarioLoading = false;
+			})
+			.catch(() => {
+				scenarioLoading = false;
+				scenarioError = true;
+			});
 	});
 </script>
 
@@ -43,31 +49,52 @@
 		<span class="truncate text-[11px] font-semibold text-[#9ca3af]">{getModelName(appState)}</span>
 	{/snippet}
 	{#snippet banner()}
-		<ColoredBanner color="#6b7280" background="#f9fafb" border="#e5e7eb" title={_metric?.name ?? metricId}>
-			{#snippet children()}
-				{#if _metric?.type}
-					<div class="mb-[6px]">
-						<span class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold" style="{_metric.type === 'negative' ? 'background:#ede9fe;color:#7c3aed' : 'background:#dbeafe;color:#2563eb'}">
-							<i class="fa-solid {_metric.type === 'negative' ? 'fa-shield-halved' : 'fa-star'} text-[9px]"></i>
-							{_metric.type === 'negative' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
-						</span>
-					</div>
-				{/if}
-				<span class="text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]">{_metric?.name ?? metricId}</span>
-				{@const criteria = appState.metricCriteria?.[metricId] ?? ''}
-				{@const meta = appState.metricMeta?.[metricId]}
-				{#if meta?.contributor}
-					<div class="mt-[6px] mb-[10px] text-[12px] font-semibold text-[#1a1a1a]">Part of: {meta.contributor}</div>
-				{/if}
-				{#if criteria}
-					<div class="mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Description</div>
-					<div class="text-[12px] leading-relaxed text-[#4b5563] whitespace-pre-line">{criteria}</div>
-				{/if}
-				{#if meta?.mattersBecause}
-					<div class="mt-[10px] mb-[4px] text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Why this matters</div>
-					<div class="text-[12px] leading-relaxed text-[#4b5563] whitespace-pre-line">{meta.mattersBecause}</div>
-				{/if}
-			{/snippet}
+		<ColoredBanner color="#6b7280" title={_metric?.name ?? metricId}>
+			{#if _metric?.type}
+				<div class="mb-[6px]">
+					<span
+						class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold"
+						style={_metric.type === 'negative'
+							? 'background:#ede9fe;color:#7c3aed'
+							: 'background:#dbeafe;color:#2563eb'}
+					>
+						<i
+							class="fa-solid {_metric.type === 'negative'
+								? 'fa-shield-halved'
+								: 'fa-star'} text-[9px]"
+						></i>
+						{_metric.type === 'negative' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
+					</span>
+				</div>
+			{/if}
+			<span class="text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]"
+				>{_metric?.name ?? metricId}</span
+			>
+			{@const criteria = appState.metricCriteria?.[metricId] ?? ''}
+			{@const meta = appState.metricMeta?.[metricId]}
+			{#if meta?.contributor}
+				<div class="mt-[6px] mb-[10px] text-[12px] font-semibold text-[#1a1a1a]">
+					Part of: {meta.contributor}
+				</div>
+			{/if}
+			{#if criteria}
+				<div class="mb-[4px] text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
+					Description
+				</div>
+				<div class="text-[12px] leading-relaxed whitespace-pre-line text-[#4b5563]">
+					{criteria}
+				</div>
+			{/if}
+			{#if meta?.mattersBecause}
+				<div
+					class="mt-[10px] mb-[4px] text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+				>
+					Why this matters
+				</div>
+				<div class="text-[12px] leading-relaxed whitespace-pre-line text-[#4b5563]">
+					{meta.mattersBecause}
+				</div>
+			{/if}
 		</ColoredBanner>
 	{/snippet}
 </StickyHeader>

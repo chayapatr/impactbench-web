@@ -3,50 +3,56 @@
 
 /* cache-bust: force new asset hash on Cloudflare CDN */
 :root {
-  --cf-bust: 1;
+	--cf-bust: 1;
 }
 
 @layer base {
-  *, *::before, *::after {
-    line-height: 1.35;
-  }
+	*,
+	*::before,
+	*::after {
+		line-height: 1.35;
+	}
 }
 
 html {
-  font-size: 17px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	font-size: 17px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #fafaf9;
-  color: #1a1a1a;
-  line-height: 1.35;
+	font-family:
+		'Inter',
+		system-ui,
+		-apple-system,
+		sans-serif;
+	background: #fafaf9;
+	color: #1a1a1a;
+	line-height: 1.35;
 }
 
 /* Custom thin scrollbar to match original */
 ::-webkit-scrollbar {
-  width: 5px;
+	width: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+	background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  border-radius: 3px;
+	background: #e5e7eb;
+	border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #d1d5db;
+	background: #d1d5db;
 }
 
 /* Hide scrollbar in sidebar panels */
 #summary-panel,
 #summary-panel *,
 .sidebar-scroll {
-  scrollbar-width: none;
+	scrollbar-width: none;
 }
 #summary-panel::-webkit-scrollbar,
 .sidebar-scroll::-webkit-scrollbar {
-  display: none;
+	display: none;
 }

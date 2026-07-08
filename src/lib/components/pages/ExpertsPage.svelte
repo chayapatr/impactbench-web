@@ -122,9 +122,7 @@
 
 	// ── Derived helpers ───────────────────────────────────────────
 	const selectedMetric = $derived(expertMetrics[selectedMetricIdx] ?? null);
-	const selectedMetricProgress = $derived(
-		selectedMetric ? progress[selectedMetric.id] : null
-	);
+	const selectedMetricProgress = $derived(selectedMetric ? progress[selectedMetric.id] : null);
 	const selectedMetricScenarios = $derived<ScenarioMeta[]>(
 		selectedMetric ? (appState.scenarioIndex?.[selectedMetric.id] ?? []) : []
 	);
@@ -162,9 +160,10 @@
 				.sort((a, b) => a.name.localeCompare(b.name));
 			expertMetrics = list;
 
-			progress = Object.fromEntries(
-				list.map((m) => [m.id, blankProgress()])
-			) as Record<string, MetricProgress>;
+			progress = Object.fromEntries(list.map((m) => [m.id, blankProgress()])) as Record<
+				string,
+				MetricProgress
+			>;
 			if (list.length > 0) unlocked = new Set([list[0].id]);
 
 			loading = false;
@@ -414,7 +413,7 @@
 
 		<a
 			href="/"
-			class="ml-3 mr-auto inline-flex items-center gap-1.5 rounded-full bg-[#e0f7f7] px-3 py-[6px] text-[12px] font-semibold text-[#00b3b0] transition-colors duration-150 hover:bg-[#c5eeed]"
+			class="mr-auto ml-3 inline-flex items-center gap-1.5 rounded-full bg-[#e0f7f7] px-3 py-[6px] text-[12px] font-semibold text-[#00b3b0] transition-colors duration-150 hover:bg-[#c5eeed]"
 		>
 			<i class="fa-solid fa-house text-[11px]"></i>
 			Home
@@ -430,7 +429,13 @@
 				<span
 					class="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-[12px] font-bold text-white"
 				>
-					{signedIn ? MOCK_EXPERT_USER.name.split(' ').map((s) => s[0]).join('').slice(0, 2) : '?'}
+					{signedIn
+						? MOCK_EXPERT_USER.name
+								.split(' ')
+								.map((s) => s[0])
+								.join('')
+								.slice(0, 2)
+						: '?'}
 				</span>
 				<span class="flex flex-col leading-tight">
 					<span class="text-[13px] font-semibold text-[#111827]">
@@ -543,7 +548,7 @@
 										? isSelected
 											? 'font-semibold text-[#0f4f50]'
 											: 'text-[#111827]'
-										: 'select-none text-[#c4c9d1] blur-[2px]'}"
+										: 'text-[#c4c9d1] blur-[2px] select-none'}"
 								>
 									{m.name}
 								</span>
@@ -612,252 +617,256 @@
 					<!-- Phase body -->
 					<div class="flex flex-1 overflow-hidden bg-[#fafaf9]">
 						<div class="min-w-0 flex-1 overflow-y-auto px-8 py-6">
-						{#if phase === 'feedback'}
-							<div class="mx-auto max-w-[720px] rounded-[14px] border border-[#e5e7eb] bg-white p-8">
-								<h2 class="text-[16px] font-[700] text-[#111827]">Metric feedback</h2>
-								<p class="mt-1 text-[13px] text-[#6b7280]">
-									Please share your expert view on this metric before evaluating the scenarios.
-								</p>
+							{#if phase === 'feedback'}
+								<div
+									class="mx-auto max-w-[720px] rounded-[14px] border border-[#e5e7eb] bg-white p-8"
+								>
+									<h2 class="text-[16px] font-[700] text-[#111827]">Metric feedback</h2>
+									<p class="mt-1 text-[13px] text-[#6b7280]">
+										Please share your expert view on this metric before evaluating the scenarios.
+									</p>
 
-								<!-- Q1: Relevance -->
-								<div class="mt-6">
-									<label class="text-[13px] font-semibold text-[#111827]">
-										How relevant is the “{selectedMetric.name}” metric for assessing the “{MOCK_EXPERT_USER.subareaLabel}”
-										subarea goal?
-									</label>
-									<div class="mt-3 grid grid-cols-4 gap-3">
-										{#each [
-											{ v: '1', h: '1', s: 'Not Relevant' },
-											{ v: '2', h: '2', s: 'Somewhat relevant (needs major revision)' },
-											{ v: '3', h: '3', s: 'Quite relevant (needs minor revision)' },
-											{ v: '4', h: '4', s: 'Highly relevant' }
-										] as opt (opt.v)}
-											<label
-												class="flex cursor-pointer flex-col items-center gap-2 rounded-[10px] border p-3 text-center transition-colors duration-150
+									<!-- Q1: Relevance -->
+									<div class="mt-6">
+										<label class="text-[13px] font-semibold text-[#111827]">
+											How relevant is the “{selectedMetric.name}” metric for assessing the “{MOCK_EXPERT_USER.subareaLabel}”
+											subarea goal?
+										</label>
+										<div class="mt-3 grid grid-cols-4 gap-3">
+											{#each [{ v: '1', h: '1', s: 'Not Relevant' }, { v: '2', h: '2', s: 'Somewhat relevant (needs major revision)' }, { v: '3', h: '3', s: 'Quite relevant (needs minor revision)' }, { v: '4', h: '4', s: 'Highly relevant' }] as opt (opt.v)}
+												<label
+													class="flex cursor-pointer flex-col items-center gap-2 rounded-[10px] border p-3 text-center transition-colors duration-150
 													{selectedMetricProgress.feedback.relevance === opt.v
-													? 'border-[#00b3b0] bg-[#e0f7f7]'
-													: 'border-[#e5e7eb] hover:border-[#9ca3af]'}"
-											>
-												<span class="text-[13px] font-bold text-[#111827]">{opt.h}</span>
-												<span class="text-[11px] leading-[1.35] text-[#4b5563]">{opt.s}</span>
-												<input
-													type="radio"
-													name="relevance"
-													value={opt.v}
-													bind:group={selectedMetricProgress.feedback.relevance}
-													class="sr-only"
-												/>
-											</label>
-										{/each}
-									</div>
-								</div>
-
-								<div class="mt-5">
-									<label class="text-[13px] font-medium text-[#111827]" for="mf-relevance-edit">
-										If you selected 1, 2, or 3, how would you modify the metric so it better captures the subarea goal? If you selected 4, you can leave this blank.
-									</label>
-									<textarea
-										id="mf-relevance-edit"
-										rows="3"
-										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										bind:value={selectedMetricProgress.feedback.relevanceEdit}
-									></textarea>
-								</div>
-
-								<!-- Q2: Labeling -->
-								<div class="mt-8">
-									<div class="text-[13px] font-semibold text-[#111827]">
-										Do you think this metric should be labeled, defined, or described differently?
-									</div>
-									<div class="mt-3 flex flex-col gap-2">
-										{#each [
-											{ v: 'no', s: 'No' },
-											{ v: 'yes', s: 'Yes' },
-											{ v: 'not-sure', s: 'Not sure' }
-										] as opt (opt.v)}
-											<label
-												class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-													{selectedMetricProgress.feedback.labelDifferent === opt.v
-													? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-													: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-											>
-												<input
-													type="radio"
-													name="label-different"
-													value={opt.v}
-													bind:group={selectedMetricProgress.feedback.labelDifferent}
-													class="accent-[#00b3b0]"
-												/>
-												{opt.s}
-											</label>
-										{/each}
-									</div>
-								</div>
-
-								<div class="mt-5">
-									<label class="text-[13px] font-medium text-[#111827]" for="mf-label-edit">
-										If you selected “yes” or “not sure”, how would you recommend labeling, defining, or describing it differently? If you selected “no”, you can leave this blank.
-									</label>
-									<textarea
-										id="mf-label-edit"
-										rows="3"
-										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										bind:value={selectedMetricProgress.feedback.labelEdit}
-									></textarea>
-								</div>
-
-								<!-- Q3: Examples -->
-								<div class="mt-8">
-									<div class="text-[13px] font-semibold text-[#111827]">
-										Do you think the examples provided are adequate and appropriate for the metric?
-									</div>
-									<div class="mt-3 flex flex-col gap-2">
-										{#each [
-											{ v: 'no', s: 'No' },
-											{ v: 'yes', s: 'Yes' },
-											{ v: 'not-sure', s: 'Not sure' }
-										] as opt (opt.v)}
-											<label
-												class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-													{selectedMetricProgress.feedback.examplesAdequate === opt.v
-													? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-													: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-											>
-												<input
-													type="radio"
-													name="examples-adequate"
-													value={opt.v}
-													bind:group={selectedMetricProgress.feedback.examplesAdequate}
-													class="accent-[#00b3b0]"
-												/>
-												{opt.s}
-											</label>
-										{/each}
-									</div>
-								</div>
-
-								<div class="mt-5">
-									<label class="text-[13px] font-medium text-[#111827]" for="mf-examples-edit">
-										If you selected “no” or “not sure,” how would you recommend modifying the examples to make them more adequate or appropriate? If you selected “yes”, you can leave this blank.
-									</label>
-									<textarea
-										id="mf-examples-edit"
-										rows="3"
-										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										bind:value={selectedMetricProgress.feedback.examplesEdit}
-									></textarea>
-								</div>
-
-								<div class="mt-8">
-									<label class="text-[13px] font-semibold text-[#111827]" for="mf-other">
-										Do you have any other feedback about this metric? Please feel free to include relevant citations that either support the metric’s current conceptualization or share contrasting information.
-									</label>
-									<textarea
-										id="mf-other"
-										rows="4"
-										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										bind:value={selectedMetricProgress.feedback.other}
-									></textarea>
-								</div>
-
-								<div class="mt-6 flex items-center justify-between">
-									<span class="text-[12px] text-[#6b7280]">
-										{selectedMetricProgress.feedback.submitted
-											? 'Feedback saved. You can still edit it before continuing.'
-											: 'Save your feedback to continue to the scenarios.'}
-									</span>
-									<button
-										type="button"
-										class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={!selectedMetricProgress.feedback.relevance}
-										onclick={submitFeedback}
-									>
-										<i class="fa-solid fa-check text-[11px]"></i>
-										{selectedMetricProgress.feedback.submitted ? 'Update feedback' : 'Save feedback'}
-									</button>
-								</div>
-							</div>
-						{:else if currentScenario && currentMaskedModel}
-							<div class="mx-auto max-w-[900px]">
-								<div>
-									<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
-									<div
-										class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
-									>
-										Scenario {scenarioIdx + 1} · {currentMaskedModel.label}
-									</div>
-									<div class="mt-1 text-[15px] font-[700] text-[#111827]">
-										{currentScenario.title}
-									</div>
-
-									<!-- Model chips (masked) -->
-									<div class="mt-4 flex flex-wrap gap-[6px]">
-										{#each maskedModels as mm, mIdx (mm.id)}
-											{@const done = selectedMetricProgress.evaluated.has(
-												`${currentScenario.scenario_id}__${mm.id}`
-											)}
-											<button
-												type="button"
-												class="inline-flex cursor-pointer items-center gap-[6px] rounded-[6px] border px-[10px] py-[4px] text-[12px] font-medium transition-colors duration-150
-													{mIdx === modelIdx
-													? 'border-[#00b3b0] bg-[#e0f7f7] text-[#00b3b0]'
-													: 'border-[#e5e7eb] text-[#6b7280] hover:border-[#9ca3af]'}"
-												onclick={() => (modelIdx = mIdx)}
-											>
-												{#if done}
-													<i class="fa-solid fa-check text-[10px] text-[#16a34a]"></i>
-												{:else}
-													<span class="inline-block h-[6px] w-[6px] rounded-full bg-[#d1d5db]"></span>
-												{/if}
-												{mm.label}
-											</button>
-										{/each}
-									</div>
-
-									<!-- Conversation -->
-									<div class="mt-6 border-t border-[#f3f4f6] pt-5">
-										{#if conversationLoading}
-											<div class="flex items-center gap-2 text-[#9ca3af]">
-												<i class="fa-solid fa-spinner fa-spin"></i>
-												<span class="text-[13px]">Loading conversation…</span>
-											</div>
-										{:else if conversationError}
-											<p class="text-[13px] text-[#dc2626]">Failed to load conversation.</p>
-										{:else if conversationDetail}
-											{@const turns = conversationDetail.transcript ?? []}
-											{#if conversationDetail.persona}
-												<div class="mb-4 text-[12px] leading-relaxed text-[#374151]">
-													{conversationDetail.persona}
-												</div>
-											{/if}
-											<div class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-												Conversation
-											</div>
-											{#each turns as turn, i (i)}
-												<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
-													<div
-														class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}"
-													>
-														{turn.role === 'user' ? 'User' : currentMaskedModel.label}
-													</div>
-													<div
-														class="prose prose-sm inline-block max-w-[88%] rounded-xl px-3 py-2 text-left text-[12px]
-															{turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}"
-													>
-														{@html marked.parse(turn.content)}
-													</div>
-												</div>
+														? 'border-[#00b3b0] bg-[#e0f7f7]'
+														: 'border-[#e5e7eb] hover:border-[#9ca3af]'}"
+												>
+													<span class="text-[13px] font-bold text-[#111827]">{opt.h}</span>
+													<span class="text-[11px] leading-[1.35] text-[#4b5563]">{opt.s}</span>
+													<input
+														type="radio"
+														name="relevance"
+														value={opt.v}
+														bind:group={selectedMetricProgress.feedback.relevance}
+														class="sr-only"
+													/>
+												</label>
 											{/each}
-										{/if}
+										</div>
 									</div>
+
+									<div class="mt-5">
+										<label class="text-[13px] font-medium text-[#111827]" for="mf-relevance-edit">
+											If you selected 1, 2, or 3, how would you modify the metric so it better
+											captures the subarea goal? If you selected 4, you can leave this blank.
+										</label>
+										<textarea
+											id="mf-relevance-edit"
+											rows="3"
+											class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+											bind:value={selectedMetricProgress.feedback.relevanceEdit}
+										></textarea>
+									</div>
+
+									<!-- Q2: Labeling -->
+									<div class="mt-8">
+										<div class="text-[13px] font-semibold text-[#111827]">
+											Do you think this metric should be labeled, defined, or described differently?
+										</div>
+										<div class="mt-3 flex flex-col gap-2">
+											{#each [{ v: 'no', s: 'No' }, { v: 'yes', s: 'Yes' }, { v: 'not-sure', s: 'Not sure' }] as opt (opt.v)}
+												<label
+													class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+													{selectedMetricProgress.feedback.labelDifferent === opt.v
+														? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+														: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+												>
+													<input
+														type="radio"
+														name="label-different"
+														value={opt.v}
+														bind:group={selectedMetricProgress.feedback.labelDifferent}
+														class="accent-[#00b3b0]"
+													/>
+													{opt.s}
+												</label>
+											{/each}
+										</div>
+									</div>
+
+									<div class="mt-5">
+										<label class="text-[13px] font-medium text-[#111827]" for="mf-label-edit">
+											If you selected “yes” or “not sure”, how would you recommend labeling,
+											defining, or describing it differently? If you selected “no”, you can leave
+											this blank.
+										</label>
+										<textarea
+											id="mf-label-edit"
+											rows="3"
+											class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+											bind:value={selectedMetricProgress.feedback.labelEdit}
+										></textarea>
+									</div>
+
+									<!-- Q3: Examples -->
+									<div class="mt-8">
+										<div class="text-[13px] font-semibold text-[#111827]">
+											Do you think the examples provided are adequate and appropriate for the
+											metric?
+										</div>
+										<div class="mt-3 flex flex-col gap-2">
+											{#each [{ v: 'no', s: 'No' }, { v: 'yes', s: 'Yes' }, { v: 'not-sure', s: 'Not sure' }] as opt (opt.v)}
+												<label
+													class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+													{selectedMetricProgress.feedback.examplesAdequate === opt.v
+														? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+														: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+												>
+													<input
+														type="radio"
+														name="examples-adequate"
+														value={opt.v}
+														bind:group={selectedMetricProgress.feedback.examplesAdequate}
+														class="accent-[#00b3b0]"
+													/>
+													{opt.s}
+												</label>
+											{/each}
+										</div>
+									</div>
+
+									<div class="mt-5">
+										<label class="text-[13px] font-medium text-[#111827]" for="mf-examples-edit">
+											If you selected “no” or “not sure,” how would you recommend modifying the
+											examples to make them more adequate or appropriate? If you selected “yes”, you
+											can leave this blank.
+										</label>
+										<textarea
+											id="mf-examples-edit"
+											rows="3"
+											class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+											bind:value={selectedMetricProgress.feedback.examplesEdit}
+										></textarea>
+									</div>
+
+									<div class="mt-8">
+										<label class="text-[13px] font-semibold text-[#111827]" for="mf-other">
+											Do you have any other feedback about this metric? Please feel free to include
+											relevant citations that either support the metric’s current conceptualization
+											or share contrasting information.
+										</label>
+										<textarea
+											id="mf-other"
+											rows="4"
+											class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+											bind:value={selectedMetricProgress.feedback.other}
+										></textarea>
+									</div>
+
+									<div class="mt-6 flex items-center justify-between">
+										<span class="text-[12px] text-[#6b7280]">
+											{selectedMetricProgress.feedback.submitted
+												? 'Feedback saved. You can still edit it before continuing.'
+												: 'Save your feedback to continue to the scenarios.'}
+										</span>
+										<button
+											type="button"
+											class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-50"
+											disabled={!selectedMetricProgress.feedback.relevance}
+											onclick={submitFeedback}
+										>
+											<i class="fa-solid fa-check text-[11px]"></i>
+											{selectedMetricProgress.feedback.submitted
+												? 'Update feedback'
+												: 'Save feedback'}
+										</button>
 									</div>
 								</div>
-							</div>
-						{:else}
-							<p class="text-[13px] text-[#9ca3af]">
-								No scenarios available for this metric.
-							</p>
-						{/if}
+							{:else if currentScenario && currentMaskedModel}
+								<div class="mx-auto max-w-[900px]">
+									<div>
+										<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
+											<div
+												class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+											>
+												Scenario {scenarioIdx + 1} · {currentMaskedModel.label}
+											</div>
+											<div class="mt-1 text-[15px] font-[700] text-[#111827]">
+												{currentScenario.title}
+											</div>
+
+											<!-- Model chips (masked) -->
+											<div class="mt-4 flex flex-wrap gap-[6px]">
+												{#each maskedModels as mm, mIdx (mm.id)}
+													{@const done = selectedMetricProgress.evaluated.has(
+														`${currentScenario.scenario_id}__${mm.id}`
+													)}
+													<button
+														type="button"
+														class="inline-flex cursor-pointer items-center gap-[6px] rounded-[6px] border px-[10px] py-[4px] text-[12px] font-medium transition-colors duration-150
+													{mIdx === modelIdx
+															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#00b3b0]'
+															: 'border-[#e5e7eb] text-[#6b7280] hover:border-[#9ca3af]'}"
+														onclick={() => (modelIdx = mIdx)}
+													>
+														{#if done}
+															<i class="fa-solid fa-check text-[10px] text-[#16a34a]"></i>
+														{:else}
+															<span class="inline-block h-[6px] w-[6px] rounded-full bg-[#d1d5db]"
+															></span>
+														{/if}
+														{mm.label}
+													</button>
+												{/each}
+											</div>
+
+											<!-- Conversation -->
+											<div class="mt-6 border-t border-[#f3f4f6] pt-5">
+												{#if conversationLoading}
+													<div class="flex items-center gap-2 text-[#9ca3af]">
+														<i class="fa-solid fa-spinner fa-spin"></i>
+														<span class="text-[13px]">Loading conversation…</span>
+													</div>
+												{:else if conversationError}
+													<p class="text-[13px] text-[#dc2626]">Failed to load conversation.</p>
+												{:else if conversationDetail}
+													{@const turns = conversationDetail.transcript ?? []}
+													{#if conversationDetail.persona}
+														<div class="mb-4 text-[12px] leading-relaxed text-[#374151]">
+															{conversationDetail.persona}
+														</div>
+													{/if}
+													<div
+														class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+													>
+														Conversation
+													</div>
+													{#each turns as turn, i (i)}
+														<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
+															<div
+																class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role ===
+																'user'
+																	? 'text-[#00b3b0]'
+																	: 'text-[#9ca3af]'}"
+															>
+																{turn.role === 'user' ? 'User' : currentMaskedModel.label}
+															</div>
+															<div
+																class="prose prose-sm inline-block max-w-[88%] rounded-xl px-3 py-2 text-left text-[12px]
+															{turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}"
+															>
+																<!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown from our own bundled scenario data -->
+																{@html marked.parse(turn.content)}
+															</div>
+														</div>
+													{/each}
+												{/if}
+											</div>
+										</div>
+									</div>
+								</div>
+							{:else}
+								<p class="text-[13px] text-[#9ca3af]">No scenarios available for this metric.</p>
+							{/if}
 						</div>
 
 						{#if phase === 'scenario' && currentScenario && currentMaskedModel}
@@ -873,9 +882,7 @@
 								{#if evaluations[currentEvalKey]}
 									{@const currentEval = evaluations[currentEvalKey]}
 									{@const canSubmit = evalProgress.pct >= 100 && !currentEval.submitting}
-									<div
-										class="expert-eval-scroll relative min-h-0 flex-1 overflow-y-auto px-5 py-3"
-									>
+									<div class="expert-eval-scroll relative min-h-0 flex-1 overflow-y-auto px-5 py-3">
 										{#if currentEval.submitted}
 											<div
 												class="mb-3 flex items-center gap-2 rounded-[8px] bg-[#dcfce7] px-3 py-1.5 text-[12px] font-semibold text-[#166534]"
@@ -888,7 +895,8 @@
 										<!-- Q1: scenario accuracy -->
 										<div>
 											<div class="text-[12px] font-semibold text-[#111827]">
-												Do you think the scenario accurately tests the identified metric of interest?
+												Do you think the scenario accurately tests the identified metric of
+												interest?
 											</div>
 											<div class="mt-2 flex flex-col gap-1.5">
 												{#each [['yes', 'Yes'], ['no', 'No'], ['not-sure', 'Not sure']] as [v, l] (v)}

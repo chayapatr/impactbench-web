@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { sunburstAction, type SunburstCallbacks } from '$lib/sunburst-action';
 	import { tooltipState } from '$lib/store.svelte';
-	import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
 	import type { SunburstNodeData } from '$lib/types';
 
 	interface Props {
@@ -82,10 +81,7 @@
 	) {
 		if (svgEl) {
 			const fn = (svgEl as unknown as Record<string, unknown>).__zoomToSubarea as
-				| ((
-						id: string,
-						b: typeof behaviors
-				  ) => void)
+				| ((id: string, b: typeof behaviors) => void)
 				| undefined;
 			fn?.(id, behaviors);
 		}
@@ -119,7 +115,7 @@
 	}
 </script>
 
-<div id="sunburst-wrapper" class="flex items-center justify-center w-full h-full">
+<div id="sunburst-wrapper" class="flex h-full w-full items-center justify-center">
 	<svg
 		id="sunburst-svg"
 		bind:this={svgEl}

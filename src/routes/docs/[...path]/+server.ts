@@ -14,14 +14,14 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 
 	const response = await fetch(`${DOCS_ORIGIN}/${path}`, {
 		headers: {
-			'Accept': request.headers.get('accept') ?? '*/*',
-			'Accept-Encoding': 'identity',
-		},
+			Accept: request.headers.get('accept') ?? '*/*',
+			'Accept-Encoding': 'identity'
+		}
 	});
 
 	const contentType = response.headers.get('content-type') ?? '';
 	return new Response(response.body, {
 		status: response.status,
-		headers: { 'content-type': contentType },
+		headers: { 'content-type': contentType }
 	});
 };

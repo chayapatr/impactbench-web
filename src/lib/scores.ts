@@ -24,7 +24,6 @@ const pillTextScale = d3
 	.range(['#dc2626', '#ea580c', '#ca8a04', '#16a34a'])
 	.clamp(true);
 
-
 export function scoreToColorBright(score: number): string {
 	return colorScaleBright(score);
 }
@@ -48,17 +47,17 @@ export function formatScore(score: number): string {
 export function scoreToLetterGrade(score: number): string {
 	if (!Number.isFinite(score)) return 'N/A';
 	if (score >= 0.95) return 'A+';
-	if (score >= 0.90) return 'A';
+	if (score >= 0.9) return 'A';
 	if (score >= 0.85) return 'A-';
-	if (score >= 0.80) return 'B+';
+	if (score >= 0.8) return 'B+';
 	if (score >= 0.75) return 'B';
-	if (score >= 0.70) return 'B-';
+	if (score >= 0.7) return 'B-';
 	if (score >= 0.65) return 'C+';
-	if (score >= 0.60) return 'C';
+	if (score >= 0.6) return 'C';
 	if (score >= 0.55) return 'C-';
-	if (score >= 0.50) return 'D+';
+	if (score >= 0.5) return 'D+';
 	if (score >= 0.45) return 'D';
-	if (score >= 0.40) return 'D-';
+	if (score >= 0.4) return 'D-';
 	return 'F';
 }
 

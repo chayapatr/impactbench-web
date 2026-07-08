@@ -7,7 +7,6 @@
 	interface Props {
 		metricId: string;
 		metricName: string;
-		subareaName?: string;
 		metricType?: 'positive' | 'negative';
 		scenarioDetail: ScenarioDetail | null;
 		loading: boolean;
@@ -22,7 +21,6 @@
 	let {
 		metricId,
 		metricName,
-		subareaName,
 		metricType = 'positive',
 		scenarioDetail,
 		loading,
@@ -34,7 +32,6 @@
 		verdictOverride = null
 	}: Props = $props();
 
-	const criteria = $derived(appState.metricCriteria?.[metricId] ?? '');
 	const isHarmful = $derived(metricType === 'negative');
 </script>
 
@@ -123,6 +120,7 @@
 			</div>
 			{#if scenarioDetail.justification}
 				<div class="prose prose-sm mt-2 max-w-none text-[12px] leading-loose text-[#6b7280]">
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown from our own bundled scenario data -->
 					{@html marked.parse(scenarioDetail.justification)}
 				</div>
 			{/if}
@@ -149,6 +147,7 @@
 					? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert'
 					: 'bg-[#f3f4f6] text-[#374151]'}"
 			>
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown from our own bundled scenario data -->
 				{@html marked.parse(turn.content)}
 			</div>
 		</div>

@@ -13,6 +13,6 @@
 
 <span
 	class="inline-block flex-shrink-0 rounded-[6px] py-[1px] text-center font-semibold
-		{size === 'sm' ? 'px-[5px] text-[10px] min-w-[26px]' : 'px-[6px] text-[11px] min-w-[30px]'}"
-	style={scorePillStyle(score)}
->{passed !== null ? `${passed}/${total}` : formatScore(score)}</span>
+		{size === 'sm' ? 'min-w-[26px] px-[5px] text-[10px]' : 'min-w-[30px] px-[6px] text-[11px]'}"
+	style={scorePillStyle(score)}>{passed !== null ? `${passed}/${total}` : formatScore(score)}</span
+>

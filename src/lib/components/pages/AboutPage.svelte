@@ -390,10 +390,9 @@
 						whether this model avoids negative impact on humans (Avoids Factual Hallucination,
 						Avoids Sexual & Intimate Behavior, Avoids Sycophancy, Avoids Toxicity), and promotes
 						positive impact on humans (Promotes Agency, Promotes Learning & Skill Development,
-						Promotes Social Interaction, Promotes Creativity, Promotes Wellbeing). This ensures
-						that anyone, from parents evaluating a companion app, to educators considering a
-						tutoring product, can learn about a model's performance at a glance and share it with
-						others.
+						Promotes Social Interaction, Promotes Creativity, Promotes Wellbeing). This ensures that
+						anyone, from parents evaluating a companion app, to educators considering a tutoring
+						product, can learn about a model's performance at a glance and share it with others.
 					</p>
 				</div>
 

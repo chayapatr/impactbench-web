@@ -8,6 +8,7 @@
 	//   /?metric=…&scenario=…    -> /?next=/explore?metric=…&scenario=…
 	// (the gate consumes ?next= and auto-opens its password modal)
 	onMount(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 		const params = new URLSearchParams(window.location.search);
 		const tab = params.get('tab');
 		if (tab && ['explore', 'metrics', 'nutrition', 'about'].includes(tab)) {

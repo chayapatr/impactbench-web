@@ -44,6 +44,7 @@ function getWorstSubareasForModel(modelId: string, count = 3): { name: string; s
 			}
 
 	allMetrics.sort((a, b) => a.score - b.score);
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 	const seen = new Set<string>();
 	const result: { name: string; score: number }[] = [];
 	for (const m of allMetrics) {
@@ -114,6 +115,7 @@ export async function runSmartExplore(text: string) {
 						};
 					}
 				);
+				// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 				const allSubareas = [...new Set(metrics.flatMap((m): string[] => m.subareas))];
 				return {
 					text: theme.name as string,

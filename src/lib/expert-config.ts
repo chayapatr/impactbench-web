@@ -19,8 +19,7 @@ export const MOCK_EXPERT_USER = {
 export const EXPERT_BENCHMARK_SLUG = 'humanebench';
 
 /** Per-scenario evaluation form the expert is asked to fill out. */
-export const EXPERT_QUALTRICS_URL =
-	'https://usc.qualtrics.com/jfe/form/SV_8B4UrSDBpVMZrXU';
+export const EXPERT_QUALTRICS_URL = 'https://usc.qualtrics.com/jfe/form/SV_8B4UrSDBpVMZrXU';
 
 export interface MaskedModel {
 	label: string; // "Model 1"

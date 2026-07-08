@@ -74,46 +74,42 @@
 			{#snippet banner()}
 				<ColoredBanner
 					color={colors.color}
-					background={colors.light}
-					border={colors.border}
 					title={catDef.label}
 					score={catScore}
 					total={metrics.length}
 				>
-					{#snippet children()}
-						<div class="flex items-center gap-2">
-							<span
-								class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]"
-								>{catDef.label}</span
+					<div class="flex items-center gap-2">
+						<span
+							class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]"
+							>{catDef.label}</span
+						>
+						<span
+							class="flex-shrink-0 text-[18px] leading-none font-[900]"
+							style="color:{colors.color}">{scoreToLetterGrade(catScore)}</span
+						>
+					</div>
+					{#if gradeRange}
+						<div
+							class="mt-[10px] rounded-[16px] border px-[12px] py-[8px] text-[11px] leading-[1.5] text-[#4b5563]"
+							style="background:{colors.light};border-color:{colors.border}"
+						>
+							This item, <span class="font-semibold">&ldquo;{catDef.label}&rdquo;</span> was graded
+							a
+							<span class="font-semibold" style="color:{colors.color}"
+								>{scoreToLetterGrade(catScore)}</span
 							>
-							<span
-								class="flex-shrink-0 text-[18px] leading-none font-[900]"
-								style="color:{colors.color}">{scoreToLetterGrade(catScore)}</span
+							because it returned an average of
+							<span class="font-semibold"
+								>{gradeRange.lower.toFixed(2)}&ndash;{gradeRange.upper.toFixed(2)}</span
 							>
+							on the following metrics.
 						</div>
-						{#if gradeRange}
-							<div
-								class="mt-[10px] rounded-[16px] border px-[12px] py-[8px] text-[11px] leading-[1.5] text-[#4b5563]"
-								style="background:{colors.light};border-color:{colors.border}"
-							>
-								This item, <span class="font-semibold">&ldquo;{catDef.label}&rdquo;</span> was
-								graded a
-								<span class="font-semibold" style="color:{colors.color}"
-									>{scoreToLetterGrade(catScore)}</span
-								>
-								because it returned an average of
-								<span class="font-semibold"
-									>{gradeRange.lower.toFixed(2)}&ndash;{gradeRange.upper.toFixed(2)}</span
-								>
-								on the following metrics.
-							</div>
-						{/if}
-						{#if catDescription}
-							<div class="mt-[10px]">
-								<div class="text-[12px] leading-relaxed text-[#6b7280]">{catDescription}</div>
-							</div>
-						{/if}
-					{/snippet}
+					{/if}
+					{#if catDescription}
+						<div class="mt-[10px]">
+							<div class="text-[12px] leading-relaxed text-[#6b7280]">{catDescription}</div>
+						</div>
+					{/if}
 				</ColoredBanner>
 			{/snippet}
 		</StickyHeader>

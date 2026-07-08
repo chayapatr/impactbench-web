@@ -18,8 +18,6 @@
 	// Selected model context (driven by Leaderboard via setFilters)
 	const currentModelId = $derived(appState.filters.model);
 	const currentModelName = $derived(getModelName(appState, currentModelId));
-	const currentAge = $derived(appState.filters.age);
-	const ageLabel = $derived(currentAge === 'child' ? 'Child / Teenager (6–17)' : 'Adult (18+)');
 
 	type NutritionCategory = { id: string; label: string; score: number };
 
@@ -49,7 +47,9 @@
 		// (nutritional-label-only) rank on the same basis as full-coverage ones.
 		const overall = scored.reduce((s, c) => s + c.score, 0) / scored.length;
 
-		const worst = [...scored].sort((a, b) => a.score - b.score).slice(0, 3)
+		const worst = [...scored]
+			.sort((a, b) => a.score - b.score)
+			.slice(0, 3)
 			.map((c) => ({ name: c.label, score: c.score }));
 
 		return { harmful, positive, overall, worstAreas: worst };
@@ -84,8 +84,6 @@
 		const idx = carouselCards.findIndex((c) => c.id === id);
 		if (idx >= 0) focusIndex = idx;
 	});
-
-	const labelData = $derived.by(() => carouselCards[focusIndex]?.data ?? null);
 
 	function gotoCard(idx: number) {
 		const cards = carouselCards;
@@ -206,10 +204,10 @@
 	function scoreColor(s: number): string {
 		if (!Number.isFinite(s)) return '#6b7280';
 		if (s >= 0.85) return '#16a34a'; // A / A+
-		if (s >= 0.7)  return '#65a30d'; // B / B+
+		if (s >= 0.7) return '#65a30d'; // B / B+
 		if (s >= 0.55) return '#d97706'; // C / C+
-		if (s >= 0.4)  return '#ea580c'; // D
-		return '#dc2626';                // F
+		if (s >= 0.4) return '#ea580c'; // D
+		return '#dc2626'; // F
 	}
 
 	const isLoading = $derived(loading);
@@ -272,16 +270,22 @@
 								<tr class="nl-compare-sub-row">
 									<td class="nl-compare-row-label nl-compare-sub-label">{cat.label}</td>
 									{#each sel as card (card.id + ':' + cat.id)}
-										{@const s = card.data.harmful.find((c: NutritionCategory) => c.id === cat.id)?.score ?? NaN}
+										{@const s =
+											card.data.harmful.find((c: NutritionCategory) => c.id === cat.id)?.score ??
+											NaN}
 										<td class="nl-compare-cell">
-											<span class="nl-compare-score nl-compare-score--sm" style="color:{scoreColor(s)}">{isNaN(s) ? '—' : scoreToLetterGrade(s)}</span>
+											<span
+												class="nl-compare-score nl-compare-score--sm"
+												style="color:{scoreColor(s)}">{isNaN(s) ? '—' : scoreToLetterGrade(s)}</span
+											>
 										</td>
 									{/each}
 								</tr>
 							{/each}
 
 							<tr class="nl-compare-area-row">
-								<td class="nl-compare-row-label nl-compare-area-label">Promoting Positive Impact</td>
+								<td class="nl-compare-row-label nl-compare-area-label">Promoting Positive Impact</td
+								>
 								{#each sel as card (card.id + ':pos-header')}
 									<td class="nl-compare-cell"></td>
 								{/each}
@@ -290,9 +294,14 @@
 								<tr class="nl-compare-sub-row">
 									<td class="nl-compare-row-label nl-compare-sub-label">{cat.label}</td>
 									{#each sel as card (card.id + ':' + cat.id)}
-										{@const s = card.data.positive.find((c: NutritionCategory) => c.id === cat.id)?.score ?? NaN}
+										{@const s =
+											card.data.positive.find((c: NutritionCategory) => c.id === cat.id)?.score ??
+											NaN}
 										<td class="nl-compare-cell">
-											<span class="nl-compare-score nl-compare-score--sm" style="color:{scoreColor(s)}">{isNaN(s) ? '—' : scoreToLetterGrade(s)}</span>
+											<span
+												class="nl-compare-score nl-compare-score--sm"
+												style="color:{scoreColor(s)}">{isNaN(s) ? '—' : scoreToLetterGrade(s)}</span
+											>
 										</td>
 									{/each}
 								</tr>
@@ -381,7 +390,11 @@
 								}
 							}}
 						>
-							<div class="nutrition-label" class:nutrition-label--pdf={pdfMode} bind:this={cardRefs[card.id]}>
+							<div
+								class="nutrition-label"
+								class:nutrition-label--pdf={pdfMode}
+								bind:this={cardRefs[card.id]}
+							>
 								<div class="nutrition-headline">AI Nutrition Label</div>
 
 								<div class="nutrition-model-block">
@@ -405,10 +418,7 @@
 													<i class="fa-solid fa-circle-info" aria-hidden="true"></i>
 												</button>
 											{/if}
-											<span
-												class="nutrition-grade-value"
-												style="color:{scoreColor(ld.overall)}"
-											>
+											<span class="nutrition-grade-value" style="color:{scoreColor(ld.overall)}">
 												{scoreToLetterGrade(ld.overall)}
 											</span>
 										</span>
@@ -418,19 +428,15 @@
 								{#if !pdfMode}
 									{@const range = letterGradeRange(ld.overall)}
 									{#if range}
-										<span
-											class="nutrition-grade-tt"
-											id={`nl-overall-tt-${card.id}`}
-											role="tooltip"
-										>
+										<span class="nutrition-grade-tt" id={`nl-overall-tt-${card.id}`} role="tooltip">
 											This model was graded a
-											<span
-												class="nutrition-grade-tt-strong"
-												style="color:{scoreColor(ld.overall)}"
-												>{scoreToLetterGrade(ld.overall)}</span>
+											<span class="nutrition-grade-tt-strong" style="color:{scoreColor(ld.overall)}"
+												>{scoreToLetterGrade(ld.overall)}</span
+											>
 											because it returned an average of
 											<span class="nutrition-grade-tt-strong"
-												>{range.lower.toFixed(2)}&ndash;{range.upper.toFixed(2)}</span>
+												>{range.lower.toFixed(2)}&ndash;{range.upper.toFixed(2)}</span
+											>
 											on the following metric categories.
 										</span>
 									{/if}
@@ -448,10 +454,15 @@
 									<div class="nl-trait-heading">Avoiding Negative Impact</div>
 									<div class="nl-trait-rule"></div>
 									{#each ld.harmful as cat (cat.id)}
-										<button class="nl-trait-row nl-trait-row--btn" onclick={() => onCatSelect?.(cat.id, card.id)}>
+										<button
+											class="nl-trait-row nl-trait-row--btn"
+											onclick={() => onCatSelect?.(cat.id, card.id)}
+										>
 											<span class="nl-trait-name">{cat.label}</span>
 											<span class="nl-trait-row-right">
-												<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}">{scoreToLetterGrade(cat.score)}</span>
+												<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}"
+													>{scoreToLetterGrade(cat.score)}</span
+												>
 												<i class="fa-solid fa-chevron-right nl-trait-chevron"></i>
 											</span>
 										</button>
@@ -464,10 +475,15 @@
 									<div class="nl-trait-heading">Promoting Positive Impact</div>
 									<div class="nl-trait-rule"></div>
 									{#each ld.positive as cat (cat.id)}
-										<button class="nl-trait-row nl-trait-row--btn" onclick={() => onCatSelect?.(cat.id, card.id)}>
+										<button
+											class="nl-trait-row nl-trait-row--btn"
+											onclick={() => onCatSelect?.(cat.id, card.id)}
+										>
 											<span class="nl-trait-name">{cat.label}</span>
 											<span class="nl-trait-row-right">
-												<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}">{scoreToLetterGrade(cat.score)}</span>
+												<span class="nl-trait-grade" style="color:{scoreColor(cat.score)}"
+													>{scoreToLetterGrade(cat.score)}</span
+												>
 												<i class="fa-solid fa-chevron-right nl-trait-chevron"></i>
 											</span>
 										</button>
@@ -497,9 +513,9 @@
 
 								<div class="nl-source-footer">
 									<p>
-										This label is part of the Open Benchmark of AI Impact on Humans (ImpactBench) led by
-										researchers at the MIT Media Lab, USC Marshall Neely Center, The Psychology of
-										Technology Institute, and UC Berkeley.
+										This label is part of the Open Benchmark of AI Impact on Humans (ImpactBench)
+										led by researchers at the MIT Media Lab, USC Marshall Neely Center, The
+										Psychology of Technology Institute, and UC Berkeley.
 									</p>
 									{#if pdfMode}
 										<p class="nl-source-footer-link">
@@ -583,7 +599,6 @@
 			{/if}
 		{/if}
 	</div>
-
 </div>
 
 {#if showLegendModal}
@@ -611,14 +626,11 @@
 			>
 				<i class="fa-solid fa-xmark"></i>
 			</button>
-			<h2 id="nl-legend-title" class="nl-legend-title">
-				How to interpret the AI Nutrition Label
-			</h2>
+			<h2 id="nl-legend-title" class="nl-legend-title">How to interpret the AI Nutrition Label</h2>
 			<p class="nl-legend-lede">
-				Each label summarizes how a model behaves across various metrics, grouped into
-				categories like <em>&ldquo;Avoids Factual Hallucination&rdquo;</em>. The letter grade you
-				see next to it is a composite. For individual metric performance, click on the category
-				to learn more.
+				Each label summarizes how a model behaves across various metrics, grouped into categories
+				like <em>&ldquo;Avoids Factual Hallucination&rdquo;</em>. The letter grade you see next to
+				it is a composite. For individual metric performance, click on the category to learn more.
 			</p>
 
 			<div class="nl-legend-section">

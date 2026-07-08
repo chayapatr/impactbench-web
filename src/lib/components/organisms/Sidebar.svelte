@@ -1,11 +1,6 @@
 <script lang="ts">
-	import {
-		appState,
-		sidebarState,
-		leaderboardState
-	} from '$lib/store.svelte';
-	import { scoreToClass } from '$lib/scores';
-	import { getScores, getModelName, getModelProvider, computeAreaScore, computeSubareaScore } from '$lib/utils';
+	import { appState, sidebarState, leaderboardState } from '$lib/store.svelte';
+	import { getScores, getModelName, getModelProvider } from '$lib/utils';
 	import ScorePill from '../atoms/ScorePill.svelte';
 	import OverviewPanel from './sidebar/OverviewPanel.svelte';
 	import AreaPanel from './sidebar/AreaPanel.svelte';
@@ -60,9 +55,13 @@
 		{@const focusNode = leaderboardState.smartFocusNode}
 		{@const isOnSmartFocus = top.type === 'smart-focus'}
 		<div class="flex-shrink-0 px-[10px] pt-[10px] pb-[6px]">
-			<div class="rounded-[12px] border border-[#b8e8e7] bg-[#e0f7f7] p-[14px] shadow-[0_1px_2px_rgba(0,179,176,0.08)]">
+			<div
+				class="rounded-[12px] border border-[#b8e8e7] bg-[#e0f7f7] p-[14px] shadow-[0_1px_2px_rgba(0,179,176,0.08)]"
+			>
 				<div class="flex items-start justify-between gap-2">
-					<div class="flex items-center gap-[6px] text-[10px] font-[700] uppercase tracking-[0.06em] text-[#00b3b0]">
+					<div
+						class="flex items-center gap-[6px] text-[10px] font-[700] tracking-[0.06em] text-[#00b3b0] uppercase"
+					>
 						<i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
 						Focus Area
 					</div>
@@ -82,7 +81,7 @@
 				</p>
 				<div class="mt-[12px] flex flex-col gap-[6px]">
 					<button
-						class="inline-flex w-full cursor-pointer items-center justify-center gap-[6px] rounded-[8px] border-none px-3 py-[8px] text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(3,141,143,0.25)] transition-[transform,box-shadow,filter] duration-150 hover:-translate-y-px hover:brightness-[1.06] hover:shadow-[0_3px_10px_rgba(3,141,143,0.35)] active:translate-y-0"
+						class="inline-flex w-full cursor-pointer items-center justify-center gap-[6px] rounded-[8px] border-none px-3 py-[8px] text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(3,141,143,0.25)] transition-[transform,box-shadow,filter] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(3,141,143,0.35)] hover:brightness-[1.06] active:translate-y-0"
 						style="background:linear-gradient(135deg,#00b3b0,#038d8f)"
 						onclick={onOpenNutritionLabel}
 					>
@@ -100,7 +99,9 @@
 				{#if !isOnSmartFocus}
 					<button
 						class="mt-[8px] inline-flex w-full cursor-pointer items-center justify-center gap-[6px] rounded-[6px] border-none bg-transparent px-2 py-[5px] text-[11px] font-semibold text-[#0e7490] transition-colors duration-150 hover:bg-[#ccf2f1]"
-						onclick={() => { if (focusNode) sidebarState.navStack = [{ type: 'overview' }, focusNode]; }}
+						onclick={() => {
+							if (focusNode) sidebarState.navStack = [{ type: 'overview' }, focusNode];
+						}}
 					>
 						<i class="fa-solid fa-arrow-up text-[9px]"></i>
 						Go to Your Focus Areas
@@ -115,10 +116,14 @@
 		<div class="px-[14px] pt-[20px] pb-[14px]">
 			<div class="flex items-center gap-3">
 				<div class="min-w-0 flex-1">
-					<div class="mb-[3px] text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
+					<div
+						class="mb-[3px] text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+					>
 						{getModelProvider(appState)}
 					</div>
-					<div class="truncate text-[16px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]">
+					<div
+						class="truncate text-[16px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]"
+					>
 						{getModelName(appState)}
 					</div>
 				</div>
@@ -140,7 +145,11 @@
 		{:else if top.type === 'smart-focus'}
 			<SmartFocusPanel themes={top.themes} userText={top.userText} />
 		{:else if top.type === 'theme-metrics'}
-			<ThemeMetricsPanel themeName={top.themeName} themeDesc={top.themeDesc} metrics={top.metrics} />
+			<ThemeMetricsPanel
+				themeName={top.themeName}
+				themeDesc={top.themeDesc}
+				metrics={top.metrics}
+			/>
 		{/if}
 	</div>
 
@@ -152,7 +161,9 @@
 				target="_blank"
 				rel="noopener"
 				class="text-[#9ca3af] underline underline-offset-2 hover:text-[#6b7280]">MIT Media Lab</a
-			> · 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307 USA ⋅ <a
+			>
+			· 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307 USA ⋅
+			<a
 				href="https://accessibility.mit.edu/"
 				target="_blank"
 				rel="noopener"

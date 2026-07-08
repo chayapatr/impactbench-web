@@ -1,4 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	onMount(() => { window.location.replace('/#access'); });
+	onMount(() => {
+		window.location.replace('/#access');
+	});
 </script>

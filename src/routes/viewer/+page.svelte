@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { loadTaxonomy, makeBenchmarkKey } from '$lib/data';
 	import type { NutritionCategoryDetail } from '$lib/data';
 	import {
@@ -71,6 +70,7 @@
 		const scoresById = new Map(viewerState.scores.map((s) => [s.id, s]));
 
 		// ── per-metric average score, across all of its scenarios ──
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 		const metricScoreAcc = new Map<string, number[]>();
 		for (const row of viewerState.conversations) {
 			const s = scoresById.get(row.id);
@@ -80,7 +80,10 @@
 			metricScoreAcc.get(row.metric_id)!.push(s.score);
 		}
 		const metricAvg = new Map(
-			[...metricScoreAcc.entries()].map(([mid, vals]) => [mid, vals.reduce((a, b) => a + b, 0) / vals.length])
+			[...metricScoreAcc.entries()].map(([mid, vals]) => [
+				mid,
+				vals.reduce((a, b) => a + b, 0) / vals.length
+			])
 		);
 
 		// ── models / benchmarkData (per-metric scores, flat, for the sunburst) ──
@@ -95,6 +98,7 @@
 		);
 
 		// ── nutritionScore (per-category avg of its metrics' averages, for this one model) ──
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 		const catScoreAcc = new Map<string, number[]>();
 		for (const [mid, avg] of metricAvg) {
 			for (const cat of METRIC_MAP[mid].categories) {
@@ -113,6 +117,7 @@
 		});
 
 		// ── nutritionCat (per-category metric breakdown, for the drill-down panel) ──
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, not reactive state
 		const catMetrics = new Map<string, Set<string>>();
 		for (const mid of metricAvg.keys()) {
 			for (const cat of METRIC_MAP[mid].categories) {
@@ -120,18 +125,18 @@
 				catMetrics.get(cat)!.add(mid);
 			}
 		}
-		const nutritionCat: NutritionCategoryDetail[] = CATEGORY_ORDER.filter((c) => catMetrics.has(c)).map(
-			(catId) => ({
-				id: catId,
-				label: CATEGORY_LABELS[catId] ?? catId,
-				description: CATEGORY_DESCRIPTIONS[catId],
-				metrics: [...catMetrics.get(catId)!].map((mid) => ({
-					id: mid,
-					name: METRIC_MAP[mid]?.name ?? mid,
-					type: METRIC_MAP[mid]?.type === 'negative' ? 'negative' : 'positive'
-				}))
-			})
-		);
+		const nutritionCat: NutritionCategoryDetail[] = CATEGORY_ORDER.filter((c) =>
+			catMetrics.has(c)
+		).map((catId) => ({
+			id: catId,
+			label: CATEGORY_LABELS[catId] ?? catId,
+			description: CATEGORY_DESCRIPTIONS[catId],
+			metrics: [...catMetrics.get(catId)!].map((mid) => ({
+				id: mid,
+				name: METRIC_MAP[mid]?.name ?? mid,
+				type: METRIC_MAP[mid]?.type === 'negative' ? 'negative' : 'positive'
+			}))
+		}));
 
 		// ── scenarioIndex (metric id -> scenario metas, for the panel's scenario list) ──
 		const scenarioIndex: Record<string, ScenarioMeta[]> = {};
@@ -191,9 +196,13 @@
 				if (file.name.includes('conversations') || (Array.isArray(json) && json[0]?.transcript)) {
 					viewerState.conversations = json;
 					if (json[0]?.target?.id) viewerState.modelName = json[0].target.id;
-				} else if (file.name.includes('scores') || (Array.isArray(json) && json[0]?.justification !== undefined)) {
+				} else if (
+					file.name.includes('scores') ||
+					(Array.isArray(json) && json[0]?.justification !== undefined)
+				) {
 					viewerState.scores = json;
-					if (!viewerState.modelName && json[0]?.target_model) viewerState.modelName = json[0].target_model;
+					if (!viewerState.modelName && json[0]?.target_model)
+						viewerState.modelName = json[0].target_model;
 				}
 			} catch (e) {
 				viewerState.importError = `Failed to parse ${file.name}: ${(e as Error).message}`;
@@ -242,7 +251,9 @@
 				<p class="mb-6 text-sm text-[#6b7280]">
 					Drop or select <code class="rounded bg-[#f3f4f6] px-1">conversations.json</code> and
 					<code class="rounded bg-[#f3f4f6] px-1">scores.json</code> from a
-					<code class="rounded bg-[#f3f4f6] px-1">benchmarks/nutritional-label/runs/&lt;model&gt;/</code>
+					<code class="rounded bg-[#f3f4f6] px-1"
+						>benchmarks/nutritional-label/runs/&lt;model&gt;/</code
+					>
 					folder. Any upload here is assumed to be a nutritional-label benchmark run.
 				</p>
 
@@ -259,7 +270,9 @@
 					ondrop={onDrop}
 				>
 					<i class="fa-solid fa-file-import text-3xl text-[#9ca3af]"></i>
-					<span class="text-sm font-semibold text-[#374151]">Drop JSON files here, or click to browse</span>
+					<span class="text-sm font-semibold text-[#374151]"
+						>Drop JSON files here, or click to browse</span
+					>
 					<input
 						type="file"
 						accept="application/json"
@@ -271,12 +284,21 @@
 
 				<div class="mt-4 flex gap-4 text-xs text-[#9ca3af]">
 					<span class="flex items-center gap-1">
-						<i class="fa-solid {viewerState.conversations.length ? 'fa-circle-check text-green-600' : 'fa-circle'}"
+						<i
+							class="fa-solid {viewerState.conversations.length
+								? 'fa-circle-check text-green-600'
+								: 'fa-circle'}"
 						></i>
-						conversations.json {viewerState.conversations.length ? `(${viewerState.conversations.length} rows)` : ''}
+						conversations.json {viewerState.conversations.length
+							? `(${viewerState.conversations.length} rows)`
+							: ''}
 					</span>
 					<span class="flex items-center gap-1">
-						<i class="fa-solid {viewerState.scores.length ? 'fa-circle-check text-green-600' : 'fa-circle'}"></i>
+						<i
+							class="fa-solid {viewerState.scores.length
+								? 'fa-circle-check text-green-600'
+								: 'fa-circle'}"
+						></i>
 						scores.json {viewerState.scores.length ? `(${viewerState.scores.length} rows)` : ''}
 					</span>
 				</div>
@@ -299,7 +321,9 @@
 				closeScenarioPanel();
 			}}
 		/>
-		<aside class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb]">
+		<aside
+			class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb]"
+		>
 			<NutritionCatPanel
 				catId={nutritionCatPanel?.catId ?? null}
 				modelId={nutritionCatPanel?.modelId ?? appState.filters.model}
@@ -314,7 +338,9 @@
 					<LocalScenarioPanel
 						metricId={scenarioPanelState.metricId}
 						scenarioMeta={scenarioPanelState.scenarioMeta}
-						scenarioDetail={viewerState.scenarioDetails.get(scenarioPanelState.scenarioMeta.scenario_id) ?? null}
+						scenarioDetail={viewerState.scenarioDetails.get(
+							scenarioPanelState.scenarioMeta.scenario_id
+						) ?? null}
 						backLabel="Close"
 						onBack={closeScenarioPanel}
 					/>

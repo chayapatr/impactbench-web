@@ -255,7 +255,7 @@ function drawArcs(
 		})
 		.on('mousemove', (event: MouseEvent) => callbacks.onTooltipMove(event))
 		.on('mouseleave', function () {
-			unhighlightAll(nodes);
+			unhighlightAll();
 			callbacks.onTooltipHide();
 			applyFocus(nodes);
 		})
@@ -383,7 +383,7 @@ function highlightNode(target: ArcDatum, nodes: ArcDatum[]): void {
 	});
 }
 
-function unhighlightAll(_nodes: ArcDatum[]): void {
+function unhighlightAll(): void {
 	d3.selectAll<SVGPathElement, ArcDatum>('.arc-path')
 		.classed('hover-dimmed', false)
 		.classed('hover-highlighted', false)

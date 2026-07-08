@@ -15,11 +15,15 @@
 	const scores = $derived(getScores(appState));
 </script>
 
-<div class="mt-4 flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
+<div
+	class="mt-4 flex items-center justify-between gap-2 px-[14px] pt-[10px] pb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+>
 	<span><i class="fa-solid fa-wand-magic-sparkles mr-1 text-[9px]"></i> Your Focus Areas</span>
 </div>
 {#if userText}
-	<p class="px-[14px] pb-2 text-[11px] leading-[1.4] text-[#9ca3af] italic truncate">"{userText}"</p>
+	<p class="truncate px-[14px] pb-2 text-[11px] leading-[1.4] text-[#9ca3af] italic">
+		"{userText}"
+	</p>
 {/if}
 <div class="flex flex-col gap-[6px] px-[14px] pb-4">
 	{#each themes as theme (theme.name)}
@@ -31,7 +35,13 @@
 		{@const interp = scoreInterpretation(avgScore)}
 		<button
 			class="flex w-full cursor-pointer flex-col rounded-[10px] border-[1.5px] border-[#e5e7eb] bg-white px-4 py-[10px] text-left transition-[border-color] duration-150 hover:border-[#00b3b0]"
-			onclick={() => sidebarPush({ type: 'theme-metrics', themeName: theme.name, themeDesc: theme.description, metrics: themeMetrics })}
+			onclick={() =>
+				sidebarPush({
+					type: 'theme-metrics',
+					themeName: theme.name,
+					themeDesc: theme.description,
+					metrics: themeMetrics
+				})}
 		>
 			<div class="flex items-center justify-between gap-2">
 				<div class="flex min-w-0 flex-1 items-center gap-2">

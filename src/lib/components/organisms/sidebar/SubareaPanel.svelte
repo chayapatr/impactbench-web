@@ -1,11 +1,22 @@
 <script lang="ts">
-	import { appState, sidebarBack, openScenarioPanel, scenarioPanelState, sidebarState } from '$lib/store.svelte';
-	import { scoreColors, scoreToColor, scorePillStyle } from '$lib/scores';
+	import {
+		appState,
+		sidebarBack,
+		openScenarioPanel,
+		scenarioPanelState,
+		sidebarState
+	} from '$lib/store.svelte';
+	import { scoreColors, scorePillStyle } from '$lib/scores';
 	import { SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
-	import { getModelName, getScores, computeSubareaScore, filterScenariosByAge, subareaPassFraction } from '$lib/utils';
+	import {
+		getModelName,
+		getScores,
+		computeSubareaScore,
+		filterScenariosByAge,
+		subareaPassFraction
+	} from '$lib/utils';
 	import type { ScenarioMeta } from '$lib/types';
 	import BadgeIcon from '$lib/components/atoms/BadgeIcon.svelte';
-	import SectionLabel from '$lib/components/atoms/SectionLabel.svelte';
 	import StickyHeader from '$lib/components/molecules/StickyHeader.svelte';
 	import ColoredBanner from '$lib/components/molecules/ColoredBanner.svelte';
 	import ModelAgeChip from '$lib/components/molecules/ModelAgeChip.svelte';
@@ -37,13 +48,6 @@
 		if (ratio >= 0.55) return 'Partial';
 		if (ratio >= 0.35) return 'Lacking';
 		return 'Failing';
-	}
-
-	function stepColor(ratio: number): string {
-		if (ratio >= 0.75) return '#16a34a';
-		if (ratio >= 0.55) return '#ca8a04';
-		if (ratio >= 0.35) return '#ea580c';
-		return '#dc2626';
 	}
 
 	function toggleMetric(metricId: string) {
@@ -81,8 +85,6 @@
 		{#snippet banner()}
 			<ColoredBanner
 				color={subColors.color}
-				background={subColors.light}
-				border={subColors.border}
 				breadcrumb={area.name}
 				icon={sub.icon}
 				title={sub.name}
@@ -145,10 +147,7 @@
 					class="flex min-w-0 flex-1 cursor-pointer items-center gap-[8px] border-none bg-transparent px-[14px] py-[7px] text-left"
 					onclick={() => toggleMetric(m.id)}
 				>
-					<BadgeIcon
-						type={m.type === 'negative' ? 'fail' : 'pass'}
-						variant="metric"
-					/>
+					<BadgeIcon type={m.type === 'negative' ? 'fail' : 'pass'} variant="metric" />
 					<span
 						class="min-w-0 flex-1 text-[12px] text-[#374151] {expandedMetricId === m.id
 							? 'whitespace-normal'
@@ -209,9 +208,13 @@
 									: _isHarmful
 										? rawResult === 'no'
 										: rawResult === 'yes'}
-							{@const isActive = scenarioPanelState.open && scenarioPanelState.scenarioMeta?.scenario_id === sc.scenario_id}
+							{@const isActive =
+								scenarioPanelState.open &&
+								scenarioPanelState.scenarioMeta?.scenario_id === sc.scenario_id}
 							<button
-								class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6] {isActive ? 'bg-[#f0fafa]' : ''}"
+								class="flex w-full items-center gap-[8px] px-[28px] py-[9px] text-left transition-colors duration-150 hover:bg-[#f3f4f6] {isActive
+									? 'bg-[#f0fafa]'
+									: ''}"
 								onclick={() => openScenarioPanel(m.id, sc)}
 							>
 								<BadgeIcon type={pass === null ? 'empty' : pass ? 'pass' : 'fail'} />

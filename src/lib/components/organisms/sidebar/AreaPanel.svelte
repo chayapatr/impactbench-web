@@ -2,7 +2,13 @@
 	import { appState, sidebarBack, sidebarPush } from '$lib/store.svelte';
 	import { scoreColors } from '$lib/scores';
 	import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
-	import { getModelName, computeAreaScore, computeSubareaScore, areaPassFraction, subareaPassFraction } from '$lib/utils';
+	import {
+		getModelName,
+		computeAreaScore,
+		computeSubareaScore,
+		areaPassFraction,
+		subareaPassFraction
+	} from '$lib/utils';
 	import ScorePill from '$lib/components/atoms/ScorePill.svelte';
 	import SectionLabel from '$lib/components/atoms/SectionLabel.svelte';
 	import StickyHeader from '$lib/components/molecules/StickyHeader.svelte';
@@ -28,15 +34,18 @@
 			<ModelAgeChip modelName={getModelName(appState)} age={appState.filters.age} />
 		{/snippet}
 		{#snippet banner()}
-			<ColoredBanner color={areaColors.color} background={areaColors.light} border={areaColors.border} title={area.name} score={areaScore}>
-				{#snippet children()}
-					<div class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">Well-being Area</div>
-					<div class="flex items-center gap-2">
-						<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
-						<span class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]">{area.name}</span>
-						<ScorePill score={areaScore} total={areaFrac.total} />
-					</div>
-				{/snippet}
+			<ColoredBanner color={areaColors.color} title={area.name} score={areaScore}>
+				<div class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">
+					Well-being Area
+				</div>
+				<div class="flex items-center gap-2">
+					<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
+					<span
+						class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]"
+						>{area.name}</span
+					>
+					<ScorePill score={areaScore} total={areaFrac.total} />
+				</div>
 			</ColoredBanner>
 		{/snippet}
 	</StickyHeader>

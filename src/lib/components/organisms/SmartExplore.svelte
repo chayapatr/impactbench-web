@@ -26,7 +26,9 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="se-overlay"
-		onclick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
+		onclick={(e) => {
+			if (e.target === e.currentTarget && !loading) onClose();
+		}}
 	>
 		<div class="se-modal" role="dialog" aria-modal="true" aria-label="Smart Explore">
 			<button class="se-close" aria-label="Close" onclick={onClose}>
@@ -39,7 +41,8 @@
 
 			<h2 class="se-title">Explore a focus area</h2>
 			<p class="se-desc">
-				Describe your context or concern. We'll surface the most relevant benchmark dimensions and re-rank models based on your focus.
+				Describe your context or concern. We'll surface the most relevant benchmark dimensions and
+				re-rank models based on your focus.
 			</p>
 
 			<label class="se-label" for="se-input">Your context</label>
@@ -48,16 +51,17 @@
 				class="se-textarea"
 				placeholder="e.g. I'm a parent worried about my teenager using AI for school assignments..."
 				bind:value={inputText}
-				onkeydown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); }}}
+				onkeydown={(e) => {
+					if (e.key === 'Enter' && !e.shiftKey) {
+						e.preventDefault();
+						handleSubmit();
+					}
+				}}
 			></textarea>
 
 			<div class="se-actions">
 				<button class="se-cancel" onclick={onClose} disabled={loading}>Cancel</button>
-				<button
-					class="se-submit"
-					disabled={!inputText.trim() || loading}
-					onclick={handleSubmit}
-				>
+				<button class="se-submit" disabled={!inputText.trim() || loading} onclick={handleSubmit}>
 					{#if loading}
 						<i class="fa-solid fa-spinner fa-spin"></i> Analyzing…
 					{:else if initialText}
@@ -88,7 +92,9 @@
 		background: #ffffff;
 		border-radius: 16px;
 		border: 1px solid #e5e7eb;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.08);
+		box-shadow:
+			0 20px 60px rgba(0, 0, 0, 0.2),
+			0 4px 16px rgba(0, 0, 0, 0.08);
 		padding: 28px 28px 24px;
 		position: relative;
 		display: flex;
@@ -113,7 +119,10 @@
 		font-size: 13px;
 		transition: background 0.15s;
 	}
-	.se-close:hover { background: #f3f4f6; color: #111827; }
+	.se-close:hover {
+		background: #f3f4f6;
+		color: #111827;
+	}
 
 	.se-badge {
 		display: inline-flex;
@@ -173,7 +182,10 @@
 		transition: border-color 0.15s;
 		line-height: 1.5;
 	}
-	.se-textarea:focus { border-color: #00b3b0; box-shadow: 0 0 0 3px rgba(0,179,176,0.1); }
+	.se-textarea:focus {
+		border-color: #00b3b0;
+		box-shadow: 0 0 0 3px rgba(0, 179, 176, 0.1);
+	}
 
 	.se-actions {
 		display: flex;
@@ -192,10 +204,17 @@
 		background: white;
 		cursor: pointer;
 		font-family: inherit;
-		transition: background 0.15s, border-color 0.15s;
+		transition:
+			background 0.15s,
+			border-color 0.15s;
 	}
-	.se-cancel:hover:not(:disabled) { background: #f3f4f6; }
-	.se-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+	.se-cancel:hover:not(:disabled) {
+		background: #f3f4f6;
+	}
+	.se-cancel:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
 
 	.se-submit {
 		display: inline-flex;
@@ -210,8 +229,15 @@
 		background: linear-gradient(135deg, #00b3b0, #038d8f);
 		cursor: pointer;
 		font-family: inherit;
-		transition: opacity 0.15s, filter 0.15s;
+		transition:
+			opacity 0.15s,
+			filter 0.15s;
 	}
-	.se-submit:hover:not(:disabled) { filter: brightness(1.06); }
-	.se-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+	.se-submit:hover:not(:disabled) {
+		filter: brightness(1.06);
+	}
+	.se-submit:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
 </style>
