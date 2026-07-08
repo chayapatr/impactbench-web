@@ -1136,7 +1136,7 @@
 										</div>
 									</div>
 
-									<!-- Sticky footer: submit button doubles as progress bar -->
+									<!-- Sticky footer: submit button (shows % until complete) -->
 									<div
 										class="relative flex-shrink-0 border-t border-[#e5e7eb] bg-white px-5 pt-3 pb-4 shadow-[0_-4px_12px_rgba(15,23,42,0.06)]"
 									>
@@ -1146,33 +1146,22 @@
 
 										<button
 											type="button"
-											class="relative flex h-[46px] w-full items-center justify-center overflow-hidden rounded-[10px] border-none bg-[#e5e7eb] px-4 text-[13px] font-semibold shadow-[0_2px_10px_rgba(15,23,42,0.08)] transition-[filter,transform] duration-150 hover:enabled:brightness-105 active:enabled:scale-[0.99] disabled:cursor-not-allowed enabled:cursor-pointer"
+											class="flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] border-none px-4 text-[13px] font-semibold transition-[filter,transform] duration-150
+												{evalProgress.pct >= 100
+												? 'cursor-pointer bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
+												: 'cursor-not-allowed bg-[#e5e7eb] text-[#9ca3af]'}"
 											disabled={!canSubmit}
 											onclick={submitEvaluation}
 										>
-											<span
-												class="absolute inset-y-0 left-0 rounded-[10px] transition-[width] duration-300 ease-out {evalProgress.pct >=
-												100
-													? 'bg-gradient-to-r from-[#16a34a] to-[#22c55e]'
-													: 'bg-gradient-to-r from-[#00b3b0] to-[#038d8f]'}"
-												style="width: {evalProgress.pct}%"
-											></span>
-											<span
-												class="relative z-10 flex items-center gap-2 {evalProgress.pct >= 50
-													? 'text-white'
-													: 'text-[#374151]'}"
-											>
-												{#if currentEval.submitting}
-													<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
-												{:else if currentEval.submitted && evalProgress.pct >= 100}
-													<i class="fa-solid fa-rotate"></i> Update evaluation · 100%
-												{:else if evalProgress.pct >= 100}
-													<i class="fa-solid fa-paper-plane"></i> Submit evaluation
-												{:else}
-													<i class="fa-solid fa-lock text-[11px]"></i>
-													{evalProgress.pct}% complete · finish all questions to submit
-												{/if}
-											</span>
+											{#if currentEval.submitting}
+												<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
+											{:else if currentEval.submitted && evalProgress.pct >= 100}
+												<i class="fa-solid fa-rotate"></i> Update evaluation
+											{:else if evalProgress.pct >= 100}
+												<i class="fa-solid fa-paper-plane"></i> Submit evaluation
+											{:else}
+												{evalProgress.pct}% complete
+											{/if}
 										</button>
 									</div>
 								{/if}
