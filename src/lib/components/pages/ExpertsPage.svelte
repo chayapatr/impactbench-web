@@ -865,10 +865,7 @@
 								class="hidden w-[440px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white lg:flex"
 							>
 								<div class="flex-shrink-0 border-b border-[#f3f4f6] px-5 pt-4 pb-3">
-									<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-										Evaluation
-									</div>
-									<h3 class="mt-0.5 text-[15px] font-[700] text-[#111827]">
+									<h3 class="text-[15px] font-[700] text-[#111827]">
 										Evaluate {currentMaskedModel.label}
 									</h3>
 								</div>
