@@ -52,6 +52,8 @@ export async function initAppData() {
 			.then(setNutritionCat)
 			.catch((e) => console.warn('Failed to load nutrition categories:', e));
 	} catch (err) {
+		// Allow a retry after a failed initial load.
+		started = false;
 		appState.error = (err as Error).message;
 		appState.loading = false;
 	}
