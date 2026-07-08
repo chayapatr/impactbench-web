@@ -138,7 +138,6 @@
 		return selectedIds.map((id) => byId.get(id)).filter((c): c is Card => Boolean(c));
 	});
 
-
 	// ───── PDF export of the center label ─────
 	let saving = $state(false);
 	let pdfMode = $state(false);
@@ -586,7 +585,6 @@
 		{/if}
 	</div>
 
-
 </div>
 
 {#if showLegendModal}
@@ -726,11 +724,6 @@
 		border-radius: 50%;
 		animation: nlSpin 0.85s linear infinite;
 	}
-	.nl-spinner--sm {
-		width: 18px;
-		height: 18px;
-		border-width: 2px;
-	}
 	@keyframes nlSpin {
 		to {
 			transform: rotate(360deg);
@@ -772,7 +765,6 @@
 		color: #6b7280;
 		font-size: 13px;
 	}
-
 
 	/* ───── Carousel ───── */
 	.nl-carousel-wrap {
@@ -877,25 +869,6 @@
 		cursor: not-allowed;
 	}
 
-	.nl-carousel-footer {
-		flex-shrink: 0;
-		margin-top: 14px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 16px;
-	}
-	.nl-carousel-counter {
-		font-family: 'Arial Black', Arial, sans-serif;
-		font-size: 15px;
-		color: #111827;
-	}
-	.nl-carousel-counter span {
-		color: #9ca3af;
-		font-weight: 400;
-		margin-left: 2px;
-	}
-
 	/* ───── Corner PDF button ───── */
 	.nl-pdf-btn--corner {
 		position: absolute;
@@ -923,12 +896,6 @@
 		color: #374151;
 		box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.18);
 		transition: all 150ms ease;
-	}
-	.nl-select-checkbox--corner {
-		position: absolute;
-		top: 16px;
-		right: 16px;
-		z-index: 250;
 	}
 	.nl-corner-actions {
 		position: absolute;
@@ -1000,16 +967,6 @@
 	.nl-strip-thumbs::-webkit-scrollbar-thumb {
 		background: rgba(0, 0, 0, 0.15);
 		border-radius: 2px;
-	}
-	.nl-strip-empty {
-		font-family: Arial, sans-serif;
-		font-size: 12px;
-		color: #6b7280;
-		padding: 6px 8px;
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		font-style: italic;
 	}
 
 	.nl-thumb {
@@ -1212,12 +1169,6 @@
 		margin: 6px 0 0;
 		color: #111827;
 	}
-	.nl-compare-meta {
-		font-family: Arial, sans-serif;
-		font-size: 12px;
-		color: #6b7280;
-		font-weight: 400;
-	}
 
 	.nl-compare-scroll {
 		flex: 1;
@@ -1280,23 +1231,6 @@
 		color: #6b7280;
 		margin-top: 2px;
 	}
-	.nl-compare-overall-label {
-		font-family: Arial, sans-serif;
-		font-size: 13px;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: #6b7280;
-		padding-top: 14px;
-		padding-bottom: 14px;
-	}
-	.nl-compare-cell--overall {
-		padding-top: 14px;
-		padding-bottom: 14px;
-	}
-	.nl-compare-cell--overall .nl-compare-score {
-		font-size: 22px;
-	}
 	.nl-compare-area-row {
 		background: #fafafa;
 	}
@@ -1312,10 +1246,6 @@
 		color: #111827;
 		padding-top: 12px;
 		padding-bottom: 12px;
-	}
-	.nl-compare-cell--area .nl-compare-score {
-		font-size: 15px;
-		font-weight: 700;
 	}
 	.nl-compare-sub-row .nl-compare-row-label {
 		padding-left: 24px;
@@ -1333,52 +1263,8 @@
 		font-size: 13px;
 		letter-spacing: -0.01em;
 	}
-	.nl-compare-score--graded {
-		display: inline-flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 2px;
-	}
-	.nl-compare-score--graded-sm {
-		gap: 1px;
-	}
-	.nl-compare-grade {
-		font-weight: 800;
-		letter-spacing: -0.01em;
-	}
-	.nl-compare-numeric {
-		font-size: 11px;
-		font-weight: 500;
-		letter-spacing: 0;
-		color: #6b7280;
-	}
 	.nl-compare-score--sm {
 		font-size: 12px;
-	}
-	.nl-compare-cell--best {
-		background: rgba(0, 179, 176, 0.08);
-		position: relative;
-	}
-	.nl-compare-cell--best::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border: 1px solid rgba(0, 179, 176, 0.5);
-		border-radius: 2px;
-		pointer-events: none;
-	}
-	.nl-compare-row--focus .nl-compare-row-label {
-		color: #00807e;
-	}
-	.nl-compare-row--focus .nl-compare-row-label,
-	.nl-compare-row--focus.nl-compare-area-row,
-	.nl-compare-row--focus.nl-compare-area-row .nl-compare-row-label {
-		background: linear-gradient(135deg, rgba(0, 179, 176, 0.08), rgba(0, 179, 176, 0.02));
-	}
-	.nl-focus-tag--sm {
-		font-size: 8px;
-		padding: 1px 5px;
-		margin-left: 6px;
 	}
 
 	/* ───── Nutrition label card (compact, matches SmartNutritionLabel style) ───── */
@@ -1396,15 +1282,6 @@
 		line-height: 0.9;
 		font-weight: 900;
 		letter-spacing: -0.03em;
-	}
-	.nutrition-subline {
-		margin-top: 3px;
-		font-size: 10px;
-		font-family: Arial, sans-serif;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: #1f2937;
 	}
 
 	.nutrition-model-block {
@@ -1543,160 +1420,6 @@
 		transform: translate(-50%, -50%);
 		border: 2px solid #ffffff;
 		box-shadow: 0 0 0 1px #111827;
-	}
-
-	.smart-nl-section-title {
-		font-family: Arial, sans-serif;
-		font-size: 12px;
-		font-weight: 800;
-		color: #111827;
-		margin: 1px 0 5px;
-		display: flex;
-		align-items: baseline;
-		gap: 6px;
-		flex-wrap: wrap;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-	}
-	.smart-nl-section-sub {
-		font-size: 10px;
-		font-weight: 500;
-		color: #6b7280;
-		text-transform: none;
-		letter-spacing: 0;
-	}
-
-	.nl-areas {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-	}
-	.nl-area-card {
-		padding: 6px 8px 7px;
-		border: 1px solid #e5e7eb;
-		border-radius: 8px;
-		background: #ffffff;
-	}
-	.nl-area-card--focus {
-		border-color: rgba(0, 179, 176, 0.55);
-		background: linear-gradient(135deg, rgba(0, 179, 176, 0.06), rgba(3, 141, 143, 0.04));
-		box-shadow: 0 1px 4px rgba(0, 179, 176, 0.14);
-	}
-
-	.smart-nl-area-top {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-family: Arial, sans-serif;
-		font-size: 11.5px;
-	}
-	.smart-nl-area-name {
-		flex: 1;
-		font-weight: 800;
-		color: #111827;
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-	}
-	.smart-nl-area-score {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 2px;
-	}
-	.smart-nl-area-grade {
-		font-weight: 900;
-		font-size: 13px;
-		letter-spacing: -0.01em;
-	}
-	.smart-nl-area-numeric {
-		font-size: 10px;
-		font-weight: 500;
-		letter-spacing: 0;
-		color: #6b7280;
-	}
-
-	.smart-nl-area-track {
-		position: relative;
-		margin: 4px 0 5px;
-		height: 4px;
-		background: #f3f4f6;
-		border-radius: 999px;
-	}
-	.smart-nl-area-zero {
-		position: absolute;
-		left: 50%;
-		top: -2px;
-		bottom: -2px;
-		width: 1px;
-		background: #9ca3af;
-	}
-	.smart-nl-area-marker {
-		position: absolute;
-		top: 50%;
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		transform: translate(-50%, -50%);
-		border: 2px solid #ffffff;
-		box-shadow: 0 0 0 1px #111827;
-	}
-
-	.nl-focus-tag {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-family: Arial, sans-serif;
-		font-size: 9px;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		font-weight: 700;
-		color: #00807e;
-		background: rgba(0, 179, 176, 0.12);
-		padding: 2px 6px;
-		border-radius: 999px;
-	}
-
-	.nl-sub-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		border-top: 1px solid #e5e7eb;
-	}
-	.nl-sub-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 4px 0;
-		border-bottom: 1px dashed #f1f5f9;
-		font-family: Arial, sans-serif;
-	}
-	.nl-sub-row:last-child {
-		border-bottom: none;
-	}
-	.nl-sub-row--focus {
-		background: rgba(0, 179, 176, 0.05);
-		border-radius: 6px;
-		padding: 3px 8px;
-		margin: 0 -8px;
-	}
-	.nl-sub-dot {
-		width: 9px;
-		height: 9px;
-		flex-shrink: 0;
-		border-radius: 999px;
-		background: linear-gradient(180deg, #f6a63b 0%, #ea7a1a 100%);
-		box-shadow:
-			0 0 0 2px rgba(246, 166, 59, 0.18),
-			0 2px 4px rgba(180, 83, 9, 0.18);
-	}
-	.nl-sub-name {
-		display: block;
-		font-size: 10.5px;
-		color: #374151;
-		line-height: 1.2;
-		font-weight: 400;
-		text-wrap: balance;
 	}
 
 	/* ───── Hardcoded trait sections (FDA-style nutrition rows) ───── */
@@ -1841,13 +1564,6 @@
 		min-width: 18px;
 	}
 
-	.nutrition-footnote {
-		font-family: Arial, sans-serif;
-		font-size: 9px;
-		line-height: 1.25;
-		color: #374151;
-	}
-
 	.nl-pdf-btn {
 		display: inline-flex;
 		align-items: center;
@@ -1873,102 +1589,8 @@
 	}
 
 	/* ───── Right: tips column ───── */
-	.nl-tips-head {
-		padding: 20px 20px 12px;
-		border-bottom: 1px solid #e5e7eb;
-	}
-	.nl-tips-title {
-		font-family: 'Source Serif Pro', 'Source Serif 4', Georgia, serif;
-		font-size: 18px;
-		font-weight: 600;
-		color: #0f172a;
-		margin: 0 0 4px;
-		letter-spacing: -0.01em;
-	}
-	.nl-tips-sub {
-		font-size: 12px;
-		line-height: 1.5;
-		color: #6b7280;
-		margin: 0;
-	}
-	.nl-tips-sub em {
-		font-style: normal;
-		color: #00807e;
-		font-weight: 500;
-	}
-
-	.nl-tips-body {
-		flex: 1;
-		overflow-y: auto;
-		padding: 14px 18px 24px;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.nl-tip-card {
-		background: #ffffff;
-		border: 1px solid #e5e7eb;
-		border-radius: 10px;
-		padding: 12px 14px;
-		box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-	}
-	.nl-tip-area {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 11.5px;
-		font-weight: 700;
-		color: #b45309;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		margin-bottom: 6px;
-	}
-	.nl-tip-area i {
-		color: #d97706;
-	}
-	.nl-tip-body {
-		font-size: 13px;
-		line-height: 1.5;
-		color: #1f2937;
-		margin: 0;
-	}
-
-	.nl-tips-loading {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		color: #6b7280;
-		font-size: 13px;
-		padding: 6px 2px;
-	}
-	.nl-tips-empty,
-	.nl-tips-note {
-		font-size: 12px;
-		color: #6b7280;
-		line-height: 1.5;
-		margin: 0;
-		padding: 6px 2px;
-	}
-	.nl-tips-note {
-		display: flex;
-		align-items: flex-start;
-		gap: 6px;
-		color: #9ca3af;
-		font-style: italic;
-	}
 
 	/* ───── Composer overlay ───── */
-	.nl-composer {
-		position: absolute;
-		inset: 0;
-		z-index: 50;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: radial-gradient(120% 80% at 50% 0%, #fffdf7 0%, #f7f3e8 58%, #efe8d6 100%);
-		animation: nlComposerIn 0.28s ease-out;
-	}
 	@keyframes nlComposerIn {
 		from {
 			opacity: 0;
@@ -1979,33 +1601,6 @@
 			transform: scale(1);
 		}
 	}
-	.nl-composer-close {
-		position: absolute;
-		top: 18px;
-		right: 22px;
-		width: 36px;
-		height: 36px;
-		border: 1px solid rgba(17, 24, 39, 0.12);
-		background: rgba(255, 255, 255, 0.78);
-		color: #111827;
-		border-radius: 999px;
-		cursor: pointer;
-		font-size: 14px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: background 150ms;
-	}
-	.nl-composer-close:hover {
-		background: rgba(255, 255, 255, 0.98);
-	}
-	.nl-composer-inner {
-		width: 100%;
-		max-width: 640px;
-		padding: 0 24px;
-		text-align: center;
-		animation: nlComposerInnerIn 0.36s 0.05s ease-out both;
-	}
 	@keyframes nlComposerInnerIn {
 		from {
 			opacity: 0;
@@ -2015,96 +1610,6 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
-	}
-	.nl-composer-title {
-		font-family: 'Source Serif Pro', 'Source Serif 4', Georgia, serif;
-		font-size: clamp(1.5rem, 2.4vw, 2rem);
-		font-weight: 550;
-		color: #111827;
-		margin: 0 0 10px;
-		letter-spacing: -0.01em;
-	}
-	.nl-composer-sub {
-		font-size: 14px;
-		line-height: 1.55;
-		color: #475569;
-		max-width: 480px;
-		margin: 0 auto 22px;
-	}
-	.nl-composer-box {
-		position: relative;
-		background: rgba(255, 255, 255, 0.92);
-		border: 1px solid rgba(148, 163, 184, 0.34);
-		border-radius: 16px;
-		padding: 14px 60px 14px 18px;
-		box-shadow: 0 18px 40px -24px rgba(15, 23, 42, 0.28);
-		transition:
-			border-color 150ms,
-			box-shadow 150ms;
-	}
-	.nl-composer-box:focus-within {
-		border-color: rgba(0, 212, 209, 0.6);
-		box-shadow: 0 0 0 4px rgba(0, 179, 176, 0.18);
-	}
-	.nl-composer-textarea {
-		width: 100%;
-		min-height: 78px;
-		max-height: 200px;
-		resize: none;
-		background: transparent;
-		border: none;
-		outline: none;
-		color: #111827;
-		font-size: 15px;
-		line-height: 1.5;
-		font-family: inherit;
-		caret-color: #00d4d1;
-	}
-	.nl-composer-textarea::placeholder {
-		color: #94a3b8;
-	}
-	.nl-composer-submit {
-		position: absolute;
-		right: 12px;
-		bottom: 12px;
-		width: 38px;
-		height: 38px;
-		border-radius: 999px;
-		border: none;
-		background: linear-gradient(135deg, #00b3b0, #038d8f);
-		color: #ffffff;
-		font-size: 14px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		box-shadow: 0 4px 12px -4px rgba(0, 179, 176, 0.5);
-		transition:
-			transform 150ms,
-			box-shadow 150ms,
-			opacity 150ms;
-	}
-	.nl-composer-submit:hover:not(:disabled) {
-		transform: translateY(-1px);
-		box-shadow: 0 6px 16px -4px rgba(0, 179, 176, 0.6);
-	}
-	.nl-composer-submit:disabled {
-		opacity: 0.35;
-		cursor: not-allowed;
-	}
-	.nl-composer-hint {
-		margin-top: 14px;
-		font-size: 12px;
-		color: #64748b;
-	}
-	.nl-composer-hint kbd {
-		font-family: ui-monospace, SFMono-Regular, monospace;
-		font-size: 11px;
-		color: #64748b;
-		border-radius: 4px;
-		background: rgba(255, 255, 255, 0.9);
-		border: 1px solid rgba(148, 163, 184, 0.28);
-		margin: 0 2px;
 	}
 	@media (max-width: 1200px) {
 		.nl-left {
@@ -2142,12 +1647,6 @@
 	}
 	.nl-legend-btn:hover i {
 		color: #111827;
-	}
-	.nl-legend-btn--corner {
-		position: absolute;
-		top: 16px;
-		right: 148px;
-		z-index: 250;
 	}
 
 	/* ───── Legend modal ───── */
@@ -2229,14 +1728,6 @@
 		border-top: 1px solid #f3f4f6;
 		padding-top: 14px;
 		margin-bottom: 14px;
-	}
-	.nl-legend-section-label {
-		font-size: 10px;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: #9ca3af;
-		margin-bottom: 10px;
 	}
 	.nl-legend-scale {
 		list-style: none;

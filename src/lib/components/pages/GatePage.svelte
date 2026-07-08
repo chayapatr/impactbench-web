@@ -360,7 +360,7 @@
 				<button class="btn-white" onclick={() => openTab('request')}>
 					<i class="fa-solid fa-key"></i> Request Access
 				</button>
-				<button class="btn-white" onclick={() => onTabChange('about')}>
+				<button class="btn-white" onclick={() => onTabChange?.('about')}>
 					<i class="fa-solid fa-file-lines"></i> About
 				</button>
 			</div>

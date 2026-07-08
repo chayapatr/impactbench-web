@@ -65,9 +65,11 @@ export type BenchmarkData = Record<BenchmarkKey, MetricScores>;
 
 // ===== Filter State =====
 
+export type AgeGroup = 'adult' | 'child';
+
 export interface FilterState {
 	model: string;
-	age: string;
+	age: AgeGroup;
 }
 
 // ===== D3 Hierarchy Types =====

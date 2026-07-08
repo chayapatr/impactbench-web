@@ -50,8 +50,10 @@
 	import NutritionLabelPage from '$lib/components/pages/NutritionLabelPage.svelte';
 	import NutritionCatPanel from '$lib/components/organisms/NutritionCatPanel.svelte';
 
+	type Tab = 'home' | 'explore' | 'metrics' | 'nutrition' | 'about';
+
 	interface Props {
-		initialTab: 'home' | 'explore' | 'metrics' | 'nutrition' | 'about';
+		initialTab: Tab;
 	}
 	let { initialTab }: Props = $props();
 
@@ -71,12 +73,22 @@
 	// no more window.location.pathname sniffing) or the legacy ?tab=explore
 	// query param on the homepage, in that precedence order.
 	const ROUTABLE_TABS = new Set(['explore', 'metrics', 'nutrition']);
+	function isTab(value: string | null | undefined): value is Tab {
+		return (
+			value === 'home' ||
+			value === 'explore' ||
+			value === 'metrics' ||
+			value === 'nutrition' ||
+			value === 'about'
+		);
+	}
 	const _initialParams =
 		typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
 	let pendingDeepMetric = $state<string | null>(_initialParams?.get('metric') ?? null);
 	let pendingDeepScenario = $state<string | null>(_initialParams?.get('scenario') ?? null);
-	let pendingDeepTab = $state<string | null>(
-		(ROUTABLE_TABS.has(initialTab) ? initialTab : null) ?? _initialParams?.get('tab') ?? null
+	const _queryTab = _initialParams?.get('tab');
+	let pendingDeepTab = $state<Tab | null>(
+		(ROUTABLE_TABS.has(initialTab) ? initialTab : null) ?? (isTab(_queryTab) ? _queryTab : null)
 	);
 
 	let sunburstRef: Sunburst | undefined = $state();
@@ -481,6 +493,7 @@
 	);
 
 	function handleTabChange(tab: string) {
+		if (!isTab(tab)) return;
 		if (tab === 'home') {
 			showGate = true;
 		} else if (ROUTABLE_TABS.has(tab) && !isAuthenticated) {
@@ -520,19 +533,11 @@
 		{isAuthenticated}
 		showPasswordOnMount={!!(pendingDeepMetric || pendingDeepScenario)}
 		passwordRequestNonce={gatePasswordRequest}
-		onEnter={(smartText) => {
+		onEnter={() => {
 			isAuthenticated = true;
 			showGate = false;
-			// If user submitted a focus prompt on the homepage, route them
-			// straight to the Nutritional Label tab and run the pipeline.
-			if (smartText && smartText.trim()) {
-				activeTab = 'nutrition';
-				pendingDeepTab = null;
-				handleSmartExploreSubmit(smartText);
-			} else {
-				activeTab = pendingDeepTab ?? 'explore';
-				pendingDeepTab = null;
-			}
+			activeTab = pendingDeepTab ?? 'explore';
+			pendingDeepTab = null;
 			// Navigate to deep link target if present
 			if (pendingDeepMetric && appState.taxonomy) {
 				sidebarNavigateToMetric(pendingDeepMetric, appState.taxonomy);

@@ -56,8 +56,7 @@
 	<ConversationViewer
 		{metricId}
 		metricName={scenarioMeta.title}
-		{behaviorType}
-		measurement="presence"
+		metricType={mapped?.type ?? 'positive'}
 		{scenarioDetail}
 		loading={false}
 		error={!scenarioDetail}

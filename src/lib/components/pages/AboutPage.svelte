@@ -1927,60 +1927,6 @@
 			grid-template-columns: 1fr;
 		}
 	}
-	.stat-card {
-		background: #fafaf9;
-		border: 1px solid #e5e7eb;
-		border-radius: 10px;
-		padding: 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		font-size: 14px;
-		line-height: 1.55;
-	}
-	.stat-card-title {
-		font-size: 14px;
-		font-weight: 600;
-		color: #1a1a1a;
-		letter-spacing: -0.005em;
-		line-height: 1.35;
-		margin: 0;
-	}
-	.stat-card-subtitle {
-		display: block;
-		font-size: 13px;
-		font-weight: 500;
-		color: #6b7280;
-		margin-top: 2px;
-	}
-	.stat-card-list {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-	.stat-card-list li {
-		font-size: 14px;
-		line-height: 1.55;
-		color: #374151;
-	}
-	.stat-card-list li strong {
-		display: block;
-		color: #1a1a1a;
-		margin-bottom: 4px;
-	}
-	.stat-card-callout {
-		margin: 4px 0 0;
-		font-size: 14px;
-		line-height: 1.55;
-		color: #b91c1c;
-		font-weight: 600;
-	}
-	.stat-card-callout em {
-		font-style: italic;
-	}
 
 	/* Column layout: header above, mini-cards stacked, equal-height columns */
 	.stat-cards {
@@ -2107,22 +2053,6 @@
 		display: flex;
 		flex-direction: column;
 		overflow-y: auto;
-	}
-
-	.about-sidebar-title {
-		font-family: 'Source Serif Pro', Georgia, serif;
-		font-size: 18px;
-		font-weight: 600;
-		letter-spacing: -0.02em;
-		color: #1a1a1a;
-		margin-bottom: 16px;
-	}
-
-	.about-sidebar-divider {
-		width: 100%;
-		height: 1px;
-		background: #e5e7eb;
-		margin-bottom: 24px;
 	}
 
 	.about-sidebar-nav {
@@ -2387,24 +2317,6 @@
 		text-align: center;
 	}
 
-	.section-overline {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 12px;
-		margin-bottom: 16px;
-	}
-
-	.section-overline span {
-		font-family: 'Inter', system-ui, sans-serif;
-		font-size: 11px;
-		font-weight: 600;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: #9ca3af;
-		white-space: nowrap;
-	}
-
 	/* Section titles */
 	.section-title {
 		font-family: 'Source Serif Pro', Georgia, serif;
@@ -2577,10 +2489,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
-	}
-
-	.team-list-cols {
-		display: none;
 	}
 
 	.team-list li {

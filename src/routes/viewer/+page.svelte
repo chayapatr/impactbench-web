@@ -12,7 +12,7 @@
 		scenarioPanelState,
 		closeScenarioPanel
 	} from '$lib/store.svelte';
-	import type { ScenarioDetail, ScenarioMeta } from '$lib/types';
+	import type { AIModel, ScenarioDetail, ScenarioMeta } from '$lib/types';
 	import NutritionLabelPage from '$lib/components/pages/NutritionLabelPage.svelte';
 	import NutritionCatPanel from '$lib/components/organisms/NutritionCatPanel.svelte';
 	import LocalScenarioPanel from './LocalScenarioPanel.svelte';
@@ -161,7 +161,16 @@
 			});
 		}
 
-		const models = [{ id: modelId, name: modelId, provider: 'Imported', version: modelId, releaseYear: 2026 }];
+		const models: AIModel[] = [
+			{
+				id: modelId,
+				name: modelId,
+				provider: 'Imported',
+				version: modelId,
+				releaseYear: 2026,
+				surfaces: ['nutritional-label']
+			}
+		];
 
 		setData(taxonomy, models, benchmarkData);
 		setNutritionScore(nutritionScore);

@@ -8,7 +8,7 @@
 	const AGE_OPTIONS = [
 		{ value: 'adult', label: 'Adult (18+)' },
 		{ value: 'child', label: 'Child / Teen (6–17)' }
-	];
+	] as const;
 
 	interface Props {
 		onModelSelect: (modelId: string) => void;
@@ -28,9 +28,6 @@
 			return { mode: 'scenario' as const, metricId: scenarioPanelState.metricId, scenarioMeta: scenarioPanelState.scenarioMeta };
 		}
 		const top = sidebarState.navStack[sidebarState.navStack.length - 1];
-		if (top.type === 'scenario') {
-			return { mode: 'scenario' as const, metricId: top.metricId, scenarioMeta: top.scenarioMeta };
-		}
 		if (top.type === 'metric') {
 			return { mode: 'metric' as const, metricId: top.metricId };
 		}
