@@ -6,8 +6,7 @@
 		loadModels,
 		loadBenchmarkData,
 		loadScenarioIndex,
-		loadMetricCriteria,
-		loadMetricMeta,
+		loadMetricDetails,
 		loadScenarioDetail
 	} from '$lib/data';
 	import {
@@ -139,15 +138,23 @@
 			]);
 			setData(taxonomy, models, benchmarkData);
 
-			const [scenarioIndex, criteria, meta, mapping] = await Promise.all([
+			const [scenarioIndex, details, mapping] = await Promise.all([
 				loadScenarioIndex(),
-				loadMetricCriteria(),
-				loadMetricMeta(),
+				loadMetricDetails(),
 				loadExpertModelMapping(fetch, models)
 			]);
 			setScenarioIndex(scenarioIndex);
-			setMetricCriteria(criteria);
-			setMetricMeta(meta);
+			setMetricCriteria(
+				Object.fromEntries(Object.entries(details).map(([id, d]) => [id, d.definition]))
+			);
+			setMetricMeta(
+				Object.fromEntries(
+					Object.entries(details).map(([id, d]) => [
+						id,
+						{ contributor: d.contributor, mattersBecause: d.mattersBecause }
+					])
+				)
+			);
 			maskedModels = mapping;
 
 			// Filter to humanebench × social-relationships metrics, alphabetically

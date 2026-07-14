@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { loadTaxonomy, makeBenchmarkKey } from '$lib/data';
+	import { loadTaxonomy, loadNutrition, makeBenchmarkKey } from '$lib/data';
 	import type { NutritionCategoryDetail } from '$lib/data';
+	import { NUTRITION_CAT_DESCRIPTIONS } from '$lib/descriptions';
 	import {
 		appState,
 		initAppData,
@@ -18,7 +19,7 @@
 	import NutritionLabelPage from '$lib/components/pages/NutritionLabelPage.svelte';
 	import NutritionCatPanel from '$lib/components/organisms/NutritionCatPanel.svelte';
 	import LocalScenarioPanel from './LocalScenarioPanel.svelte';
-	import { METRIC_MAP, CATEGORY_LABELS, CATEGORY_DESCRIPTIONS, CATEGORY_ORDER } from './metric-map';
+	import { buildMetricMaps } from './metric-map';
 
 	interface ChatTurn {
 		role: 'user' | 'assistant';
@@ -84,7 +85,11 @@
 		// Wait out the boot-time load so it can't land after (and clobber)
 		// the imported dataset we're about to write.
 		await initAppData().catch(() => {});
-		const taxonomy = await loadTaxonomy();
+		const [taxonomy, nutrition] = await Promise.all([loadTaxonomy(), loadNutrition()]);
+
+		// Metric names/types/categories come from the published nutrition data
+		// rather than a hardcoded copy — see metric-map.ts.
+		const { METRIC_MAP, CATEGORY_LABELS, CATEGORY_ORDER } = buildMetricMaps(nutrition);
 
 		prevFilters = { ...appState.filters };
 		importedIntoGlobalStore = true;
@@ -152,7 +157,7 @@
 		).map((catId) => ({
 			id: catId,
 			label: CATEGORY_LABELS[catId] ?? catId,
-			description: CATEGORY_DESCRIPTIONS[catId],
+			description: NUTRITION_CAT_DESCRIPTIONS[catId],
 			metrics: [...catMetrics.get(catId)!].map((mid) => ({
 				id: mid,
 				name: METRIC_MAP[mid]?.name ?? mid,

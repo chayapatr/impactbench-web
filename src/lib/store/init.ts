@@ -3,10 +3,8 @@ import {
 	loadModels,
 	loadBenchmarkData,
 	loadScenarioIndex,
-	loadMetricCriteria,
-	loadMetricMeta,
-	loadNutritionScore,
-	loadNutritionCat
+	loadMetricDetails,
+	loadNutrition
 } from '../data';
 import { appState, setData } from './appData.svelte';
 import {
@@ -53,18 +51,35 @@ async function load() {
 		loadScenarioIndex()
 			.then(setScenarioIndex)
 			.catch((e) => console.warn('Failed to load scenario index:', e));
-		loadMetricCriteria()
-			.then(setMetricCriteria)
-			.catch((e) => console.warn('Failed to load metric criteria:', e));
-		loadMetricMeta()
-			.then(setMetricMeta)
-			.catch((e) => console.warn('Failed to load metric meta:', e));
-		loadNutritionScore()
-			.then(setNutritionScore)
-			.catch((e) => console.warn('Failed to load nutrition scores:', e));
-		loadNutritionCat()
-			.then(setNutritionCat)
-			.catch((e) => console.warn('Failed to load nutrition categories:', e));
+
+		// metric-details.json and nutrition.json each merge two of the files the
+		// store used to fetch separately. The store still keeps them as separate
+		// slices — /viewer builds the same slices client-side from an imported
+		// run — so split each payload back out on arrival.
+		loadMetricDetails()
+			.then((details) => {
+				setMetricCriteria(
+					Object.fromEntries(Object.entries(details).map(([id, d]) => [id, d.definition]))
+				);
+				setMetricMeta(
+					Object.fromEntries(
+						Object.entries(details).map(([id, d]) => [
+							id,
+							{ contributor: d.contributor, mattersBecause: d.mattersBecause }
+						])
+					)
+				);
+			})
+			.catch((e) => console.warn('Failed to load metric details:', e));
+
+		loadNutrition()
+			.then((cats) => {
+				setNutritionScore(cats.map(({ id, label, models }) => ({ id, label, models })));
+				setNutritionCat(
+					cats.map(({ id, label, description, metrics }) => ({ id, label, description, metrics }))
+				);
+			})
+			.catch((e) => console.warn('Failed to load nutrition data:', e));
 	} catch (err) {
 		// Allow a retry after a failed initial load.
 		pending = null;

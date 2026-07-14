@@ -4,7 +4,6 @@
 	import ConversationViewer from '$lib/components/organisms/ConversationViewer.svelte';
 	import StickyHeader from '$lib/components/molecules/StickyHeader.svelte';
 	import ColoredBanner from '$lib/components/molecules/ColoredBanner.svelte';
-	import { METRIC_MAP } from './metric-map';
 
 	interface Props {
 		metricId: string;
@@ -16,7 +15,11 @@
 
 	let { metricId, scenarioMeta, scenarioDetail, backLabel, onBack }: Props = $props();
 
-	const mapped = $derived(METRIC_MAP[metricId]);
+	// The imported run's metrics are already in the store (buildAppState writes
+	// nutritionCat from the published nutrition data), keyed by the same ids.
+	const mapped = $derived(
+		appState.nutritionCat.flatMap((c) => c.metrics).find((m) => m.id === metricId)
+	);
 	const metricName = $derived(mapped?.name ?? metricId);
 	const behaviorType = $derived<'flourishing' | 'restrain_harm' | undefined>(
 		mapped ? (mapped.type === 'negative' ? 'restrain_harm' : 'flourishing') : undefined
