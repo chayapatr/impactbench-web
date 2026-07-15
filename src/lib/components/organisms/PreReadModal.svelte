@@ -78,14 +78,11 @@
 	>
 		<!-- Header -->
 		<div class="flex-shrink-0 border-b border-[#e5e7eb] px-7 py-5">
-			<div class="text-[10px] font-[700] tracking-[0.08em] text-[#00b3b0] uppercase">
-				Required reviewer pre-read
-			</div>
 			<h2
 				id="prereadTitle"
-				class="mt-1 text-[19px] font-[700] tracking-[-0.01em] text-[#111827]"
+				class="text-[19px] font-[700] tracking-[-0.01em] text-[#111827]"
 			>
-				Reviewer Protocol: Validating ImpactBench
+				Reviewer Protocol: Please read and sign
 			</h2>
 			<p class="mt-1 text-[12px] text-[#6b7280]">
 				Please read the full protocol below. You must scroll to the end, tick the

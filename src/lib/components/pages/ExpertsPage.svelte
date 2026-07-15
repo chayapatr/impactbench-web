@@ -21,9 +21,30 @@
 		MOCK_EXPERT_USER,
 		EXPERT_BENCHMARK_SLUG,
 		getExpertMaskedModels,
+		getShuffledScenarios,
 		type MaskedModel
 	} from '$lib/expert-config';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
+
+	// ── Props ─────────────────────────────────────────────────────
+	// The default (no props) route shows the multi-metric HumaneBench ×
+	// Social Relationships flow. Per-slug routes (e.g. /experts/falseintimacy)
+	// pass a metricId + curated copy so ExpertsPage renders a single-metric
+	// review with the reviewer's own definition & examples.
+	interface Props {
+		metricId?: string;
+		expertName?: string;
+		subareaLabel?: string;
+		definition?: string;
+		examples?: readonly string[];
+	}
+	let {
+		metricId,
+		expertName: expertNameProp,
+		subareaLabel: subareaLabelProp,
+		definition: definitionProp,
+		examples: examplesProp = []
+	}: Props = $props();
 
 	// ── Types ─────────────────────────────────────────────────────
 	interface ExpertMetric {
@@ -126,22 +147,46 @@
 	let preReadSignerName = $state<string | null>(null);
 
 	// ── Derived helpers ───────────────────────────────────────────
+	// Resolved copy: prop overrides win; otherwise fall back to the
+	// MOCK_EXPERT_USER / R2 data defaults.
+	const expertNameDisplay = $derived(expertNameProp ?? MOCK_EXPERT_USER.name);
+	const expertInitials = $derived(
+		expertNameDisplay
+			.split(' ')
+			.map((s) => s[0] ?? '')
+			.join('')
+			.slice(0, 2)
+			.toUpperCase()
+	);
+	const subareaLabelDisplay = $derived(subareaLabelProp ?? MOCK_EXPERT_USER.subareaLabel);
+	const displayExamples = $derived(examplesProp ?? []);
 	const selectedMetric = $derived(expertMetrics[selectedMetricIdx] ?? null);
 	const selectedMetricProgress = $derived(
 		selectedMetric ? progress[selectedMetric.id] : null
 	);
 	// Only surface adult-participant scenarios to experts. Underage variants
 	// remain in the underlying data (so scores etc. still compute) but are
-	// hidden from the expert review UI.
+	// hidden from the expert review UI. Order is shuffled once per browser
+	// (persisted in localStorage) so each expert sees a stable but randomised
+	// sequence.
 	const selectedMetricScenarios = $derived<ScenarioMeta[]>(
 		selectedMetric
-			? (appState.scenarioIndex?.[selectedMetric.id] ?? []).filter(
-					(sc) => sc.age === 'adult'
+			? getShuffledScenarios(
+					selectedMetric.id,
+					(appState.scenarioIndex?.[selectedMetric.id] ?? []).filter(
+						(sc) => sc.age === 'adult'
+					)
 				)
 			: []
 	);
 	const currentScenario = $derived(selectedMetricScenarios[scenarioIdx] ?? null);
 	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
+	// Scenario detail carries the full user goal; the index copy is truncated
+	// at ~80 chars upstream. Prefer the loaded detail when available so the
+	// header title isn't cut off mid-word.
+	const currentScenarioTitle = $derived(
+		conversationDetail?.user_goal ?? currentScenario?.title ?? ''
+	);
 
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
@@ -184,16 +229,27 @@
 					])
 				)
 			);
-			maskedModels = getExpertMaskedModels();
+			maskedModels = getExpertMaskedModels(expertNameDisplay);
 
-			// Filter to humanebench × social-relationships metrics, alphabetically
-			const subarea = taxonomy.areas
-				.flatMap((a) => a.subareas)
-				.find((s) => s.id === MOCK_EXPERT_USER.subareaId);
-			const list: ExpertMetric[] = (subarea?.metrics ?? [])
-				.filter((m) => m.id.startsWith(`${EXPERT_BENCHMARK_SLUG}__`))
-				.map((m) => ({ id: m.id, name: m.name }))
-				.sort((a, b) => a.name.localeCompare(b.name));
+			// Per-slug routes pass a metricId to scope the flow to one metric;
+			// the default /experts route falls back to the full
+			// humanebench × social-relationships list (alphabetical).
+			let list: ExpertMetric[];
+			if (metricId) {
+				const found = taxonomy.areas
+					.flatMap((a) => a.subareas)
+					.flatMap((s) => s.metrics)
+					.find((m) => m.id === metricId);
+				list = found ? [{ id: found.id, name: found.name }] : [];
+			} else {
+				const subarea = taxonomy.areas
+					.flatMap((a) => a.subareas)
+					.find((s) => s.id === MOCK_EXPERT_USER.subareaId);
+				list = (subarea?.metrics ?? [])
+					.filter((m) => m.id.startsWith(`${EXPERT_BENCHMARK_SLUG}__`))
+					.map((m) => ({ id: m.id, name: m.name }))
+					.sort((a, b) => a.name.localeCompare(b.name));
+			}
 			expertMetrics = list;
 
 			progress = Object.fromEntries(
@@ -264,6 +320,14 @@
 		progress[selectedMetric.id].feedback.submitted = true;
 	}
 
+	// Feedback CTA: record the feedback and jump straight into the first
+	// scenario, so "Next" reads naturally as "take me to the scenarios".
+	function submitFeedbackAndAdvance() {
+		if (!selectedMetric) return;
+		submitFeedback();
+		stepForward();
+	}
+
 	function markCurrentEvaluated() {
 		if (!selectedMetric || !currentScenario || !currentMaskedModel) return;
 		const key = `${currentScenario.scenario_id}__${currentMaskedModel.id}`;
@@ -314,12 +378,12 @@
 		form.submitting = true;
 		const params = new URLSearchParams({
 			form_type: 'Expert-Evaluation',
-			expert_name: MOCK_EXPERT_USER.name,
-			subarea: MOCK_EXPERT_USER.subareaLabel,
+			expert_name: expertNameDisplay,
+			subarea: subareaLabelDisplay,
 			metric_id: selectedMetric.id,
 			metric_name: selectedMetric.name,
 			scenario_id: currentScenario.scenario_id,
-			scenario_title: currentScenario.title,
+			scenario_title: currentScenarioTitle,
 			masked_model: currentMaskedModel.label,
 			actual_model_id: currentMaskedModel.id,
 			scenario_accurate: form.scenarioAccurate,
@@ -405,7 +469,8 @@
 
 	// ── Small helpers ─────────────────────────────────────────────
 	const metricCriteriaText = $derived(
-		selectedMetric ? (appState.metricCriteria?.[selectedMetric.id] ?? '') : ''
+		definitionProp ??
+			(selectedMetric ? (appState.metricCriteria?.[selectedMetric.id] ?? '') : '')
 	);
 	const isEvaluatedAll = $derived((metricId: string) => {
 		const scenarios = (appState.scenarioIndex?.[metricId] ?? []).filter(
@@ -458,16 +523,68 @@
 		}
 	}
 
-	// Metric pager derived state (used by the header prev/next arrows).
-	const prevMetricIdx = $derived(selectedMetricIdx - 1);
-	const nextMetricIdx = $derived(selectedMetricIdx + 1);
-	const canPrevMetric = $derived(
-		prevMetricIdx >= 0 && unlocked.has(expertMetrics[prevMetricIdx]?.id ?? '')
+	// Linear step navigation within the current metric.
+	// Flow: feedback → (scenario 0, model 0) → (s0, m1) → … → (s2, m2).
+	const modelCount = $derived(maskedModels.length);
+	const scenarioCount = $derived(selectedMetricScenarios.length);
+	const totalScenarioSteps = $derived(scenarioCount * modelCount);
+	const currentStepIdx = $derived(
+		phase === 'scenario' ? scenarioIdx * modelCount + modelIdx : -1
 	);
-	const canNextMetric = $derived(
-		nextMetricIdx < expertMetrics.length &&
-			unlocked.has(expertMetrics[nextMetricIdx]?.id ?? '')
+	const canPrevStep = $derived(phase === 'scenario');
+	// Forward navigation is gated on the current step being complete so
+	// reviewers can only advance sequentially. Backward navigation is always
+	// free (within a metric) so they can revisit earlier answers.
+	const isAtLastStep = $derived(
+		phase === 'scenario' &&
+			scenarioIdx === scenarioCount - 1 &&
+			modelIdx === modelCount - 1
 	);
+	const currentStepComplete = $derived(
+		phase === 'feedback'
+			? (selectedMetricProgress?.feedback.submitted ?? false)
+			: (evaluations[currentEvalKey]?.submitted ?? false)
+	);
+	const canNextStep = $derived(
+		currentStepComplete &&
+			((phase === 'feedback' && scenarioCount > 0) ||
+				(phase === 'scenario' && !isAtLastStep))
+	);
+	const nextStepBlockedReason = $derived(
+		canNextStep || isAtLastStep
+			? ''
+			: phase === 'feedback'
+				? 'Please save your metric feedback first.'
+				: 'You must complete evaluating this scenario first.'
+	);
+
+	function stepBack() {
+		if (phase !== 'scenario') return;
+		if (modelIdx > 0) {
+			modelIdx = modelIdx - 1;
+		} else if (scenarioIdx > 0) {
+			scenarioIdx = scenarioIdx - 1;
+			modelIdx = modelCount - 1;
+		} else {
+			phase = 'feedback';
+		}
+	}
+
+	function stepForward() {
+		if (phase === 'feedback') {
+			if (scenarioCount === 0) return;
+			phase = 'scenario';
+			scenarioIdx = 0;
+			modelIdx = 0;
+			return;
+		}
+		if (modelIdx < modelCount - 1) {
+			modelIdx = modelIdx + 1;
+		} else if (scenarioIdx < scenarioCount - 1) {
+			scenarioIdx = scenarioIdx + 1;
+			modelIdx = 0;
+		}
+	}
 
 	const currentEvalKey = $derived(
 		selectedMetric && currentScenario && currentMaskedModel
@@ -509,6 +626,33 @@
 		const total = items.length;
 		return { done, total, pct: Math.round((done / total) * 100) };
 	});
+
+	// Feedback-phase equivalent so the header progress bar mirrors the
+	// bottom CTA in the same way scenario evaluations do.
+	const feedbackProgress = $derived.by(() => {
+		const f = selectedMetricProgress?.feedback;
+		if (!f) return { done: 0, total: 1, pct: 0 };
+		const items: boolean[] = [];
+		items.push(!!f.relevance);
+		if (f.relevance === '1' || f.relevance === '2' || f.relevance === '3') {
+			items.push(!!f.relevanceEdit.trim());
+		}
+		items.push(!!f.labelDifferent);
+		if (f.labelDifferent === 'yes' || f.labelDifferent === 'not-sure') {
+			items.push(!!f.labelEdit.trim());
+		}
+		items.push(!!f.examplesAdequate);
+		if (f.examplesAdequate === 'no' || f.examplesAdequate === 'not-sure') {
+			items.push(!!f.examplesEdit.trim());
+		}
+		const done = items.filter(Boolean).length;
+		const total = items.length;
+		return { done, total, pct: Math.round((done / total) * 100) };
+	});
+
+	const headerProgressPct = $derived(
+		phase === 'feedback' ? feedbackProgress.pct : evalProgress.pct
+	);
 </script>
 
 <div class="flex h-screen flex-col bg-[#fafaf9] text-[#1a1a1a]">
@@ -538,14 +682,14 @@
 				<span
 					class="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-[12px] font-bold text-white"
 				>
-					{signedIn ? MOCK_EXPERT_USER.name.split(' ').map((s) => s[0]).join('').slice(0, 2) : '?'}
+					{signedIn ? expertInitials : '?'}
 				</span>
 				<span class="flex flex-col leading-tight">
 					<span class="text-[13px] font-semibold text-[#111827]">
-						{signedIn ? MOCK_EXPERT_USER.name : 'Signed out'}
+						{signedIn ? expertNameDisplay : 'Signed out'}
 					</span>
 					<span class="text-[11px] text-[#6b7280]">
-						{signedIn ? MOCK_EXPERT_USER.subareaLabel : 'Click to sign in'}
+						{signedIn ? subareaLabelDisplay : 'Click to sign in'}
 					</span>
 				</span>
 				<i class="fa-solid fa-chevron-down text-[10px] text-[#9ca3af]"></i>
@@ -559,10 +703,10 @@
 					{#if signedIn}
 						<div class="border-b border-[#f3f4f6] px-4 py-[10px]">
 							<div class="text-[12px] font-semibold text-[#111827]">
-								{MOCK_EXPERT_USER.name}
+								{expertNameDisplay}
 							</div>
 							<div class="text-[11px] text-[#6b7280]">
-								{MOCK_EXPERT_USER.subareaLabel} expert
+								{subareaLabelDisplay} expert
 							</div>
 						</div>
 						<button
@@ -606,7 +750,11 @@
 						<div class="flex items-start justify-between gap-4">
 							<div>
 								<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-									Metric {selectedMetricIdx + 1} of {expertMetrics.length} · {MOCK_EXPERT_USER.subareaLabel}
+									{#if phase === 'scenario' && scenarioCount > 0}
+										Scenario {scenarioIdx + 1} of {scenarioCount} · {subareaLabelDisplay}
+									{:else}
+										{subareaLabelDisplay}
+									{/if}
 								</div>
 								<h1 class="mt-[3px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]">
 									{selectedMetric.name}
@@ -616,69 +764,56 @@
 										{metricCriteriaText}
 									</p>
 								{/if}
+								{#if displayExamples.length > 0}
+									<div class="mt-3 max-w-[720px]">
+										<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+											Examples
+										</div>
+										<ul class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]">
+											{#each displayExamples as ex (ex)}
+												<li>{ex}</li>
+											{/each}
+										</ul>
+									</div>
+								{/if}
 							</div>
-							<!-- Metric pager (replaces removed sidebar) -->
-							<div class="flex flex-shrink-0 items-center gap-1.5">
-								<button
-									type="button"
-									class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
-									disabled={!canPrevMetric}
-									aria-label="Previous metric"
-									onclick={() => selectMetric(prevMetricIdx)}
-								>
-									<i class="fa-solid fa-chevron-left text-[11px]"></i>
-								</button>
-								<span class="text-[11px] font-semibold text-[#6b7280]">
-									{selectedMetricIdx + 1} / {expertMetrics.length}
-								</span>
-								<button
-									type="button"
-									class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
-									disabled={!canNextMetric}
-									aria-label="Next metric"
-									onclick={() => selectMetric(nextMetricIdx)}
-								>
-									<i class="fa-solid fa-chevron-right text-[11px]"></i>
-								</button>
-							</div>
+							<!-- Linear step pager within the current metric -->
+							{#if totalScenarioSteps > 0}
+								<div class="flex flex-shrink-0 items-center gap-1.5">
+									<button
+										type="button"
+										class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
+										disabled={!canPrevStep}
+										aria-label="Previous step"
+										onclick={stepBack}
+									>
+										<i class="fa-solid fa-chevron-left text-[11px]"></i>
+									</button>
+									<span class="min-w-[42px] text-center text-[11px] font-semibold text-[#6b7280]">
+										{phase === 'scenario' ? currentStepIdx + 1 : 0} / {totalScenarioSteps}
+									</span>
+									<button
+										type="button"
+										class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
+										disabled={!canNextStep}
+										aria-label="Next step"
+										title={nextStepBlockedReason || undefined}
+										onclick={stepForward}
+									>
+										<i class="fa-solid fa-chevron-right text-[11px]"></i>
+									</button>
+								</div>
+							{/if}
 						</div>
 
-						<!-- Phase tabs -->
-						<div class="mt-4 -mb-px flex gap-1">
-							<button
-								class="cursor-pointer border-b-[2px] px-3 py-[6px] text-[12px] font-semibold transition-colors duration-150
-									{phase === 'feedback'
-									? 'border-[#00b3b0] text-[#00b3b0]'
-									: 'border-transparent text-[#6b7280] hover:text-[#111827]'}"
-								onclick={() => (phase = 'feedback')}
-							>
-								<i class="fa-solid fa-clipboard-question mr-1.5 text-[11px]"></i>
-								Metric feedback
-								{#if selectedMetricProgress.feedback.submitted}
-									<i class="fa-solid fa-check ml-1 text-[10px] text-[#16a34a]"></i>
-								{/if}
-							</button>
-							{#each selectedMetricScenarios as sc, sIdx (sc.scenario_id)}
-								{@const modelsDone = maskedModels.filter((mm) =>
-									selectedMetricProgress.evaluated.has(`${sc.scenario_id}__${mm.id}`)
-								).length}
-								<button
-									class="cursor-pointer border-b-[2px] px-3 py-[6px] text-[12px] font-semibold transition-colors duration-150
-										{phase === 'scenario' && scenarioIdx === sIdx
-										? 'border-[#00b3b0] text-[#00b3b0]'
-										: 'border-transparent text-[#6b7280] hover:text-[#111827]'}"
-									onclick={() => {
-										phase = 'scenario';
-										scenarioIdx = sIdx;
-										modelIdx = 0;
-									}}
-								>
-									Scenario {sIdx + 1}
-									<span class="ml-1 text-[10px] font-normal text-[#9ca3af]">
-										({modelsDone}/{maskedModels.length})
-									</span>
-								</button>
-							{/each}
+						<!-- Subtle horizontal progress bar (mirrors the completion CTA %) -->
+						<div class="mt-5 pb-4">
+							<div class="h-[3px] w-full overflow-hidden rounded-full bg-[#f1f5f4]">
+								<div
+									class="h-full rounded-full bg-gradient-to-r from-[#00b3b0] to-[#038d8f] transition-[width] duration-300 ease-out"
+									style="width: {headerProgressPct}%"
+								></div>
+							</div>
 						</div>
 					</div>
 
@@ -695,7 +830,7 @@
 								<!-- Q1: Relevance -->
 								<div class="mt-6">
 									<label class="text-[13px] font-semibold text-[#111827]">
-										How relevant is the “{selectedMetric.name}” metric for assessing the “{MOCK_EXPERT_USER.subareaLabel}”
+										How relevant is the “{selectedMetric.name}” metric for assessing the “{subareaLabelDisplay}”
 										subarea goal?
 									</label>
 									<div class="mt-3 grid grid-cols-4 gap-3">
@@ -833,20 +968,15 @@
 									></textarea>
 								</div>
 
-								<div class="mt-6 flex items-center justify-between">
-									<span class="text-[12px] text-[#6b7280]">
-										{selectedMetricProgress.feedback.submitted
-											? 'Feedback saved. You can still edit it before continuing.'
-											: 'Save your feedback to continue to the scenarios.'}
-									</span>
+								<div class="mt-6 flex items-center justify-end">
 									<button
 										type="button"
 										class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={!selectedMetricProgress.feedback.relevance}
-										onclick={submitFeedback}
+										disabled={!selectedMetricProgress.feedback.relevance || scenarioCount === 0}
+										onclick={submitFeedbackAndAdvance}
 									>
-										<i class="fa-solid fa-check text-[11px]"></i>
-										{selectedMetricProgress.feedback.submitted ? 'Update feedback' : 'Save feedback'}
+										Next
+										<i class="fa-solid fa-arrow-right text-[11px]"></i>
 									</button>
 								</div>
 							</div>
@@ -882,7 +1012,7 @@
 										Scenario {scenarioIdx + 1} of {selectedMetricScenarios.length} · {currentMaskedModel.label}
 									</div>
 									<div class="mt-1 text-[15px] font-[700] text-[#111827]">
-										{currentScenario.title}
+										{currentScenarioTitle}
 									</div>
 
 									<!-- Conversation -->
@@ -944,6 +1074,9 @@
 								{#if evaluations[currentEvalKey]}
 									{@const currentEval = evaluations[currentEvalKey]}
 									{@const canSubmit = evalProgress.pct >= 100 && !currentEval.submitting}
+									{@const showNext = currentEval.submitted && nextStep && nextStep.kind !== 'done'}
+									{@const showDone = currentEval.submitted && nextStep && nextStep.kind === 'done'}
+									{@const submitIsSecondary = showNext}
 									<div
 										class="expert-eval-scroll relative min-h-0 flex-1 overflow-y-auto px-5 py-3"
 									>
@@ -1215,12 +1348,17 @@
 											class="pointer-events-none absolute -top-8 right-0 left-0 h-8 bg-gradient-to-t from-white to-transparent"
 										></div>
 
+										<!-- Once the evaluation is submitted, the Next
+										     button becomes the primary CTA and "Update
+										     evaluation" demotes to a secondary style. -->
 										<button
 											type="button"
-											class="flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] border-none px-4 text-[13px] font-semibold transition-[filter,transform] duration-150
+											class="flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] px-4 text-[13px] font-semibold transition-[filter,transform] duration-150
 												{evalProgress.pct >= 100
-												? 'cursor-pointer bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
-												: 'cursor-not-allowed bg-[#e5e7eb] text-[#9ca3af]'}"
+												? submitIsSecondary
+													? 'cursor-pointer border border-[#00b3b0] bg-white text-[#00b3b0] hover:bg-[#e0f7f7]'
+													: 'cursor-pointer border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
+												: 'cursor-not-allowed border-none bg-[#e5e7eb] text-[#9ca3af]'}"
 											disabled={!canSubmit}
 											onclick={submitEvaluation}
 										>
@@ -1237,18 +1375,18 @@
 
 										<!-- Sequential Next button. Only appears once the current
 										     (scenario, model) evaluation has been submitted. -->
-										{#if currentEval.submitted && nextStep && nextStep.kind !== 'done'}
+										{#if showNext}
 											<button
 												type="button"
-												class="mt-2 flex h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#00b3b0] bg-white px-4 text-[13px] font-semibold text-[#00b3b0] transition-colors duration-150 hover:bg-[#e0f7f7]"
+												class="mt-2 flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 text-[13px] font-semibold text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] transition-[filter,transform] duration-150 hover:brightness-105 active:scale-[0.99]"
 												onclick={goToNext}
 											>
 												{nextStep.label}
 												<i class="fa-solid fa-arrow-right text-[11px]"></i>
 											</button>
-										{:else if currentEval.submitted && nextStep && nextStep.kind === 'done'}
+										{:else if showDone}
 											<div
-												class="mt-2 flex h-[42px] w-full items-center justify-center gap-2 rounded-[10px] border border-[#16a34a] bg-[#dcfce7] px-4 text-[13px] font-semibold text-[#166534]"
+												class="mt-2 flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] border border-[#16a34a] bg-[#dcfce7] px-4 text-[13px] font-semibold text-[#166534]"
 											>
 												<i class="fa-solid fa-check-circle text-[12px]"></i>
 												All metrics complete
@@ -1273,8 +1411,8 @@
 	<PreReadModal
 		onAcknowledge={acknowledgePreRead}
 		appsScriptUrl={APPS_SCRIPT_URL}
-		expertName={MOCK_EXPERT_USER.name}
-		subareaLabel={MOCK_EXPERT_USER.subareaLabel}
+		expertName={expertNameDisplay}
+		subareaLabel={subareaLabelDisplay}
 	/>
 {/if}
 
