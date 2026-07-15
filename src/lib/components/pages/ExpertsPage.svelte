@@ -458,6 +458,17 @@
 		}
 	}
 
+	// Metric pager derived state (used by the header prev/next arrows).
+	const prevMetricIdx = $derived(selectedMetricIdx - 1);
+	const nextMetricIdx = $derived(selectedMetricIdx + 1);
+	const canPrevMetric = $derived(
+		prevMetricIdx >= 0 && unlocked.has(expertMetrics[prevMetricIdx]?.id ?? '')
+	);
+	const canNextMetric = $derived(
+		nextMetricIdx < expertMetrics.length &&
+			unlocked.has(expertMetrics[nextMetricIdx]?.id ?? '')
+	);
+
 	const currentEvalKey = $derived(
 		selectedMetric && currentScenario && currentMaskedModel
 			? `${selectedMetric.id}__${currentScenario.scenario_id}__${currentMaskedModel.id}`
@@ -608,17 +619,12 @@
 							</div>
 							<!-- Metric pager (replaces removed sidebar) -->
 							<div class="flex flex-shrink-0 items-center gap-1.5">
-								{@const prevIdx = selectedMetricIdx - 1}
-								{@const nextIdx = selectedMetricIdx + 1}
-								{@const canPrev = prevIdx >= 0 && unlocked.has(expertMetrics[prevIdx]?.id ?? '')}
-								{@const canNext =
-									nextIdx < expertMetrics.length && unlocked.has(expertMetrics[nextIdx]?.id ?? '')}
 								<button
 									type="button"
 									class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
-									disabled={!canPrev}
+									disabled={!canPrevMetric}
 									aria-label="Previous metric"
-									onclick={() => selectMetric(prevIdx)}
+									onclick={() => selectMetric(prevMetricIdx)}
 								>
 									<i class="fa-solid fa-chevron-left text-[11px]"></i>
 								</button>
@@ -628,9 +634,9 @@
 								<button
 									type="button"
 									class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
-									disabled={!canNext}
+									disabled={!canNextMetric}
 									aria-label="Next metric"
-									onclick={() => selectMetric(nextIdx)}
+									onclick={() => selectMetric(nextMetricIdx)}
 								>
 									<i class="fa-solid fa-chevron-right text-[11px]"></i>
 								</button>
