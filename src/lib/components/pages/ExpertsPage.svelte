@@ -18,12 +18,25 @@
 	} from '$lib/store.svelte';
 	import type { ScenarioDetail, ScenarioMeta } from '$lib/types';
 	import {
-		MOCK_EXPERT_USER,
 		EXPERT_BENCHMARK_SLUG,
-		getExpertMaskedModels,
+		resolveExpertMaskedModels,
 		type MaskedModel
 	} from '$lib/expert-config';
+	import {
+		acknowledgePreRead as persistPreRead,
+		getExpert,
+		markExpertCompleted,
+		saveExpertDraft,
+		submitScenarioEvaluation
+	} from '$lib/experts/db';
+	import type { ExpertFormState, ExpertRow } from '$lib/experts/types';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
+
+	interface Props {
+		expertId: string;
+	}
+
+	let { expertId }: Props = $props();
 
 	// ── Types ─────────────────────────────────────────────────────
 	interface ExpertMetric {
@@ -97,15 +110,18 @@
 	// ── State ─────────────────────────────────────────────────────
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
+	let expert = $state<ExpertRow | null>(null);
+	let formCompleted = $state(false);
+	let saveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let saveError = $state<string | null>(null);
+	let draftReady = $state(false);
+	let skipNextAutosave = $state(false);
 
 	let maskedModels: MaskedModel[] = $state([]);
 	let expertMetrics: ExpertMetric[] = $state([]);
 	let progress: Record<string, MetricProgress> = $state({});
 	let unlocked: Set<string> = $state(new Set());
 	let evaluations: Record<string, ScenarioEval> = $state({});
-
-	const APPS_SCRIPT_URL =
-		'https://script.google.com/macros/s/AKfycbzreHbqgqwXZVM1Lgm_Uw93xakvLi9dcqKsrwQThNM-dJGrGjDn76TcCQ8XniALwWKs/exec';
 
 	let selectedMetricIdx = $state(0);
 	let phase: 'feedback' | 'scenario' = $state('feedback');
@@ -116,14 +132,18 @@
 	let conversationLoading = $state(false);
 	let conversationError = $state(false);
 
-	// Mock auth
+	// Mock auth (capability URL acts as session)
 	let signedIn = $state(true);
 	let userMenuOpen = $state(false);
 
-	// Pre-read protocol acknowledgment (required before evaluation).
-	const PREREAD_STORAGE_KEY = 'impactbench.expertPreRead.v1';
 	let preReadAcknowledged = $state(false);
 	let preReadSignerName = $state<string | null>(null);
+
+	const expertUser = $derived({
+		name: expert?.name ?? 'Expert',
+		subareaId: expert?.subarea_id ?? 'social-relationships',
+		subareaLabel: expert?.subarea_label ?? 'Social Relationships'
+	});
 
 	// ── Derived helpers ───────────────────────────────────────────
 	const selectedMetric = $derived(expertMetrics[selectedMetricIdx] ?? null);
@@ -143,24 +163,158 @@
 	const currentScenario = $derived(selectedMetricScenarios[scenarioIdx] ?? null);
 	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
 
-	// ── Init ──────────────────────────────────────────────────────
-	onMount(async () => {
-		// Restore any prior pre-read acknowledgment so we don't re-prompt on refresh.
-		if (typeof window !== 'undefined') {
-			try {
-				const raw = window.localStorage.getItem(PREREAD_STORAGE_KEY);
-				if (raw) {
-					const parsed = JSON.parse(raw) as { signedName?: string };
-					if (parsed && typeof parsed.signedName === 'string' && parsed.signedName.trim()) {
-						preReadSignerName = parsed.signedName;
-						preReadAcknowledged = true;
-					}
-				}
-			} catch {
-				// ignore corrupt storage
+	function blankProgress(): MetricProgress {
+		return {
+			feedback: {
+				relevance: '',
+				relevanceEdit: '',
+				labelDifferent: '',
+				labelEdit: '',
+				examplesAdequate: '',
+				examplesEdit: '',
+				other: '',
+				submitted: false
+			},
+			evaluated: new Set()
+		};
+	}
+
+	function blankEval(): ScenarioEval {
+		return {
+			scenarioAccurate: '',
+			scenarioAccurateEdit: '',
+			scenarioRealistic: '',
+			scenarioRealisticEdit: '',
+			rating: '',
+			influencedAspects: [],
+			influencedAspectsOther: '',
+			confidence: '',
+			mainChallenge: '',
+			mainChallengeOther: '',
+			justification: '',
+			otherFeedback: '',
+			submitting: false,
+			submitted: false
+		};
+	}
+
+	function serializeFormState(): ExpertFormState {
+		const progressPayload: ExpertFormState['progress'] = {};
+		for (const [metricId, p] of Object.entries(progress)) {
+			progressPayload[metricId] = {
+				feedback: { ...p.feedback },
+				evaluated: [...p.evaluated]
+			};
+		}
+		const evaluationsPayload: NonNullable<ExpertFormState['evaluations']> = {};
+		for (const [key, e] of Object.entries(evaluations)) {
+			const { submitting: _submitting, ...rest } = e;
+			evaluationsPayload[key] = rest;
+		}
+		return {
+			progress: progressPayload,
+			evaluations: evaluationsPayload,
+			unlocked: [...unlocked],
+			selectedMetricIdx,
+			phase,
+			scenarioIdx,
+			modelIdx
+		};
+	}
+
+	function hydrateFromExpert(row: ExpertRow, metricIds: string[]) {
+		const state = row.form_state ?? {};
+		const nextProgress: Record<string, MetricProgress> = Object.fromEntries(
+			metricIds.map((id) => [id, blankProgress()])
+		);
+		if (state.progress) {
+			for (const [metricId, p] of Object.entries(state.progress)) {
+				if (!nextProgress[metricId]) continue;
+				nextProgress[metricId] = {
+					feedback: {
+						relevance: (p.feedback?.relevance ?? '') as MetricFeedback['relevance'],
+						relevanceEdit: p.feedback?.relevanceEdit ?? '',
+						labelDifferent: (p.feedback?.labelDifferent ??
+							'') as MetricFeedback['labelDifferent'],
+						labelEdit: p.feedback?.labelEdit ?? '',
+						examplesAdequate: (p.feedback?.examplesAdequate ??
+							'') as MetricFeedback['examplesAdequate'],
+						examplesEdit: p.feedback?.examplesEdit ?? '',
+						other: p.feedback?.other ?? '',
+						submitted: !!p.feedback?.submitted
+					},
+					evaluated: new Set(p.evaluated ?? [])
+				};
 			}
 		}
+		progress = nextProgress;
+
+		const nextEvals: Record<string, ScenarioEval> = {};
+		if (state.evaluations) {
+			for (const [key, raw] of Object.entries(state.evaluations)) {
+				const base = blankEval();
+				const partial = raw as unknown as Partial<ScenarioEval>;
+				nextEvals[key] = {
+					...base,
+					...partial,
+					influencedAspects: Array.isArray(partial.influencedAspects)
+						? [...partial.influencedAspects]
+						: [],
+					submitting: false
+				};
+			}
+		}
+		evaluations = nextEvals;
+
+		if (state.unlocked?.length) {
+			unlocked = new Set(state.unlocked.filter((id) => metricIds.includes(id)));
+		} else if (metricIds.length > 0) {
+			unlocked = new Set([metricIds[0]]);
+		}
+
+		if (typeof state.selectedMetricIdx === 'number') {
+			selectedMetricIdx = Math.min(Math.max(0, state.selectedMetricIdx), metricIds.length - 1);
+		}
+		if (state.phase === 'feedback' || state.phase === 'scenario') phase = state.phase;
+		if (typeof state.scenarioIdx === 'number') scenarioIdx = Math.max(0, state.scenarioIdx);
+		if (typeof state.modelIdx === 'number') modelIdx = Math.max(0, state.modelIdx);
+
+		preReadAcknowledged = !!row.pre_read_acknowledged;
+		preReadSignerName = row.pre_read_signer_name;
+	}
+
+	async function persistDraft(extra?: {
+		model_mapping?: MaskedModel[] | null;
+		pre_read_acknowledged?: boolean;
+		pre_read_signer_name?: string | null;
+	}) {
+		if (!expert || formCompleted) return;
+		saveStatus = 'saving';
+		saveError = null;
 		try {
+			await saveExpertDraft(expert.id, {
+				form_state: serializeFormState(),
+				...extra
+			});
+			saveStatus = 'saved';
+		} catch (e) {
+			saveStatus = 'error';
+			saveError = e instanceof Error ? e.message : String(e);
+		}
+	}
+
+	// ── Init ──────────────────────────────────────────────────────
+	onMount(async () => {
+		try {
+			const row = await getExpert(expertId);
+			if (!row) {
+				loadError = 'Expert form not found. Check your personal link.';
+				loading = false;
+				return;
+			}
+			expert = row;
+			formCompleted = row.status === 'completed';
+
 			const [taxonomy, models, benchmarkData] = await Promise.all([
 				loadTaxonomy(),
 				loadModels(),
@@ -184,23 +338,25 @@
 					])
 				)
 			);
-			maskedModels = getExpertMaskedModels();
 
-			// Filter to humanebench × social-relationships metrics, alphabetically
+			const { mapping, regenerated } = resolveExpertMaskedModels(row.model_mapping);
+			maskedModels = mapping;
+			if (regenerated) {
+				await saveExpertDraft(row.id, { model_mapping: mapping });
+			}
+
 			const subarea = taxonomy.areas
 				.flatMap((a) => a.subareas)
-				.find((s) => s.id === MOCK_EXPERT_USER.subareaId);
+				.find((s) => s.id === row.subarea_id);
 			const list: ExpertMetric[] = (subarea?.metrics ?? [])
 				.filter((m) => m.id.startsWith(`${EXPERT_BENCHMARK_SLUG}__`))
 				.map((m) => ({ id: m.id, name: m.name }))
 				.sort((a, b) => a.name.localeCompare(b.name));
 			expertMetrics = list;
 
-			progress = Object.fromEntries(
-				list.map((m) => [m.id, blankProgress()])
-			) as Record<string, MetricProgress>;
-			if (list.length > 0) unlocked = new Set([list[0].id]);
-
+			skipNextAutosave = true;
+			hydrateFromExpert(row, list.map((m) => m.id));
+			draftReady = true;
 			loading = false;
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : String(e);
@@ -208,21 +364,28 @@
 		}
 	});
 
-	function blankProgress(): MetricProgress {
-		return {
-			feedback: {
-				relevance: '',
-				relevanceEdit: '',
-				labelDifferent: '',
-				labelEdit: '',
-				examplesAdequate: '',
-				examplesEdit: '',
-				other: '',
-				submitted: false
-			},
-			evaluated: new Set()
-		};
-	}
+	// Debounced autosave of draft state.
+	// Deep-read nested progress/evaluations fields — Svelte 5 effects that only
+	// touch the top-level object miss bind:value / bind:group mutations, so
+	// scenario 2+ answers never triggered a save.
+	$effect(() => {
+		if (!draftReady || formCompleted || !expert) return;
+
+		const snapshot = JSON.stringify(serializeFormState());
+
+		if (skipNextAutosave) {
+			skipNextAutosave = false;
+			return;
+		}
+
+		const handle = setTimeout(() => {
+			void persistDraft();
+		}, 800);
+		// Keep snapshot referenced so the serializer isn't tree-shaken as unused.
+		void snapshot;
+		return () => clearTimeout(handle);
+	});
+
 
 	// ── Conversation loading ──────────────────────────────────────
 	$effect(() => {
@@ -260,8 +423,9 @@
 	}
 
 	function submitFeedback() {
-		if (!selectedMetric) return;
+		if (!selectedMetric || formCompleted) return;
 		progress[selectedMetric.id].feedback.submitted = true;
+		void persistDraft();
 	}
 
 	function markCurrentEvaluated() {
@@ -270,25 +434,6 @@
 		progress[selectedMetric.id].evaluated.add(key);
 		// trigger reactivity on the Set
 		progress[selectedMetric.id].evaluated = new Set(progress[selectedMetric.id].evaluated);
-	}
-
-	function blankEval(): ScenarioEval {
-		return {
-			scenarioAccurate: '',
-			scenarioAccurateEdit: '',
-			scenarioRealistic: '',
-			scenarioRealisticEdit: '',
-			rating: '',
-			influencedAspects: [],
-			influencedAspectsOther: '',
-			confidence: '',
-			mainChallenge: '',
-			mainChallengeOther: '',
-			justification: '',
-			otherFeedback: '',
-			submitting: false,
-			submitted: false
-		};
 	}
 
 	function toggleInfluence(key: string, checked: boolean) {
@@ -305,44 +450,56 @@
 	}
 
 	async function submitEvaluation() {
-		if (!selectedMetric || !currentScenario || !currentMaskedModel) return;
+		if (!selectedMetric || !currentScenario || !currentMaskedModel || !expert) return;
+		if (formCompleted) return;
 		const key = currentEvalKey;
 		if (!key) return;
 		const form = evaluations[key];
 		if (!form) return;
 		if (evalProgress.pct < 100) return;
 		form.submitting = true;
-		const params = new URLSearchParams({
-			form_type: 'Expert-Evaluation',
-			expert_name: MOCK_EXPERT_USER.name,
-			subarea: MOCK_EXPERT_USER.subareaLabel,
-			metric_id: selectedMetric.id,
-			metric_name: selectedMetric.name,
-			scenario_id: currentScenario.scenario_id,
-			scenario_title: currentScenario.title,
-			masked_model: currentMaskedModel.label,
-			actual_model_id: currentMaskedModel.id,
-			scenario_accurate: form.scenarioAccurate,
-			scenario_accurate_edit: form.scenarioAccurateEdit,
-			scenario_realistic: form.scenarioRealistic,
-			scenario_realistic_edit: form.scenarioRealisticEdit,
-			rating: form.rating,
-			influenced_aspects: form.influencedAspects.join('; '),
-			influenced_aspects_other: form.influencedAspectsOther,
-			confidence: form.confidence,
-			main_challenge: form.mainChallenge,
-			main_challenge_other: form.mainChallengeOther,
-			justification: form.justification,
-			other_feedback: form.otherFeedback,
-			submitted_at: new Date().toISOString()
-		}).toString();
 		try {
-			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			await submitScenarioEvaluation({
+				expert_id: expert.id,
+				metric_id: selectedMetric.id,
+				metric_name: selectedMetric.name,
+				scenario_id: currentScenario.scenario_id,
+				scenario_title: currentScenario.title,
+				model_id: currentMaskedModel.id,
+				masked_model_label: currentMaskedModel.label,
+				scenario_accurate: form.scenarioAccurate,
+				scenario_accurate_edit: form.scenarioAccurateEdit,
+				scenario_realistic: form.scenarioRealistic,
+				scenario_realistic_edit: form.scenarioRealisticEdit,
+				rating: form.rating,
+				influenced_aspects: form.influencedAspects.join('; '),
+				influenced_aspects_other: form.influencedAspectsOther,
+				confidence: form.confidence,
+				main_challenge: form.mainChallenge,
+				main_challenge_other: form.mainChallengeOther,
+				justification: form.justification,
+				other_feedback: form.otherFeedback,
+				submitted_at: new Date().toISOString()
+			});
 			form.submitted = true;
 			markCurrentEvaluated();
+			await persistDraft();
+			await maybeMarkCompleted();
+		} catch (e) {
+			saveStatus = 'error';
+			saveError = e instanceof Error ? e.message : String(e);
 		} finally {
 			form.submitting = false;
 		}
+	}
+
+	async function maybeMarkCompleted() {
+		if (!expert || formCompleted) return;
+		const allDone = expertMetrics.every((m) => isEvaluatedAll(m.id));
+		if (!allDone) return;
+		await markExpertCompleted(expert.id);
+		formCompleted = true;
+		expert = { ...expert, status: 'completed', completed_at: new Date().toISOString() };
 	}
 
 	// ── Auto-unlock ───────────────────────────────────────────────
@@ -362,23 +519,22 @@
 	function toggleUserMenu() {
 		userMenuOpen = !userMenuOpen;
 	}
-	function acknowledgePreRead(signedName: string) {
+	async function acknowledgePreRead(signedName: string) {
+		if (!expert) throw new Error('Expert not loaded');
 		preReadSignerName = signedName;
 		preReadAcknowledged = true;
-		if (typeof window !== 'undefined') {
-			try {
-				window.localStorage.setItem(
-					PREREAD_STORAGE_KEY,
-					JSON.stringify({
-						signedName,
-						acknowledgedAt: new Date().toISOString(),
-						document: 'HumaneBench_PreRead_Protocol',
-						documentVersion: '2026-01'
-					})
-				);
-			} catch {
-				// ignore
-			}
+		try {
+			await persistPreRead(expert.id, signedName);
+			await persistDraft({
+				pre_read_acknowledged: true,
+				pre_read_signer_name: signedName
+			});
+		} catch (e) {
+			preReadAcknowledged = false;
+			preReadSignerName = null;
+			saveStatus = 'error';
+			saveError = e instanceof Error ? e.message : String(e);
+			throw e;
 		}
 	}
 	function logOut() {
@@ -456,6 +612,7 @@
 				modelIdx = 0;
 			}
 		}
+		void persistDraft();
 	}
 
 	// Metric pager derived state (used by the header prev/next arrows).
@@ -478,7 +635,9 @@
 	$effect(() => {
 		if (!currentEvalKey) return;
 		if (!evaluations[currentEvalKey]) {
-			evaluations[currentEvalKey] = blankEval();
+			// Reassign the record so other scenarios' keys stay intact and
+			// reactivity subscribers see a top-level change.
+			evaluations = { ...evaluations, [currentEvalKey]: blankEval() };
 		}
 	});
 
@@ -528,6 +687,16 @@
 			Home
 		</a>
 
+		{#if saveStatus === 'saving'}
+			<span class="mr-3 text-[11px] text-[#9ca3af]">Saving…</span>
+		{:else if saveStatus === 'saved'}
+			<span class="mr-3 text-[11px] text-[#059669]">Saved</span>
+		{:else if saveStatus === 'error'}
+			<span class="mr-3 max-w-[180px] truncate text-[11px] text-[#dc2626]" title={saveError ?? ''}
+				>Save failed</span
+			>
+		{/if}
+
 		<div class="expert-user-menu relative">
 			<button
 				class="flex cursor-pointer items-center gap-[10px] rounded-full border border-[#e5e7eb] bg-white py-[6px] pr-3 pl-[6px] text-left transition-colors duration-150 hover:border-[#00b3b0]"
@@ -538,14 +707,14 @@
 				<span
 					class="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-[12px] font-bold text-white"
 				>
-					{signedIn ? MOCK_EXPERT_USER.name.split(' ').map((s) => s[0]).join('').slice(0, 2) : '?'}
+					{signedIn ? expertUser.name.split(' ').map((s) => s[0]).join('').slice(0, 2) : '?'}
 				</span>
 				<span class="flex flex-col leading-tight">
 					<span class="text-[13px] font-semibold text-[#111827]">
-						{signedIn ? MOCK_EXPERT_USER.name : 'Signed out'}
+						{signedIn ? expertUser.name : 'Signed out'}
 					</span>
 					<span class="text-[11px] text-[#6b7280]">
-						{signedIn ? MOCK_EXPERT_USER.subareaLabel : 'Click to sign in'}
+						{signedIn ? expertUser.subareaLabel : 'Click to sign in'}
 					</span>
 				</span>
 				<i class="fa-solid fa-chevron-down text-[10px] text-[#9ca3af]"></i>
@@ -559,10 +728,10 @@
 					{#if signedIn}
 						<div class="border-b border-[#f3f4f6] px-4 py-[10px]">
 							<div class="text-[12px] font-semibold text-[#111827]">
-								{MOCK_EXPERT_USER.name}
+								{expertUser.name}
 							</div>
 							<div class="text-[11px] text-[#6b7280]">
-								{MOCK_EXPERT_USER.subareaLabel} expert
+								{expertUser.subareaLabel} expert
 							</div>
 						</div>
 						<button
@@ -597,6 +766,17 @@
 			<div class="flex flex-1 items-center justify-center text-[#dc2626]">
 				Failed to load: {loadError}
 			</div>
+		{:else if formCompleted}
+			<div class="flex flex-1 items-center justify-center px-6">
+				<div class="max-w-md text-center">
+					<div class="mb-3 text-[2.5rem]">✓</div>
+					<h2 class="m-0 mb-2 text-[1.35rem] font-bold text-[#111827]">Review complete</h2>
+					<p class="m-0 text-[14px] leading-[1.6] text-[#6b7280]">
+						Thanks, {expertUser.name}. Your evaluations for {expertUser.subareaLabel} have been
+						submitted and this form is locked.
+					</p>
+				</div>
+			</div>
 		{:else}
 			<!-- Right: workspace (full-width, no metric sidebar) -->
 			<section class="flex flex-1 flex-col overflow-hidden">
@@ -606,7 +786,7 @@
 						<div class="flex items-start justify-between gap-4">
 							<div>
 								<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-									Metric {selectedMetricIdx + 1} of {expertMetrics.length} · {MOCK_EXPERT_USER.subareaLabel}
+									Metric {selectedMetricIdx + 1} of {expertMetrics.length} · {expertUser.subareaLabel}
 								</div>
 								<h1 class="mt-[3px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]">
 									{selectedMetric.name}
@@ -671,6 +851,7 @@
 										phase = 'scenario';
 										scenarioIdx = sIdx;
 										modelIdx = 0;
+										void persistDraft();
 									}}
 								>
 									Scenario {sIdx + 1}
@@ -695,7 +876,7 @@
 								<!-- Q1: Relevance -->
 								<div class="mt-6">
 									<label class="text-[13px] font-semibold text-[#111827]">
-										How relevant is the “{selectedMetric.name}” metric for assessing the “{MOCK_EXPERT_USER.subareaLabel}”
+										How relevant is the “{selectedMetric.name}” metric for assessing the “{expertUser.subareaLabel}”
 										subarea goal?
 									</label>
 									<div class="mt-3 grid grid-cols-4 gap-3">
@@ -1269,12 +1450,11 @@
 	</main>
 </div>
 
-{#if !preReadAcknowledged}
+{#if !preReadAcknowledged && !formCompleted && !loading && !loadError}
 	<PreReadModal
 		onAcknowledge={acknowledgePreRead}
-		appsScriptUrl={APPS_SCRIPT_URL}
-		expertName={MOCK_EXPERT_USER.name}
-		subareaLabel={MOCK_EXPERT_USER.subareaLabel}
+		expertName={expertUser.name}
+		subareaLabel={expertUser.subareaLabel}
 	/>
 {/if}
 
