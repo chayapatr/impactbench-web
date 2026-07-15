@@ -24,6 +24,8 @@
 	} from '$lib/expert-config';
 	import {
 		acknowledgePreRead as persistPreRead,
+		claimExpertModelMapping,
+		ExpertDraftConflictError,
 		getExpert,
 		markExpertCompleted,
 		saveExpertDraft,
@@ -272,35 +274,114 @@
 			unlocked = new Set([metricIds[0]]);
 		}
 
-		if (typeof state.selectedMetricIdx === 'number') {
-			selectedMetricIdx = Math.min(Math.max(0, state.selectedMetricIdx), metricIds.length - 1);
-		}
+		const clampIndex = (raw: unknown, maxExclusive: number): number => {
+			if (maxExclusive <= 0) return 0;
+			const n = typeof raw === 'number' && Number.isFinite(raw) ? Math.trunc(raw) : 0;
+			return Math.min(Math.max(0, n), maxExclusive - 1);
+		};
+
+		selectedMetricIdx = clampIndex(state.selectedMetricIdx, metricIds.length);
 		if (state.phase === 'feedback' || state.phase === 'scenario') phase = state.phase;
-		if (typeof state.scenarioIdx === 'number') scenarioIdx = Math.max(0, state.scenarioIdx);
-		if (typeof state.modelIdx === 'number') modelIdx = Math.max(0, state.modelIdx);
+
+		const selectedId = metricIds[selectedMetricIdx];
+		const adultScenarioCount = selectedId
+			? (appState.scenarioIndex?.[selectedId] ?? []).filter((sc) => sc.age === 'adult').length
+			: 0;
+		scenarioIdx = clampIndex(state.scenarioIdx, adultScenarioCount);
+		modelIdx = clampIndex(state.modelIdx, maskedModels.length);
 
 		preReadAcknowledged = !!row.pre_read_acknowledged;
 		preReadSignerName = row.pre_read_signer_name;
 	}
 
-	async function persistDraft(extra?: {
+	/** Merge extras for coalesced saves (latest non-null wins). */
+	let pendingDraftExtra: {
 		model_mapping?: MaskedModel[] | null;
 		pre_read_acknowledged?: boolean;
 		pre_read_signer_name?: string | null;
-	}) {
-		if (!expert || formCompleted) return;
-		saveStatus = 'saving';
-		saveError = null;
-		try {
-			await saveExpertDraft(expert.id, {
-				form_state: serializeFormState(),
-				...extra
-			});
-			saveStatus = 'saved';
-		} catch (e) {
-			saveStatus = 'error';
-			saveError = e instanceof Error ? e.message : String(e);
+	} = {};
+	let persistInFlight = false;
+	let persistQueued = false;
+	let persistTail: Promise<boolean> = Promise.resolve(true);
+
+	async function persistDraft(
+		extra?: {
+			model_mapping?: MaskedModel[] | null;
+			pre_read_acknowledged?: boolean;
+			pre_read_signer_name?: string | null;
 		}
+	): Promise<boolean> {
+		if (!expert || formCompleted) return false;
+		if (extra) pendingDraftExtra = { ...pendingDraftExtra, ...extra };
+
+		if (persistInFlight) {
+			persistQueued = true;
+			return persistTail;
+		}
+
+		persistInFlight = true;
+		persistTail = (async () => {
+			let ok = true;
+			let attempts = 0;
+			do {
+				persistQueued = false;
+				attempts += 1;
+				if (attempts > 6) {
+					ok = false;
+					saveStatus = 'error';
+					saveError = 'Could not save draft after several retries.';
+					break;
+				}
+				const patch = {
+					form_state: serializeFormState(),
+					...pendingDraftExtra
+				};
+				pendingDraftExtra = {};
+				saveStatus = 'saving';
+				saveError = null;
+				try {
+					const updated = await saveExpertDraft(expert!.id, expert!.updated_at, patch);
+					expert = { ...expert!, ...updated, form_state: patch.form_state ?? expert!.form_state };
+					saveStatus = 'saved';
+				} catch (e) {
+					if (e instanceof ExpertDraftConflictError) {
+						try {
+							const fresh = await getExpert(expert!.id);
+							if (fresh) {
+								expert = {
+									...expert!,
+									updated_at: fresh.updated_at,
+									status: fresh.status,
+									completed_at: fresh.completed_at
+								};
+								if (fresh.status === 'completed') {
+									formCompleted = true;
+									ok = false;
+									break;
+								}
+							}
+							persistQueued = true;
+							continue;
+						} catch (reloadErr) {
+							ok = false;
+							saveStatus = 'error';
+							saveError =
+								reloadErr instanceof Error ? reloadErr.message : String(reloadErr);
+							break;
+						}
+					}
+					ok = false;
+					saveStatus = 'error';
+					saveError = e instanceof Error ? e.message : String(e);
+					break;
+				}
+			} while (persistQueued);
+			return ok;
+		})().finally(() => {
+			persistInFlight = false;
+		});
+
+		return persistTail;
 	}
 
 	// ── Init ──────────────────────────────────────────────────────
@@ -340,14 +421,16 @@
 			);
 
 			const { mapping, regenerated } = resolveExpertMaskedModels(row.model_mapping);
-			maskedModels = mapping;
+			let activeRow = row;
 			if (regenerated) {
-				await saveExpertDraft(row.id, { model_mapping: mapping });
+				activeRow = await claimExpertModelMapping(row.id, mapping);
 			}
+			maskedModels = resolveExpertMaskedModels(activeRow.model_mapping).mapping;
+			expert = activeRow;
 
 			const subarea = taxonomy.areas
 				.flatMap((a) => a.subareas)
-				.find((s) => s.id === row.subarea_id);
+				.find((s) => s.id === activeRow.subarea_id);
 			const list: ExpertMetric[] = (subarea?.metrics ?? [])
 				.filter((m) => m.id.startsWith(`${EXPERT_BENCHMARK_SLUG}__`))
 				.map((m) => ({ id: m.id, name: m.name }))
@@ -355,7 +438,7 @@
 			expertMetrics = list;
 
 			skipNextAutosave = true;
-			hydrateFromExpert(row, list.map((m) => m.id));
+			hydrateFromExpert(activeRow, list.map((m) => m.id));
 			draftReady = true;
 			loading = false;
 		} catch (e) {
@@ -483,8 +566,8 @@
 			});
 			form.submitted = true;
 			markCurrentEvaluated();
-			await persistDraft();
-			await maybeMarkCompleted();
+			const saved = await persistDraft();
+			if (saved) await maybeMarkCompleted();
 		} catch (e) {
 			saveStatus = 'error';
 			saveError = e instanceof Error ? e.message : String(e);
@@ -497,9 +580,9 @@
 		if (!expert || formCompleted) return;
 		const allDone = expertMetrics.every((m) => isEvaluatedAll(m.id));
 		if (!allDone) return;
-		await markExpertCompleted(expert.id);
+		const updated = await markExpertCompleted(expert.id);
 		formCompleted = true;
-		expert = { ...expert, status: 'completed', completed_at: new Date().toISOString() };
+		expert = { ...expert, ...updated };
 	}
 
 	// ── Auto-unlock ───────────────────────────────────────────────
@@ -521,17 +604,17 @@
 	}
 	async function acknowledgePreRead(signedName: string) {
 		if (!expert) throw new Error('Expert not loaded');
-		preReadSignerName = signedName;
-		preReadAcknowledged = true;
 		try {
-			await persistPreRead(expert.id, signedName);
-			await persistDraft({
+			const updated = await persistPreRead(expert.id, signedName, expert.updated_at);
+			expert = { ...expert, ...updated };
+			const saved = await persistDraft({
 				pre_read_acknowledged: true,
 				pre_read_signer_name: signedName
 			});
+			if (!saved) throw new Error(saveError ?? 'Failed to save pre-read acknowledgment');
+			preReadSignerName = signedName;
+			preReadAcknowledged = true;
 		} catch (e) {
-			preReadAcknowledged = false;
-			preReadSignerName = null;
 			saveStatus = 'error';
 			saveError = e instanceof Error ? e.message : String(e);
 			throw e;
@@ -567,9 +650,15 @@
 		const scenarios = (appState.scenarioIndex?.[metricId] ?? []).filter(
 			(sc) => sc.age === 'adult'
 		);
-		const total = scenarios.length * maskedModels.length;
-		const done = progress[metricId]?.evaluated.size ?? 0;
-		return total > 0 && done >= total && (progress[metricId]?.feedback.submitted ?? false);
+		const expected = scenarios.flatMap((scenario) =>
+			maskedModels.map((model) => `${scenario.scenario_id}__${model.id}`)
+		);
+		const evaluated = progress[metricId]?.evaluated;
+		return (
+			expected.length > 0 &&
+			!!progress[metricId]?.feedback.submitted &&
+			expected.every((key) => evaluated?.has(key))
+		);
 	});
 
 	// After a user submits an evaluation for the current (scenario, model)

@@ -1,7 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { env } from '$env/dynamic/public';
+import type { Database } from '$lib/experts/types';
 
-let client: SupabaseClient | null = null;
+/** Typed via Database for documentation; runtime client stays flexible for RPC shapes. */
+let client: SupabaseClient<Database> | null = null;
 
 export function getSupabase(): SupabaseClient {
 	const url = env.PUBLIC_SUPABASE_URL;
@@ -12,7 +14,8 @@ export function getSupabase(): SupabaseClient {
 		);
 	}
 	if (!client) {
-		client = createClient(url, key);
+		// Database-parameterized client; cast outward so RPC helpers stay ergonomic.
+		client = createClient<Database>(url, key);
 	}
-	return client;
+	return client as unknown as SupabaseClient;
 }

@@ -1,5 +1,6 @@
--- ImpactBench expert forms (capability-URL access via UUID)
--- Run this in the Supabase SQL editor for project tsaobsvruacdusomvftf.
+-- ImpactBench expert forms
+-- Capability access via SECURITY DEFINER RPCs (no direct anon table DML).
+-- Run in the Supabase SQL editor for project tsaobsvruacdusomvftf.
 
 create extension if not exists "pgcrypto";
 
@@ -78,46 +79,322 @@ create trigger expert_evaluations_set_updated_at
 alter table public.experts enable row level security;
 alter table public.expert_evaluations enable row level security;
 
--- Capability URL model: anyone who knows the UUID can read/update that row.
--- No list UI; UUIDv4 is the access boundary.
+-- Remove open table policies / grants from earlier schema revisions.
 drop policy if exists "experts_anon_insert" on public.experts;
-create policy "experts_anon_insert"
-	on public.experts for insert
-	to anon, authenticated
-	with check (true);
-
 drop policy if exists "experts_anon_select" on public.experts;
-create policy "experts_anon_select"
-	on public.experts for select
-	to anon, authenticated
-	using (true);
-
 drop policy if exists "experts_anon_update" on public.experts;
-create policy "experts_anon_update"
-	on public.experts for update
-	to anon, authenticated
-	using (true)
-	with check (true);
-
 drop policy if exists "expert_evaluations_anon_select" on public.expert_evaluations;
-create policy "expert_evaluations_anon_select"
-	on public.expert_evaluations for select
-	to anon, authenticated
-	using (true);
-
 drop policy if exists "expert_evaluations_anon_insert" on public.expert_evaluations;
-create policy "expert_evaluations_anon_insert"
-	on public.expert_evaluations for insert
-	to anon, authenticated
-	with check (true);
-
 drop policy if exists "expert_evaluations_anon_update" on public.expert_evaluations;
-create policy "expert_evaluations_anon_update"
-	on public.expert_evaluations for update
-	to anon, authenticated
-	using (true)
-	with check (true);
+
+revoke all on table public.experts from anon, authenticated, public;
+revoke all on table public.expert_evaluations from anon, authenticated, public;
 
 grant usage on schema public to anon, authenticated;
-grant select, insert, update on public.experts to anon, authenticated;
-grant select, insert, update on public.expert_evaluations to anon, authenticated;
+
+-- ── Capability RPCs (SECURITY DEFINER; UUID is the capability) ───────────
+
+create or replace function public.create_expert(
+	p_name text,
+	p_email text,
+	p_job_title text default null,
+	p_website text default null,
+	p_cv_filename text default null,
+	p_expertise_description text default null,
+	p_expertise_subarea_ids text[] default '{}',
+	p_subarea_id text default null,
+	p_subarea_label text default null
+)
+returns public.experts
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+	r public.experts;
+begin
+	if p_name is null or trim(p_name) = '' then
+		raise exception 'name is required';
+	end if;
+	if p_email is null or trim(p_email) = '' then
+		raise exception 'email is required';
+	end if;
+	if p_subarea_id is null or trim(p_subarea_id) = '' then
+		raise exception 'subarea_id is required';
+	end if;
+	if p_subarea_label is null or trim(p_subarea_label) = '' then
+		raise exception 'subarea_label is required';
+	end if;
+
+	insert into public.experts (
+		name,
+		email,
+		job_title,
+		website,
+		cv_filename,
+		expertise_description,
+		expertise_subarea_ids,
+		subarea_id,
+		subarea_label,
+		form_state,
+		status
+	) values (
+		trim(p_name),
+		trim(p_email),
+		p_job_title,
+		nullif(trim(coalesce(p_website, '')), ''),
+		nullif(trim(coalesce(p_cv_filename, '')), ''),
+		p_expertise_description,
+		coalesce(p_expertise_subarea_ids, '{}'),
+		p_subarea_id,
+		p_subarea_label,
+		'{}'::jsonb,
+		'in_progress'
+	)
+	returning * into r;
+
+	return r;
+end;
+$$;
+
+create or replace function public.get_expert(p_id uuid)
+returns public.experts
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+	r public.experts;
+begin
+	select * into r from public.experts where id = p_id;
+	if not found then
+		return null;
+	end if;
+	return r;
+end;
+$$;
+
+create or replace function public.update_expert_draft(
+	p_id uuid,
+	p_expected_updated_at timestamptz,
+	p_form_state jsonb default null,
+	p_model_mapping jsonb default null,
+	p_pre_read_acknowledged boolean default null,
+	p_pre_read_signer_name text default null
+)
+returns public.experts
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+	r public.experts;
+begin
+	update public.experts
+	set
+		form_state = coalesce(p_form_state, form_state),
+		model_mapping = coalesce(p_model_mapping, model_mapping),
+		pre_read_acknowledged = coalesce(p_pre_read_acknowledged, pre_read_acknowledged),
+		pre_read_signer_name = coalesce(p_pre_read_signer_name, pre_read_signer_name),
+		updated_at = now()
+	where id = p_id
+		and status = 'in_progress'
+		and updated_at = p_expected_updated_at
+	returning * into r;
+
+	if not found then
+		raise exception 'expert_draft_conflict'
+			using errcode = 'P0001';
+	end if;
+
+	return r;
+end;
+$$;
+
+create or replace function public.claim_expert_model_mapping(
+	p_id uuid,
+	p_mapping jsonb
+)
+returns public.experts
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+	r public.experts;
+begin
+	update public.experts
+	set model_mapping = p_mapping, updated_at = now()
+	where id = p_id and model_mapping is null
+	returning * into r;
+
+	if found then
+		return r;
+	end if;
+
+	select * into r from public.experts where id = p_id;
+	return r;
+end;
+$$;
+
+create or replace function public.acknowledge_expert_pre_read(
+	p_id uuid,
+	p_signed_name text,
+	p_expected_updated_at timestamptz
+)
+returns public.experts
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+	return public.update_expert_draft(
+		p_id,
+		p_expected_updated_at,
+		null,
+		null,
+		true,
+		p_signed_name
+	);
+end;
+$$;
+
+create or replace function public.mark_expert_completed(p_id uuid)
+returns public.experts
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+	r public.experts;
+begin
+	update public.experts
+	set
+		status = 'completed',
+		completed_at = coalesce(completed_at, now()),
+		updated_at = now()
+	where id = p_id
+	returning * into r;
+
+	if not found then
+		raise exception 'expert not found';
+	end if;
+
+	return r;
+end;
+$$;
+
+create or replace function public.upsert_expert_evaluation(
+	p_expert_id uuid,
+	p_metric_id text,
+	p_metric_name text,
+	p_scenario_id text,
+	p_scenario_title text,
+	p_model_id text,
+	p_masked_model_label text,
+	p_scenario_accurate text,
+	p_scenario_accurate_edit text,
+	p_scenario_realistic text,
+	p_scenario_realistic_edit text,
+	p_rating text,
+	p_influenced_aspects text,
+	p_influenced_aspects_other text,
+	p_confidence text,
+	p_main_challenge text,
+	p_main_challenge_other text,
+	p_justification text,
+	p_other_feedback text,
+	p_submitted_at timestamptz default now()
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+	if not exists (select 1 from public.experts where id = p_expert_id) then
+		raise exception 'expert not found';
+	end if;
+
+	insert into public.expert_evaluations (
+		expert_id,
+		metric_id,
+		metric_name,
+		scenario_id,
+		scenario_title,
+		model_id,
+		masked_model_label,
+		scenario_accurate,
+		scenario_accurate_edit,
+		scenario_realistic,
+		scenario_realistic_edit,
+		rating,
+		influenced_aspects,
+		influenced_aspects_other,
+		confidence,
+		main_challenge,
+		main_challenge_other,
+		justification,
+		other_feedback,
+		submitted,
+		submitted_at
+	) values (
+		p_expert_id,
+		p_metric_id,
+		p_metric_name,
+		p_scenario_id,
+		p_scenario_title,
+		p_model_id,
+		p_masked_model_label,
+		p_scenario_accurate,
+		p_scenario_accurate_edit,
+		p_scenario_realistic,
+		p_scenario_realistic_edit,
+		p_rating,
+		p_influenced_aspects,
+		p_influenced_aspects_other,
+		p_confidence,
+		p_main_challenge,
+		p_main_challenge_other,
+		p_justification,
+		p_other_feedback,
+		true,
+		coalesce(p_submitted_at, now())
+	)
+	on conflict (expert_id, metric_id, scenario_id, model_id) do update set
+		metric_name = excluded.metric_name,
+		scenario_title = excluded.scenario_title,
+		masked_model_label = excluded.masked_model_label,
+		scenario_accurate = excluded.scenario_accurate,
+		scenario_accurate_edit = excluded.scenario_accurate_edit,
+		scenario_realistic = excluded.scenario_realistic,
+		scenario_realistic_edit = excluded.scenario_realistic_edit,
+		rating = excluded.rating,
+		influenced_aspects = excluded.influenced_aspects,
+		influenced_aspects_other = excluded.influenced_aspects_other,
+		confidence = excluded.confidence,
+		main_challenge = excluded.main_challenge,
+		main_challenge_other = excluded.main_challenge_other,
+		justification = excluded.justification,
+		other_feedback = excluded.other_feedback,
+		submitted = true,
+		submitted_at = excluded.submitted_at,
+		updated_at = now();
+end;
+$$;
+
+grant execute on function public.create_expert(
+	text, text, text, text, text, text, text[], text, text
+) to anon, authenticated;
+
+grant execute on function public.get_expert(uuid) to anon, authenticated;
+grant execute on function public.update_expert_draft(
+	uuid, timestamptz, jsonb, jsonb, boolean, text
+) to anon, authenticated;
+grant execute on function public.claim_expert_model_mapping(uuid, jsonb) to anon, authenticated;
+grant execute on function public.acknowledge_expert_pre_read(uuid, text, timestamptz)
+	to anon, authenticated;
+grant execute on function public.mark_expert_completed(uuid) to anon, authenticated;
+grant execute on function public.upsert_expert_evaluation(
+	uuid, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, timestamptz
+) to anon, authenticated;

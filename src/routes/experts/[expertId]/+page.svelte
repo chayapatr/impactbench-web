@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import ExpertsPage from '$lib/components/pages/ExpertsPage.svelte';
 
-	const expertId = $derived(page.params.expertId ?? '');
+	const expertId = $derived(String((page.params as Record<string, string>).expertId ?? ''));
 </script>
 
 <svelte:head>

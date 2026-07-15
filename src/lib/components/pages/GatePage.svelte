@@ -254,11 +254,13 @@
 			});
 
 			// Secondary log to the existing sheet (best-effort).
-			const params = new URLSearchParams({
-				...data,
-				expert_id: expert.id
-			}).toString();
-			void fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			// POST body only — never put consented PII or the capability UUID in a URL.
+			void fetch(APPS_SCRIPT_URL, {
+				method: 'POST',
+				mode: 'no-cors',
+				headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+				body: JSON.stringify(data)
+			});
 
 			createdExpertLink = `${window.location.origin}/experts/${expert.id}`;
 			linkCopied = false;
