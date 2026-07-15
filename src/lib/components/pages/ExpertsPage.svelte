@@ -576,11 +576,28 @@
 		}
 	}
 
+	function buildRequiredEvaluations() {
+		return expertMetrics.flatMap((metric) => {
+			const scenarios = (appState.scenarioIndex?.[metric.id] ?? []).filter(
+				(sc) => sc.age === 'adult'
+			);
+			return scenarios.flatMap((scenario) =>
+				maskedModels.map((model) => ({
+					metric_id: metric.id,
+					scenario_id: scenario.scenario_id,
+					model_id: model.id
+				}))
+			);
+		});
+	}
+
 	async function maybeMarkCompleted() {
 		if (!expert || formCompleted) return;
 		const allDone = expertMetrics.every((m) => isEvaluatedAll(m.id));
 		if (!allDone) return;
-		const updated = await markExpertCompleted(expert.id);
+		const required = buildRequiredEvaluations();
+		if (required.length === 0) return;
+		const updated = await markExpertCompleted(expert.id, required);
 		formCompleted = true;
 		expert = { ...expert, ...updated };
 	}

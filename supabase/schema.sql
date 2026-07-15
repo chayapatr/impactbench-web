@@ -259,7 +259,13 @@ begin
 end;
 $$;
 
-create or replace function public.mark_expert_completed(p_id uuid)
+-- Drop prior 1-arg signature so clients must supply required evaluation coverage.
+drop function if exists public.mark_expert_completed(uuid);
+
+create or replace function public.mark_expert_completed(
+	p_id uuid,
+	p_required_evaluations jsonb
+)
 returns public.experts
 language plpgsql
 security definer
@@ -267,17 +273,77 @@ set search_path = public
 as $$
 declare
 	r public.experts;
+	required_count integer;
+	matched_count integer;
+	metric_ids text[];
+	metric_id text;
+	feedback_submitted boolean;
 begin
+	if p_required_evaluations is null
+		or jsonb_typeof(p_required_evaluations) <> 'array'
+		or jsonb_array_length(p_required_evaluations) = 0 then
+		raise exception 'required evaluations missing';
+	end if;
+
+	select * into r from public.experts where id = p_id for update;
+	if not found then
+		raise exception 'expert not found';
+	end if;
+
+	if r.status <> 'in_progress' then
+		raise exception 'expert is not in progress';
+	end if;
+
+	if not r.pre_read_acknowledged then
+		raise exception 'pre-read not acknowledged';
+	end if;
+
+	-- Validate each required (metric_id, scenario_id, model_id) has a submitted row.
+	select count(*)::integer
+	into required_count
+	from jsonb_array_elements(p_required_evaluations) as elem;
+
+	select count(*)::integer
+	into matched_count
+	from jsonb_array_elements(p_required_evaluations) as elem
+	join public.expert_evaluations e
+		on e.expert_id = p_id
+		and e.metric_id = elem->>'metric_id'
+		and e.scenario_id = elem->>'scenario_id'
+		and e.model_id = elem->>'model_id'
+		and e.submitted = true;
+
+	if matched_count <> required_count then
+		raise exception 'required evaluations incomplete';
+	end if;
+
+	-- Metric feedback must be marked submitted in form_state for every required metric.
+	select array_agg(distinct elem->>'metric_id')
+	into metric_ids
+	from jsonb_array_elements(p_required_evaluations) as elem;
+
+	foreach metric_id in array metric_ids
+	loop
+		feedback_submitted := coalesce(
+			(r.form_state #>> array['progress', metric_id, 'feedback', 'submitted'])::boolean,
+			false
+		);
+		if not feedback_submitted then
+			raise exception 'metric feedback incomplete for %', metric_id;
+		end if;
+	end loop;
+
 	update public.experts
 	set
 		status = 'completed',
 		completed_at = coalesce(completed_at, now()),
 		updated_at = now()
 	where id = p_id
+		and status = 'in_progress'
 	returning * into r;
 
 	if not found then
-		raise exception 'expert not found';
+		raise exception 'expert is not in progress';
 	end if;
 
 	return r;
@@ -311,9 +377,20 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+	expert_status text;
 begin
-	if not exists (select 1 from public.experts where id = p_expert_id) then
+	select status into expert_status
+	from public.experts
+	where id = p_expert_id
+	for update;
+
+	if not found then
 		raise exception 'expert not found';
+	end if;
+
+	if expert_status <> 'in_progress' then
+		raise exception 'expert is not in progress';
 	end if;
 
 	insert into public.expert_evaluations (
@@ -394,7 +471,7 @@ grant execute on function public.update_expert_draft(
 grant execute on function public.claim_expert_model_mapping(uuid, jsonb) to anon, authenticated;
 grant execute on function public.acknowledge_expert_pre_read(uuid, text, timestamptz)
 	to anon, authenticated;
-grant execute on function public.mark_expert_completed(uuid) to anon, authenticated;
+grant execute on function public.mark_expert_completed(uuid, jsonb) to anon, authenticated;
 grant execute on function public.upsert_expert_evaluation(
 	uuid, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, timestamptz
 ) to anon, authenticated;

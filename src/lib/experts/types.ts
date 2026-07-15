@@ -144,7 +144,17 @@ export type Database = {
 				{ p_id: string; p_signed_name: string; p_expected_updated_at: string },
 				ExpertRow
 			>;
-			mark_expert_completed: RpcFn<{ p_id: string }, ExpertRow>;
+			mark_expert_completed: RpcFn<
+				{
+					p_id: string;
+					p_required_evaluations: {
+						metric_id: string;
+						scenario_id: string;
+						model_id: string;
+					}[];
+				},
+				ExpertRow
+			>;
 			upsert_expert_evaluation: RpcFn<
 				{
 					p_expert_id: string;

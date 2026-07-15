@@ -106,9 +106,21 @@ export async function acknowledgePreRead(
 	return asExpertRow(data);
 }
 
-export async function markExpertCompleted(id: string): Promise<ExpertRow> {
+export type RequiredEvaluationKey = {
+	metric_id: string;
+	scenario_id: string;
+	model_id: string;
+};
+
+export async function markExpertCompleted(
+	id: string,
+	requiredEvaluations: RequiredEvaluationKey[]
+): Promise<ExpertRow> {
 	const supabase = getSupabase();
-	const { data, error } = await supabase.rpc('mark_expert_completed', { p_id: id });
+	const { data, error } = await supabase.rpc('mark_expert_completed', {
+		p_id: id,
+		p_required_evaluations: requiredEvaluations
+	});
 	if (error) throw new Error(error.message);
 	return asExpertRow(data);
 }
