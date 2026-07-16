@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { marked } from 'marked';
 	import {
 		loadTaxonomy,
@@ -135,6 +135,9 @@
 	let saveError = $state<string | null>(null);
 	let draftReady = $state(false);
 	let skipNextAutosave = $state(false);
+	/** Last form_state JSON we successfully persisted (or hydrated). Skip no-op saves. */
+	let lastPersistedSnapshot = $state<string | null>(null);
+	let saveStatusClearHandle: ReturnType<typeof setTimeout> | null = null;
 
 	// Model A/B/C → real-id mapping. Frozen independently for every
 	// (metric, scenario) pair the expert visits so "Model A" doesn't
@@ -353,7 +356,10 @@
 			selectedMetric.id,
 			currentScenario.scenario_id
 		);
-		maskedModels = mapping;
+		const same =
+			maskedModels.length === mapping.length &&
+			maskedModels.every((m, i) => m.id === mapping[i]?.id && m.label === mapping[i]?.label);
+		if (!same) maskedModels = mapping;
 		if (regenerated) {
 			modelMappingStore = store;
 			void persistDraft();
@@ -532,6 +538,20 @@
 	let persistQueued = false;
 	let persistTail: Promise<boolean> = Promise.resolve(true);
 
+	function markSaveStatus(next: 'idle' | 'saving' | 'saved' | 'error') {
+		if (saveStatusClearHandle) {
+			clearTimeout(saveStatusClearHandle);
+			saveStatusClearHandle = null;
+		}
+		saveStatus = next;
+		if (next === 'saved') {
+			saveStatusClearHandle = setTimeout(() => {
+				if (saveStatus === 'saved') saveStatus = 'idle';
+				saveStatusClearHandle = null;
+			}, 2000);
+		}
+	}
+
 	async function persistDraft(extra?: {
 		pre_read_acknowledged?: boolean;
 		pre_read_signer_name?: string | null;
@@ -553,16 +573,24 @@
 				attempts += 1;
 				if (attempts > 6) {
 					ok = false;
-					saveStatus = 'error';
+					markSaveStatus('error');
 					saveError = 'Could not save draft after several retries.';
 					break;
 				}
+				const form_state = serializeFormState();
+				const snapshot = JSON.stringify(form_state);
+				const hasExtra = Object.keys(pendingDraftExtra).length > 0;
+				// Skip network round-trips when nothing meaningful changed.
+				if (!hasExtra && snapshot === lastPersistedSnapshot) {
+					ok = true;
+					break;
+				}
 				const patch = {
-					form_state: serializeFormState(),
+					form_state,
 					...pendingDraftExtra
 				};
 				pendingDraftExtra = {};
-				saveStatus = 'saving';
+				markSaveStatus('saving');
 				saveError = null;
 				try {
 					const updated = await saveExpertDraft(expert!.id, expert!.updated_at, patch);
@@ -571,7 +599,8 @@
 						...updated,
 						form_state: patch.form_state ?? expert!.form_state
 					};
-					saveStatus = 'saved';
+					lastPersistedSnapshot = snapshot;
+					markSaveStatus('saved');
 				} catch (e) {
 					if (e instanceof ExpertDraftConflictError) {
 						try {
@@ -593,13 +622,13 @@
 							continue;
 						} catch (reloadErr) {
 							ok = false;
-							saveStatus = 'error';
+							markSaveStatus('error');
 							saveError = reloadErr instanceof Error ? reloadErr.message : String(reloadErr);
 							break;
 						}
 					}
 					ok = false;
-					saveStatus = 'error';
+					markSaveStatus('error');
 					saveError = e instanceof Error ? e.message : String(e);
 					break;
 				}
@@ -688,21 +717,26 @@
 	// Deep-read nested progress/evaluations fields — Svelte 5 effects that only
 	// touch the top-level object miss bind:value / bind:group mutations, so
 	// scenario 2+ answers never triggered a save.
+	// Only schedule a write when the serialized snapshot actually differs from
+	// the last persisted one (persistDraft also updates `expert`, which would
+	// otherwise re-trigger this effect in a Saving/Saved flash loop).
 	$effect(() => {
-		if (!draftReady || formCompleted || !expert) return;
+		if (!draftReady || formCompleted) return;
+		if (untrack(() => !expert)) return;
 
 		const snapshot = JSON.stringify(serializeFormState());
 
 		if (skipNextAutosave) {
+			lastPersistedSnapshot = snapshot;
 			skipNextAutosave = false;
 			return;
 		}
 
+		if (snapshot === lastPersistedSnapshot) return;
+
 		const handle = setTimeout(() => {
 			void persistDraft();
-		}, 800);
-		// Keep snapshot referenced so the serializer isn't tree-shaken as unused.
-		void snapshot;
+		}, 1200);
 		return () => clearTimeout(handle);
 	});
 
