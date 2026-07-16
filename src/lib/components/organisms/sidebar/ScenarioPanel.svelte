@@ -82,8 +82,8 @@
 					<span
 						class="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[3px] text-[11px] font-semibold"
 						style={_metric.type === 'negative'
-							? 'background:#ede9fe;color:#7c3aed'
-							: 'background:#dbeafe;color:#2563eb'}
+					? 'background:#f3f4f6;color:#c4b5fd'
+					: 'background:#f3f4f6;color:#93c5fd'}
 					>
 						<i
 							class="fa-solid {_metric.type === 'negative'
@@ -135,7 +135,8 @@
 		<div class="flex flex-col gap-[8px]">
 			{#each scenarios as sc (sc.scenario_id)}
 				<button
-					class="flex w-full cursor-pointer items-start gap-[10px] rounded-[10px] border border-[#e5e7eb] bg-white p-[12px] text-left transition-all duration-150 hover:border-[#9ca3af] hover:shadow-[0_1px_4px_rgba(0,0,0,0.07)]"
+					class="flex w-full cursor-pointer items-start gap-[10px] rounded-[10px] bg-white p-[12px] text-left transition-all duration-150"
+					style="box-shadow: 0 1px 4px {verdictPass(sc) === null ? 'rgba(0,0,0,0.06)' : verdictPass(sc) ? 'rgba(22,163,74,0.18)' : 'rgba(220,38,38,0.18)'}"
 					onclick={() => openModal(sc)}
 				>
 					<span class="min-w-0 flex-1 text-[12px] leading-[1.45] text-[#374151]">{sc.title}</span>

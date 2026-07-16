@@ -50,7 +50,7 @@
 <div class="px-6 py-4">
 	{#if appState.metricCriteria?.[metricId]}
 		<div
-			class="mb-4 border-l-[2px] border-[#e5e7eb] pl-[8px] text-[11px] leading-[1.5] whitespace-pre-line text-[#6b7280]"
+			class="mb-4 text-[11px] leading-[1.5] whitespace-pre-line text-[#6b7280]"
 		>
 			{appState.metricCriteria[metricId]}
 		</div>

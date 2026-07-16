@@ -49,6 +49,12 @@
 		if (ratio >= 0.35) return 'background:#ffedd5;color:#ea580c';
 		return 'background:#fee2e2;color:#dc2626';
 	}
+	function stepBorderColor(ratio: number): string {
+		if (ratio >= 0.75) return '#16a34a';
+		if (ratio >= 0.55) return '#ca8a04';
+		if (ratio >= 0.35) return '#ea580c';
+		return '#dc2626';
+	}
 </script>
 
 {#if subareaTuple}
@@ -59,35 +65,37 @@
 	{@const metricById = Object.fromEntries(metrics.map((m) => [m.id, m]))}
 	{@const hasGroups = sub.groups && sub.groups.length > 0}
 
+	<!-- Back bar -->
 	<StickyHeader backLabel={area.name} onBack={sidebarBack}>
 		{#snippet right()}
 			<ModelAgeChip modelName={getModelName(appState)} age={appState.filters.age} />
 		{/snippet}
-		{#snippet banner()}
-			<ColoredBanner
-				color={subColors.color}
-				breadcrumb={area.name}
-				icon={sub.icon}
-				title={sub.name}
-				score={subareaScore}
-				total={subareaFrac.total}
-			/>
-		{/snippet}
 	</StickyHeader>
 
-	{#if subDesc}
-		<div class="px-[14px] pt-3 pb-2">
-			<p class="text-[12px] leading-[1.6] text-balance text-[#6b7280]">{subDesc}</p>
+	<!-- Merged breadcrumb + title + description (no left bar, no score chip) -->
+	<div class="border-b border-[#e5e7eb] bg-[#f9fafb] px-[14px] pt-[10px] pb-[12px]">
+		<div class="mb-[3px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">
+			{area.name} ›
 		</div>
-	{/if}
+		<div class="flex items-center gap-2">
+			{#if sub.icon}
+				<i class="fa-solid {sub.icon} flex-shrink-0 text-[15px]"></i>
+			{/if}
+			<span class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[700] tracking-[-0.02em] text-[#1a1a1a]">{sub.name}</span>
+		</div>
+		{#if subDesc}
+			<p class="mt-[6px] text-[12px] leading-[1.6] text-balance text-[#6b7280]">{subDesc}</p>
+		{/if}
+	</div>
 
 	{#snippet metricCard(m: (typeof metrics)[0])}
 		{@const isActive = scenarioPanelState.open && scenarioPanelState.metricId === m.id}
 		<button
 			class="mx-[10px] mb-[6px] flex w-[calc(100%-20px)] cursor-pointer items-center gap-[10px] rounded-[10px] border px-[12px] py-[10px] text-left transition-all duration-150
-				{isActive
-				? 'border-[#00b3b0] bg-[#f0fafa] shadow-[0_0_0_1px_#00b3b0]'
-				: 'border-[#e5e7eb] bg-white hover:border-[#9ca3af] hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)]'}"
+				hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+			style={isActive
+				? `border: 1px solid ${stepBorderColor(m.score)}; background: ${m.score >= 0.75 ? '#f0fafa' : m.score >= 0.55 ? '#fefce8' : m.score >= 0.35 ? '#fff7ed' : '#fef2f2'}`
+				: 'border-color: #e5e7eb; background: white'}
 			onclick={() => openMetricPanel(m.id)}
 		>
 			<!-- type badge with tooltip -->
