@@ -18,27 +18,35 @@
 	} from '$lib/store.svelte';
 	import type { ScenarioDetail, ScenarioMeta } from '$lib/types';
 	import {
+		MOCK_EXPERT_USER,
 		EXPERT_BENCHMARK_SLUG,
-		resolveExpertMaskedModels,
+		getExpertMaskedModels,
+		getShuffledScenarios,
+		getParticipantId,
 		type MaskedModel
 	} from '$lib/expert-config';
-	import {
-		acknowledgePreRead as persistPreRead,
-		claimExpertModelMapping,
-		ExpertDraftConflictError,
-		getExpert,
-		markExpertCompleted,
-		saveExpertDraft,
-		submitScenarioEvaluation
-	} from '$lib/experts/db';
-	import type { ExpertFormState, ExpertRow } from '$lib/experts/types';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
+	import OrientationModal from '$lib/components/organisms/OrientationModal.svelte';
 
+	// ── Props ─────────────────────────────────────────────────────
+	// The default (no props) route shows the multi-metric HumaneBench ×
+	// Social Relationships flow. Per-slug routes (e.g. /experts/falseintimacy)
+	// pass a metricId + curated copy so ExpertsPage renders a single-metric
+	// review with the reviewer's own definition & examples.
 	interface Props {
-		expertId: string;
+		metricId?: string;
+		expertName?: string;
+		subareaLabel?: string;
+		definition?: string;
+		examples?: readonly string[];
 	}
-
-	let { expertId }: Props = $props();
+	let {
+		metricId,
+		expertName: expertNameProp,
+		subareaLabel: subareaLabelProp,
+		definition: definitionProp,
+		examples: examplesProp = []
+	}: Props = $props();
 
 	// ── Types ─────────────────────────────────────────────────────
 	interface ExpertMetric {
@@ -112,18 +120,124 @@
 	// ── State ─────────────────────────────────────────────────────
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
-	let expert = $state<ExpertRow | null>(null);
-	let formCompleted = $state(false);
-	let saveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
-	let saveError = $state<string | null>(null);
-	let draftReady = $state(false);
-	let skipNextAutosave = $state(false);
 
+	// Model A/B/C → real-id mapping. Reshuffled independently for every
+	// (participant, metric, scenario) triple so "Model A" doesn't consistently
+	// stand for the same real model within one session, while each scenario
+	// still covers all three real models exactly once.
 	let maskedModels: MaskedModel[] = $state([]);
+	// Anonymous per-browser id used to key model-mask + scenario shuffles and
+	// submitted with every payload so backend rows can be joined per reviewer
+	// without exposing their identity in the URL.
+	let participantId = $state('ssr');
 	let expertMetrics: ExpertMetric[] = $state([]);
 	let progress: Record<string, MetricProgress> = $state({});
 	let unlocked: Set<string> = $state(new Set());
 	let evaluations: Record<string, ScenarioEval> = $state({});
+
+	// End-of-flow exit survey (demographics + payment + wrap-up).
+	interface ExitSurvey {
+		otherFeedback: string;
+		gender: string;
+		genderOther: string;
+		age: string;
+		race: string;
+		raceOther: string;
+		role: string;
+		roleOther: string;
+		evaluatingFor: string;
+		context: string;
+		contextOther: string;
+		impactAreas: string[];
+		impactAreasOther: string;
+		biggestConcern: string;
+		paymentMethod: string;
+		submitting: boolean;
+		submitted: boolean;
+	}
+	function blankExitSurvey(): ExitSurvey {
+		return {
+			otherFeedback: '',
+			gender: '',
+			genderOther: '',
+			age: '',
+			race: '',
+			raceOther: '',
+			role: '',
+			roleOther: '',
+			evaluatingFor: '',
+			context: '',
+			contextOther: '',
+			impactAreas: [],
+			impactAreasOther: '',
+			biggestConcern: '',
+			paymentMethod: '',
+			submitting: false,
+			submitted: false
+		};
+	}
+	let exitSurvey: ExitSurvey = $state(blankExitSurvey());
+	let showExitSurvey = $state(false);
+
+	const GENDER_OPTS: { v: string; l: string }[] = [
+		{ v: 'male', l: 'Male' },
+		{ v: 'female', l: 'Female' },
+		{ v: 'other', l: 'Other' }
+	];
+	const AGE_OPTS = ['Under 18', '18 - 24', '25 - 34', '35 - 44', '45 - 54', '55 - 64', '65 or older'];
+	const RACE_OPTS: { v: string; l: string }[] = [
+		{ v: 'white', l: 'White/Caucasian' },
+		{ v: 'asian', l: 'Asian/Asian-American' },
+		{ v: 'black', l: 'Black/African-American' },
+		{ v: 'latin', l: 'Latin/Hispanic' },
+		{ v: 'other', l: 'Other' }
+	];
+	const ROLE_OPTS: { v: string; l: string }[] = [
+		{ v: 'educator', l: 'Educator/teacher' },
+		{ v: 'school-admin', l: 'School administrator' },
+		{ v: 'clinician', l: 'Clinician or mental-health professional' },
+		{ v: 'researcher', l: 'Researcher/academic' },
+		{ v: 'policymaker', l: 'Policymaker or regulator' },
+		{ v: 'child-safety', l: 'Child-safety or youth advocate' },
+		{ v: 'legal', l: 'Legal professional' },
+		{ v: 'parent', l: 'Parent or caregiver' },
+		{ v: 'industry', l: 'Product/industry practitioner' },
+		{ v: 'journalist', l: 'Journalist' },
+		{ v: 'other', l: 'Other' }
+	];
+	const EVAL_FOR_OPTS = [
+		'Children (under 13)',
+		'Teens (13-17)',
+		'Adults',
+		'Older adults',
+		'Myself',
+		'A mixed population'
+	];
+	const CONTEXT_OPTS: { v: string; l: string }[] = [
+		{ v: 'companion', l: 'Companion/emotional-support apps' },
+		{ v: 'tutoring', l: 'Tutoring or learning tools' },
+		{ v: 'mental-health', l: 'Mental-health chatbots' },
+		{ v: 'general', l: 'General-purpose assistants' },
+		{ v: 'health-info', l: 'Health information' },
+		{ v: 'legal-financial', l: 'Legal or financial advice' },
+		{ v: 'other', l: 'Other' }
+	];
+	const IMPACT_AREA_OPTS = [
+		'Mental wellbeing',
+		'Emotional dependency',
+		'Cognitive autonomy/not deskilling',
+		'Child safety',
+		'Health accuracy',
+		'Legal & financial advice',
+		'Fairness & bias',
+		'Social relationships',
+		'Self-determination',
+		'Creativity & cognition',
+		'Other'
+	];
+
+	const APPS_SCRIPT_URL =
+		'https://script.google.com/macros/s/AKfycbzreHbqgqwXZVM1Lgm_Uw93xakvLi9dcqKsrwQThNM-dJGrGjDn76TcCQ8XniALwWKs/exec';
 
 	let selectedMetricIdx = $state(0);
 	let phase: 'feedback' | 'scenario' = $state('feedback');
@@ -134,268 +248,125 @@
 	let conversationLoading = $state(false);
 	let conversationError = $state(false);
 
-	// Mock auth (capability URL acts as session)
+	// Mock auth
 	let signedIn = $state(true);
 	let userMenuOpen = $state(false);
 
+	// Pre-read protocol acknowledgment (required before evaluation).
+	const PREREAD_STORAGE_KEY = 'impactbench.expertPreRead.v1';
 	let preReadAcknowledged = $state(false);
 	let preReadSignerName = $state<string | null>(null);
 
-	const expertUser = $derived({
-		name: expert?.name ?? 'Expert',
-		subareaId: expert?.subarea_id ?? 'social-relationships',
-		subareaLabel: expert?.subarea_label ?? 'Social Relationships'
-	});
+	// Metric-scoped orientation. Only shown on per-slug routes where a
+	// metricId is provided; the default multi-metric /experts flow skips it.
+	const ORIENTATION_STORAGE_KEY = 'impactbench.expertOrientation.v1';
+	let orientationAcknowledged = $state(false);
+
+	// Collapsible examples in the metric header. Closed by default so the
+	// header stays compact; toggled via the "See examples" caret.
+	let examplesExpanded = $state(false);
+
+	// Content-note banner: dismissible per session, then collapses to a
+	// small pill that re-reveals the note on hover.
+	let contentNoteDismissed = $state(false);
 
 	// ── Derived helpers ───────────────────────────────────────────
+	// Resolved copy: prop overrides win; otherwise fall back to the
+	// MOCK_EXPERT_USER / R2 data defaults.
+	const expertNameDisplay = $derived(expertNameProp ?? MOCK_EXPERT_USER.name);
+	const expertInitials = $derived(
+		expertNameDisplay
+			.split(' ')
+			.map((s) => s[0] ?? '')
+			.join('')
+			.slice(0, 2)
+			.toUpperCase()
+	);
+	const subareaLabelDisplay = $derived(subareaLabelProp ?? MOCK_EXPERT_USER.subareaLabel);
+	const displayExamples = $derived(examplesProp ?? []);
 	const selectedMetric = $derived(expertMetrics[selectedMetricIdx] ?? null);
 	const selectedMetricProgress = $derived(
 		selectedMetric ? progress[selectedMetric.id] : null
 	);
 	// Only surface adult-participant scenarios to experts. Underage variants
 	// remain in the underlying data (so scores etc. still compute) but are
-	// hidden from the expert review UI.
+	// hidden from the expert review UI. Order is shuffled once per browser
+	// (persisted in localStorage) so each expert sees a stable but randomised
+	// sequence.
 	const selectedMetricScenarios = $derived<ScenarioMeta[]>(
 		selectedMetric
-			? (appState.scenarioIndex?.[selectedMetric.id] ?? []).filter(
-					(sc) => sc.age === 'adult'
+			? getShuffledScenarios(
+					participantId,
+					selectedMetric.id,
+					(appState.scenarioIndex?.[selectedMetric.id] ?? []).filter(
+						(sc) => sc.age === 'adult'
+					)
 				)
 			: []
 	);
 	const currentScenario = $derived(selectedMetricScenarios[scenarioIdx] ?? null);
-	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
-
-	function blankProgress(): MetricProgress {
-		return {
-			feedback: {
-				relevance: '',
-				relevanceEdit: '',
-				labelDifferent: '',
-				labelEdit: '',
-				examplesAdequate: '',
-				examplesEdit: '',
-				other: '',
-				submitted: false
-			},
-			evaluated: new Set()
-		};
-	}
-
-	function blankEval(): ScenarioEval {
-		return {
-			scenarioAccurate: '',
-			scenarioAccurateEdit: '',
-			scenarioRealistic: '',
-			scenarioRealisticEdit: '',
-			rating: '',
-			influencedAspects: [],
-			influencedAspectsOther: '',
-			confidence: '',
-			mainChallenge: '',
-			mainChallengeOther: '',
-			justification: '',
-			otherFeedback: '',
-			submitting: false,
-			submitted: false
-		};
-	}
-
-	function serializeFormState(): ExpertFormState {
-		const progressPayload: ExpertFormState['progress'] = {};
-		for (const [metricId, p] of Object.entries(progress)) {
-			progressPayload[metricId] = {
-				feedback: { ...p.feedback },
-				evaluated: [...p.evaluated]
-			};
-		}
-		const evaluationsPayload: NonNullable<ExpertFormState['evaluations']> = {};
-		for (const [key, e] of Object.entries(evaluations)) {
-			const { submitting: _submitting, ...rest } = e;
-			evaluationsPayload[key] = rest;
-		}
-		return {
-			progress: progressPayload,
-			evaluations: evaluationsPayload,
-			unlocked: [...unlocked],
-			selectedMetricIdx,
-			phase,
-			scenarioIdx,
-			modelIdx
-		};
-	}
-
-	function hydrateFromExpert(row: ExpertRow, metricIds: string[]) {
-		const state = row.form_state ?? {};
-		const nextProgress: Record<string, MetricProgress> = Object.fromEntries(
-			metricIds.map((id) => [id, blankProgress()])
+	// Reshuffle Model A/B/C whenever the current scenario changes so the
+	// mapping is stable within a scenario but independent across scenarios.
+	$effect(() => {
+		if (participantId === 'ssr') return;
+		if (!selectedMetric || !currentScenario) return;
+		maskedModels = getExpertMaskedModels(
+			participantId,
+			selectedMetric.id,
+			currentScenario.scenario_id
 		);
-		if (state.progress) {
-			for (const [metricId, p] of Object.entries(state.progress)) {
-				if (!nextProgress[metricId]) continue;
-				nextProgress[metricId] = {
-					feedback: {
-						relevance: (p.feedback?.relevance ?? '') as MetricFeedback['relevance'],
-						relevanceEdit: p.feedback?.relevanceEdit ?? '',
-						labelDifferent: (p.feedback?.labelDifferent ??
-							'') as MetricFeedback['labelDifferent'],
-						labelEdit: p.feedback?.labelEdit ?? '',
-						examplesAdequate: (p.feedback?.examplesAdequate ??
-							'') as MetricFeedback['examplesAdequate'],
-						examplesEdit: p.feedback?.examplesEdit ?? '',
-						other: p.feedback?.other ?? '',
-						submitted: !!p.feedback?.submitted
-					},
-					evaluated: new Set(p.evaluated ?? [])
-				};
-			}
-		}
-		progress = nextProgress;
-
-		const nextEvals: Record<string, ScenarioEval> = {};
-		if (state.evaluations) {
-			for (const [key, raw] of Object.entries(state.evaluations)) {
-				const base = blankEval();
-				const partial = raw as unknown as Partial<ScenarioEval>;
-				nextEvals[key] = {
-					...base,
-					...partial,
-					influencedAspects: Array.isArray(partial.influencedAspects)
-						? [...partial.influencedAspects]
-						: [],
-					submitting: false
-				};
-			}
-		}
-		evaluations = nextEvals;
-
-		if (state.unlocked?.length) {
-			unlocked = new Set(state.unlocked.filter((id) => metricIds.includes(id)));
-		} else if (metricIds.length > 0) {
-			unlocked = new Set([metricIds[0]]);
-		}
-
-		const clampIndex = (raw: unknown, maxExclusive: number): number => {
-			if (maxExclusive <= 0) return 0;
-			const n = typeof raw === 'number' && Number.isFinite(raw) ? Math.trunc(raw) : 0;
-			return Math.min(Math.max(0, n), maxExclusive - 1);
-		};
-
-		selectedMetricIdx = clampIndex(state.selectedMetricIdx, metricIds.length);
-		if (state.phase === 'feedback' || state.phase === 'scenario') phase = state.phase;
-
-		const selectedId = metricIds[selectedMetricIdx];
-		const adultScenarioCount = selectedId
-			? (appState.scenarioIndex?.[selectedId] ?? []).filter((sc) => sc.age === 'adult').length
-			: 0;
-		scenarioIdx = clampIndex(state.scenarioIdx, adultScenarioCount);
-		modelIdx = clampIndex(state.modelIdx, maskedModels.length);
-
-		preReadAcknowledged = !!row.pre_read_acknowledged;
-		preReadSignerName = row.pre_read_signer_name;
-	}
-
-	/** Merge extras for coalesced saves (latest non-null wins). */
-	let pendingDraftExtra: {
-		model_mapping?: MaskedModel[] | null;
-		pre_read_acknowledged?: boolean;
-		pre_read_signer_name?: string | null;
-	} = {};
-	let persistInFlight = false;
-	let persistQueued = false;
-	let persistTail: Promise<boolean> = Promise.resolve(true);
-
-	async function persistDraft(
-		extra?: {
-			model_mapping?: MaskedModel[] | null;
-			pre_read_acknowledged?: boolean;
-			pre_read_signer_name?: string | null;
-		}
-	): Promise<boolean> {
-		if (!expert || formCompleted) return false;
-		if (extra) pendingDraftExtra = { ...pendingDraftExtra, ...extra };
-
-		if (persistInFlight) {
-			persistQueued = true;
-			return persistTail;
-		}
-
-		persistInFlight = true;
-		persistTail = (async () => {
-			let ok = true;
-			let attempts = 0;
-			do {
-				persistQueued = false;
-				attempts += 1;
-				if (attempts > 6) {
-					ok = false;
-					saveStatus = 'error';
-					saveError = 'Could not save draft after several retries.';
-					break;
-				}
-				const patch = {
-					form_state: serializeFormState(),
-					...pendingDraftExtra
-				};
-				pendingDraftExtra = {};
-				saveStatus = 'saving';
-				saveError = null;
-				try {
-					const updated = await saveExpertDraft(expert!.id, expert!.updated_at, patch);
-					expert = { ...expert!, ...updated, form_state: patch.form_state ?? expert!.form_state };
-					saveStatus = 'saved';
-				} catch (e) {
-					if (e instanceof ExpertDraftConflictError) {
-						try {
-							const fresh = await getExpert(expert!.id);
-							if (fresh) {
-								expert = {
-									...expert!,
-									updated_at: fresh.updated_at,
-									status: fresh.status,
-									completed_at: fresh.completed_at
-								};
-								if (fresh.status === 'completed') {
-									formCompleted = true;
-									ok = false;
-									break;
-								}
-							}
-							persistQueued = true;
-							continue;
-						} catch (reloadErr) {
-							ok = false;
-							saveStatus = 'error';
-							saveError =
-								reloadErr instanceof Error ? reloadErr.message : String(reloadErr);
-							break;
-						}
-					}
-					ok = false;
-					saveStatus = 'error';
-					saveError = e instanceof Error ? e.message : String(e);
-					break;
-				}
-			} while (persistQueued);
-			return ok;
-		})().finally(() => {
-			persistInFlight = false;
-		});
-
-		return persistTail;
-	}
+	});
+	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
+	// Scenario detail carries the full user goal; the index copy is truncated
+	// at ~80 chars upstream. Prefer the loaded detail when available so the
+	// header title isn't cut off mid-word.
+	const currentScenarioTitle = $derived(
+		conversationDetail?.user_goal ?? currentScenario?.title ?? ''
+	);
 
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
-		try {
-			const row = await getExpert(expertId);
-			if (!row) {
-				loadError = 'Expert form not found. Check your personal link.';
-				loading = false;
-				return;
-			}
-			expert = row;
-			formCompleted = row.status === 'completed';
+		// Anonymous per-browser participant id. Persisted on first visit so
+		// randomised assignments (model mask + scenario order) stay stable
+		// across reloads for the same reviewer while differing between
+		// reviewers.
+		participantId = getParticipantId();
 
+		// Restore prior orientation ack (per metricId) so we don't re-prompt
+		// on refresh. Skipped entirely for the multi-metric /experts route.
+		if (typeof window !== 'undefined') {
+			if (!metricId) {
+				orientationAcknowledged = true;
+			} else {
+				try {
+					const raw = window.localStorage.getItem(ORIENTATION_STORAGE_KEY);
+					if (raw) {
+						const parsed = JSON.parse(raw) as Record<string, boolean>;
+						if (parsed && parsed[metricId] === true) {
+							orientationAcknowledged = true;
+						}
+					}
+				} catch {
+					// ignore corrupt storage
+				}
+			}
+		}
+		// Restore any prior pre-read acknowledgment so we don't re-prompt on refresh.
+		if (typeof window !== 'undefined') {
+			try {
+				const raw = window.localStorage.getItem(PREREAD_STORAGE_KEY);
+				if (raw) {
+					const parsed = JSON.parse(raw) as { signedName?: string };
+					if (parsed && typeof parsed.signedName === 'string' && parsed.signedName.trim()) {
+						preReadSignerName = parsed.signedName;
+						preReadAcknowledged = true;
+					}
+				}
+			} catch {
+				// ignore corrupt storage
+			}
+		}
+		try {
 			const [taxonomy, models, benchmarkData] = await Promise.all([
 				loadTaxonomy(),
 				loadModels(),
@@ -419,27 +390,35 @@
 					])
 				)
 			);
+			// masked models are now assigned per (participant, metric, scenario)
+			// via a reactive effect above, so nothing to set here.
 
-			const { mapping, regenerated } = resolveExpertMaskedModels(row.model_mapping);
-			let activeRow = row;
-			if (regenerated) {
-				activeRow = await claimExpertModelMapping(row.id, mapping);
+			// Per-slug routes pass a metricId to scope the flow to one metric;
+			// the default /experts route falls back to the full
+			// humanebench × social-relationships list (alphabetical).
+			let list: ExpertMetric[];
+			if (metricId) {
+				const found = taxonomy.areas
+					.flatMap((a) => a.subareas)
+					.flatMap((s) => s.metrics)
+					.find((m) => m.id === metricId);
+				list = found ? [{ id: found.id, name: found.name }] : [];
+			} else {
+				const subarea = taxonomy.areas
+					.flatMap((a) => a.subareas)
+					.find((s) => s.id === MOCK_EXPERT_USER.subareaId);
+				list = (subarea?.metrics ?? [])
+					.filter((m) => m.id.startsWith(`${EXPERT_BENCHMARK_SLUG}__`))
+					.map((m) => ({ id: m.id, name: m.name }))
+					.sort((a, b) => a.name.localeCompare(b.name));
 			}
-			maskedModels = resolveExpertMaskedModels(activeRow.model_mapping).mapping;
-			expert = activeRow;
-
-			const subarea = taxonomy.areas
-				.flatMap((a) => a.subareas)
-				.find((s) => s.id === activeRow.subarea_id);
-			const list: ExpertMetric[] = (subarea?.metrics ?? [])
-				.filter((m) => m.id.startsWith(`${EXPERT_BENCHMARK_SLUG}__`))
-				.map((m) => ({ id: m.id, name: m.name }))
-				.sort((a, b) => a.name.localeCompare(b.name));
 			expertMetrics = list;
 
-			skipNextAutosave = true;
-			hydrateFromExpert(activeRow, list.map((m) => m.id));
-			draftReady = true;
+			progress = Object.fromEntries(
+				list.map((m) => [m.id, blankProgress()])
+			) as Record<string, MetricProgress>;
+			if (list.length > 0) unlocked = new Set([list[0].id]);
+
 			loading = false;
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : String(e);
@@ -447,28 +426,21 @@
 		}
 	});
 
-	// Debounced autosave of draft state.
-	// Deep-read nested progress/evaluations fields — Svelte 5 effects that only
-	// touch the top-level object miss bind:value / bind:group mutations, so
-	// scenario 2+ answers never triggered a save.
-	$effect(() => {
-		if (!draftReady || formCompleted || !expert) return;
-
-		const snapshot = JSON.stringify(serializeFormState());
-
-		if (skipNextAutosave) {
-			skipNextAutosave = false;
-			return;
-		}
-
-		const handle = setTimeout(() => {
-			void persistDraft();
-		}, 800);
-		// Keep snapshot referenced so the serializer isn't tree-shaken as unused.
-		void snapshot;
-		return () => clearTimeout(handle);
-	});
-
+	function blankProgress(): MetricProgress {
+		return {
+			feedback: {
+				relevance: '',
+				relevanceEdit: '',
+				labelDifferent: '',
+				labelEdit: '',
+				examplesAdequate: '',
+				examplesEdit: '',
+				other: '',
+				submitted: false
+			},
+			evaluated: new Set()
+		};
+	}
 
 	// ── Conversation loading ──────────────────────────────────────
 	$effect(() => {
@@ -506,9 +478,16 @@
 	}
 
 	function submitFeedback() {
-		if (!selectedMetric || formCompleted) return;
+		if (!selectedMetric) return;
 		progress[selectedMetric.id].feedback.submitted = true;
-		void persistDraft();
+	}
+
+	// Feedback CTA: record the feedback and jump straight into the first
+	// scenario, so "Next" reads naturally as "take me to the scenarios".
+	function submitFeedbackAndAdvance() {
+		if (!selectedMetric) return;
+		submitFeedback();
+		stepForward();
 	}
 
 	function markCurrentEvaluated() {
@@ -517,6 +496,25 @@
 		progress[selectedMetric.id].evaluated.add(key);
 		// trigger reactivity on the Set
 		progress[selectedMetric.id].evaluated = new Set(progress[selectedMetric.id].evaluated);
+	}
+
+	function blankEval(): ScenarioEval {
+		return {
+			scenarioAccurate: '',
+			scenarioAccurateEdit: '',
+			scenarioRealistic: '',
+			scenarioRealisticEdit: '',
+			rating: '',
+			influencedAspects: [],
+			influencedAspectsOther: '',
+			confidence: '',
+			mainChallenge: '',
+			mainChallengeOther: '',
+			justification: '',
+			otherFeedback: '',
+			submitting: false,
+			submitted: false
+		};
 	}
 
 	function toggleInfluence(key: string, checked: boolean) {
@@ -533,73 +531,45 @@
 	}
 
 	async function submitEvaluation() {
-		if (!selectedMetric || !currentScenario || !currentMaskedModel || !expert) return;
-		if (formCompleted) return;
+		if (!selectedMetric || !currentScenario || !currentMaskedModel) return;
 		const key = currentEvalKey;
 		if (!key) return;
 		const form = evaluations[key];
 		if (!form) return;
 		if (evalProgress.pct < 100) return;
 		form.submitting = true;
+		const params = new URLSearchParams({
+			form_type: 'Expert-Evaluation',
+			participant_id: participantId,
+			expert_name: expertNameDisplay,
+			subarea: subareaLabelDisplay,
+			metric_id: selectedMetric.id,
+			metric_name: selectedMetric.name,
+			scenario_id: currentScenario.scenario_id,
+			scenario_title: currentScenarioTitle,
+			masked_model: currentMaskedModel.label,
+			actual_model_id: currentMaskedModel.id,
+			scenario_accurate: form.scenarioAccurate,
+			scenario_accurate_edit: form.scenarioAccurateEdit,
+			scenario_realistic: form.scenarioRealistic,
+			scenario_realistic_edit: form.scenarioRealisticEdit,
+			rating: form.rating,
+			influenced_aspects: form.influencedAspects.join('; '),
+			influenced_aspects_other: form.influencedAspectsOther,
+			confidence: form.confidence,
+			main_challenge: form.mainChallenge,
+			main_challenge_other: form.mainChallengeOther,
+			justification: form.justification,
+			other_feedback: form.otherFeedback,
+			submitted_at: new Date().toISOString()
+		}).toString();
 		try {
-			await submitScenarioEvaluation({
-				expert_id: expert.id,
-				metric_id: selectedMetric.id,
-				metric_name: selectedMetric.name,
-				scenario_id: currentScenario.scenario_id,
-				scenario_title: currentScenario.title,
-				model_id: currentMaskedModel.id,
-				masked_model_label: currentMaskedModel.label,
-				scenario_accurate: form.scenarioAccurate,
-				scenario_accurate_edit: form.scenarioAccurateEdit,
-				scenario_realistic: form.scenarioRealistic,
-				scenario_realistic_edit: form.scenarioRealisticEdit,
-				rating: form.rating,
-				influenced_aspects: form.influencedAspects.join('; '),
-				influenced_aspects_other: form.influencedAspectsOther,
-				confidence: form.confidence,
-				main_challenge: form.mainChallenge,
-				main_challenge_other: form.mainChallengeOther,
-				justification: form.justification,
-				other_feedback: form.otherFeedback,
-				submitted_at: new Date().toISOString()
-			});
+			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
 			form.submitted = true;
 			markCurrentEvaluated();
-			const saved = await persistDraft();
-			if (saved) await maybeMarkCompleted();
-		} catch (e) {
-			saveStatus = 'error';
-			saveError = e instanceof Error ? e.message : String(e);
 		} finally {
 			form.submitting = false;
 		}
-	}
-
-	function buildRequiredEvaluations() {
-		return expertMetrics.flatMap((metric) => {
-			const scenarios = (appState.scenarioIndex?.[metric.id] ?? []).filter(
-				(sc) => sc.age === 'adult'
-			);
-			return scenarios.flatMap((scenario) =>
-				maskedModels.map((model) => ({
-					metric_id: metric.id,
-					scenario_id: scenario.scenario_id,
-					model_id: model.id
-				}))
-			);
-		});
-	}
-
-	async function maybeMarkCompleted() {
-		if (!expert || formCompleted) return;
-		const allDone = expertMetrics.every((m) => isEvaluatedAll(m.id));
-		if (!allDone) return;
-		const required = buildRequiredEvaluations();
-		if (required.length === 0) return;
-		const updated = await markExpertCompleted(expert.id, required);
-		formCompleted = true;
-		expert = { ...expert, ...updated };
 	}
 
 	// ── Auto-unlock ───────────────────────────────────────────────
@@ -619,22 +589,115 @@
 	function toggleUserMenu() {
 		userMenuOpen = !userMenuOpen;
 	}
-	async function acknowledgePreRead(signedName: string) {
-		if (!expert) throw new Error('Expert not loaded');
+	function acknowledgePreRead(signedName: string) {
+		preReadSignerName = signedName;
+		preReadAcknowledged = true;
+		if (typeof window !== 'undefined') {
+			try {
+				window.localStorage.setItem(
+					PREREAD_STORAGE_KEY,
+					JSON.stringify({
+						signedName,
+						acknowledgedAt: new Date().toISOString(),
+						document: 'HumaneBench_PreRead_Protocol',
+						documentVersion: '2026-01'
+					})
+				);
+			} catch {
+				// ignore
+			}
+		}
+	}
+	function acknowledgeOrientation() {
+		orientationAcknowledged = true;
+		if (typeof window === 'undefined' || !metricId) return;
 		try {
-			const updated = await persistPreRead(expert.id, signedName, expert.updated_at);
-			expert = { ...expert, ...updated };
-			const saved = await persistDraft({
-				pre_read_acknowledged: true,
-				pre_read_signer_name: signedName
-			});
-			if (!saved) throw new Error(saveError ?? 'Failed to save pre-read acknowledgment');
-			preReadSignerName = signedName;
-			preReadAcknowledged = true;
-		} catch (e) {
-			saveStatus = 'error';
-			saveError = e instanceof Error ? e.message : String(e);
-			throw e;
+			const raw = window.localStorage.getItem(ORIENTATION_STORAGE_KEY);
+			const store = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+			store[metricId] = true;
+			window.localStorage.setItem(ORIENTATION_STORAGE_KEY, JSON.stringify(store));
+		} catch {
+			// ignore
+		}
+	}
+
+	// ── Exit survey ───────────────────────────────────────────────
+	function openExitSurvey() {
+		showExitSurvey = true;
+	}
+	function toggleImpactArea(area: string, checked: boolean) {
+		if (checked) {
+			if (!exitSurvey.impactAreas.includes(area)) {
+				exitSurvey.impactAreas = [...exitSurvey.impactAreas, area];
+			}
+		} else {
+			exitSurvey.impactAreas = exitSurvey.impactAreas.filter((a) => a !== area);
+			if (area === 'Other') exitSurvey.impactAreasOther = '';
+		}
+	}
+	const exitSurveyReady = $derived(
+		!!(
+			exitSurvey.gender &&
+			(exitSurvey.gender !== 'other' || exitSurvey.genderOther.trim()) &&
+			exitSurvey.age &&
+			exitSurvey.race &&
+			(exitSurvey.race !== 'other' || exitSurvey.raceOther.trim()) &&
+			exitSurvey.role &&
+			(exitSurvey.role !== 'other' || exitSurvey.roleOther.trim()) &&
+			exitSurvey.evaluatingFor &&
+			exitSurvey.context &&
+			(exitSurvey.context !== 'other' || exitSurvey.contextOther.trim()) &&
+			exitSurvey.impactAreas.length > 0 &&
+			(!exitSurvey.impactAreas.includes('Other') || exitSurvey.impactAreasOther.trim()) &&
+			exitSurvey.biggestConcern.trim() &&
+			exitSurvey.paymentMethod.trim()
+		)
+	);
+	async function submitExitSurvey() {
+		if (!exitSurveyReady || exitSurvey.submitting) return;
+		exitSurvey.submitting = true;
+		const genderLabel =
+			exitSurvey.gender === 'other'
+				? exitSurvey.genderOther.trim()
+				: (GENDER_OPTS.find((o) => o.v === exitSurvey.gender)?.l ?? exitSurvey.gender);
+		const raceLabel =
+			exitSurvey.race === 'other'
+				? exitSurvey.raceOther.trim()
+				: (RACE_OPTS.find((o) => o.v === exitSurvey.race)?.l ?? exitSurvey.race);
+		const roleLabel =
+			exitSurvey.role === 'other'
+				? exitSurvey.roleOther.trim()
+				: (ROLE_OPTS.find((o) => o.v === exitSurvey.role)?.l ?? exitSurvey.role);
+		const contextLabel =
+			exitSurvey.context === 'other'
+				? exitSurvey.contextOther.trim()
+				: (CONTEXT_OPTS.find((o) => o.v === exitSurvey.context)?.l ?? exitSurvey.context);
+		const params = new URLSearchParams({
+			form_type: 'Expert-ExitSurvey',
+			participant_id: participantId,
+			expert_name: expertNameDisplay,
+			subarea: subareaLabelDisplay,
+			metric_id: metricId ?? '',
+			metric_name: selectedMetric?.name ?? '',
+			other_feedback: exitSurvey.otherFeedback,
+			gender: genderLabel,
+			age: exitSurvey.age,
+			race_ethnicity: raceLabel,
+			role: roleLabel,
+			evaluating_for: exitSurvey.evaluatingFor,
+			context_of_use: contextLabel,
+			impact_areas: exitSurvey.impactAreas
+				.map((a) => (a === 'Other' ? `Other: ${exitSurvey.impactAreasOther.trim()}` : a))
+				.join('; '),
+			biggest_concern: exitSurvey.biggestConcern,
+			payment_method: exitSurvey.paymentMethod,
+			submitted_at: new Date().toISOString()
+		}).toString();
+		try {
+			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			exitSurvey.submitted = true;
+		} finally {
+			exitSurvey.submitting = false;
 		}
 	}
 	function logOut() {
@@ -661,21 +724,16 @@
 
 	// ── Small helpers ─────────────────────────────────────────────
 	const metricCriteriaText = $derived(
-		selectedMetric ? (appState.metricCriteria?.[selectedMetric.id] ?? '') : ''
+		definitionProp ??
+			(selectedMetric ? (appState.metricCriteria?.[selectedMetric.id] ?? '') : '')
 	);
 	const isEvaluatedAll = $derived((metricId: string) => {
 		const scenarios = (appState.scenarioIndex?.[metricId] ?? []).filter(
 			(sc) => sc.age === 'adult'
 		);
-		const expected = scenarios.flatMap((scenario) =>
-			maskedModels.map((model) => `${scenario.scenario_id}__${model.id}`)
-		);
-		const evaluated = progress[metricId]?.evaluated;
-		return (
-			expected.length > 0 &&
-			!!progress[metricId]?.feedback.submitted &&
-			expected.every((key) => evaluated?.has(key))
-		);
+		const total = scenarios.length * maskedModels.length;
+		const done = progress[metricId]?.evaluated.size ?? 0;
+		return total > 0 && done >= total && (progress[metricId]?.feedback.submitted ?? false);
 	});
 
 	// After a user submits an evaluation for the current (scenario, model)
@@ -718,19 +776,70 @@
 				modelIdx = 0;
 			}
 		}
-		void persistDraft();
 	}
 
-	// Metric pager derived state (used by the header prev/next arrows).
-	const prevMetricIdx = $derived(selectedMetricIdx - 1);
-	const nextMetricIdx = $derived(selectedMetricIdx + 1);
-	const canPrevMetric = $derived(
-		prevMetricIdx >= 0 && unlocked.has(expertMetrics[prevMetricIdx]?.id ?? '')
+	// Linear step navigation within the current metric.
+	// Flow: feedback → (scenario 0, model 0) → (s0, m1) → … → (s2, m2).
+	const modelCount = $derived(maskedModels.length);
+	const scenarioCount = $derived(selectedMetricScenarios.length);
+	const totalScenarioSteps = $derived(scenarioCount * modelCount);
+	const currentStepIdx = $derived(
+		phase === 'scenario' ? scenarioIdx * modelCount + modelIdx : -1
 	);
-	const canNextMetric = $derived(
-		nextMetricIdx < expertMetrics.length &&
-			unlocked.has(expertMetrics[nextMetricIdx]?.id ?? '')
+	const canPrevStep = $derived(phase === 'scenario');
+	// Forward navigation is gated on the current step being complete so
+	// reviewers can only advance sequentially. Backward navigation is always
+	// free (within a metric) so they can revisit earlier answers.
+	const isAtLastStep = $derived(
+		phase === 'scenario' &&
+			scenarioIdx === scenarioCount - 1 &&
+			modelIdx === modelCount - 1
 	);
+	const currentStepComplete = $derived(
+		phase === 'feedback'
+			? (selectedMetricProgress?.feedback.submitted ?? false)
+			: (evaluations[currentEvalKey]?.submitted ?? false)
+	);
+	const canNextStep = $derived(
+		currentStepComplete &&
+			((phase === 'feedback' && scenarioCount > 0) ||
+				(phase === 'scenario' && !isAtLastStep))
+	);
+	const nextStepBlockedReason = $derived(
+		canNextStep || isAtLastStep
+			? ''
+			: phase === 'feedback'
+				? 'Please save your metric feedback first.'
+				: 'You must complete evaluating this scenario first.'
+	);
+
+	function stepBack() {
+		if (phase !== 'scenario') return;
+		if (modelIdx > 0) {
+			modelIdx = modelIdx - 1;
+		} else if (scenarioIdx > 0) {
+			scenarioIdx = scenarioIdx - 1;
+			modelIdx = modelCount - 1;
+		} else {
+			phase = 'feedback';
+		}
+	}
+
+	function stepForward() {
+		if (phase === 'feedback') {
+			if (scenarioCount === 0) return;
+			phase = 'scenario';
+			scenarioIdx = 0;
+			modelIdx = 0;
+			return;
+		}
+		if (modelIdx < modelCount - 1) {
+			modelIdx = modelIdx + 1;
+		} else if (scenarioIdx < scenarioCount - 1) {
+			scenarioIdx = scenarioIdx + 1;
+			modelIdx = 0;
+		}
+	}
 
 	const currentEvalKey = $derived(
 		selectedMetric && currentScenario && currentMaskedModel
@@ -741,9 +850,7 @@
 	$effect(() => {
 		if (!currentEvalKey) return;
 		if (!evaluations[currentEvalKey]) {
-			// Reassign the record so other scenarios' keys stay intact and
-			// reactivity subscribers see a top-level change.
-			evaluations = { ...evaluations, [currentEvalKey]: blankEval() };
+			evaluations[currentEvalKey] = blankEval();
 		}
 	});
 
@@ -774,6 +881,33 @@
 		const total = items.length;
 		return { done, total, pct: Math.round((done / total) * 100) };
 	});
+
+	// Feedback-phase equivalent so the header progress bar mirrors the
+	// bottom CTA in the same way scenario evaluations do.
+	const feedbackProgress = $derived.by(() => {
+		const f = selectedMetricProgress?.feedback;
+		if (!f) return { done: 0, total: 1, pct: 0 };
+		const items: boolean[] = [];
+		items.push(!!f.relevance);
+		if (f.relevance === '1' || f.relevance === '2' || f.relevance === '3') {
+			items.push(!!f.relevanceEdit.trim());
+		}
+		items.push(!!f.labelDifferent);
+		if (f.labelDifferent === 'yes' || f.labelDifferent === 'not-sure') {
+			items.push(!!f.labelEdit.trim());
+		}
+		items.push(!!f.examplesAdequate);
+		if (f.examplesAdequate === 'no' || f.examplesAdequate === 'not-sure') {
+			items.push(!!f.examplesEdit.trim());
+		}
+		const done = items.filter(Boolean).length;
+		const total = items.length;
+		return { done, total, pct: Math.round((done / total) * 100) };
+	});
+
+	const headerProgressPct = $derived(
+		phase === 'feedback' ? feedbackProgress.pct : evalProgress.pct
+	);
 </script>
 
 <div class="flex h-screen flex-col bg-[#fafaf9] text-[#1a1a1a]">
@@ -793,16 +927,6 @@
 			Home
 		</a>
 
-		{#if saveStatus === 'saving'}
-			<span class="mr-3 text-[11px] text-[#9ca3af]">Saving…</span>
-		{:else if saveStatus === 'saved'}
-			<span class="mr-3 text-[11px] text-[#059669]">Saved</span>
-		{:else if saveStatus === 'error'}
-			<span class="mr-3 max-w-[180px] truncate text-[11px] text-[#dc2626]" title={saveError ?? ''}
-				>Save failed</span
-			>
-		{/if}
-
 		<div class="expert-user-menu relative">
 			<button
 				class="flex cursor-pointer items-center gap-[10px] rounded-full border border-[#e5e7eb] bg-white py-[6px] pr-3 pl-[6px] text-left transition-colors duration-150 hover:border-[#00b3b0]"
@@ -813,14 +937,14 @@
 				<span
 					class="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-[12px] font-bold text-white"
 				>
-					{signedIn ? expertUser.name.split(' ').map((s) => s[0]).join('').slice(0, 2) : '?'}
+					{signedIn ? expertInitials : '?'}
 				</span>
 				<span class="flex flex-col leading-tight">
 					<span class="text-[13px] font-semibold text-[#111827]">
-						{signedIn ? expertUser.name : 'Signed out'}
+						{signedIn ? expertNameDisplay : 'Signed out'}
 					</span>
 					<span class="text-[11px] text-[#6b7280]">
-						{signedIn ? expertUser.subareaLabel : 'Click to sign in'}
+						{signedIn ? subareaLabelDisplay : 'Click to sign in'}
 					</span>
 				</span>
 				<i class="fa-solid fa-chevron-down text-[10px] text-[#9ca3af]"></i>
@@ -834,10 +958,10 @@
 					{#if signedIn}
 						<div class="border-b border-[#f3f4f6] px-4 py-[10px]">
 							<div class="text-[12px] font-semibold text-[#111827]">
-								{expertUser.name}
+								{expertNameDisplay}
 							</div>
 							<div class="text-[11px] text-[#6b7280]">
-								{expertUser.subareaLabel} expert
+								{subareaLabelDisplay} expert
 							</div>
 						</div>
 						<button
@@ -872,17 +996,6 @@
 			<div class="flex flex-1 items-center justify-center text-[#dc2626]">
 				Failed to load: {loadError}
 			</div>
-		{:else if formCompleted}
-			<div class="flex flex-1 items-center justify-center px-6">
-				<div class="max-w-md text-center">
-					<div class="mb-3 text-[2.5rem]">✓</div>
-					<h2 class="m-0 mb-2 text-[1.35rem] font-bold text-[#111827]">Review complete</h2>
-					<p class="m-0 text-[14px] leading-[1.6] text-[#6b7280]">
-						Thanks, {expertUser.name}. Your evaluations for {expertUser.subareaLabel} have been
-						submitted and this form is locked.
-					</p>
-				</div>
-			</div>
 		{:else}
 			<!-- Right: workspace (full-width, no metric sidebar) -->
 			<section class="flex flex-1 flex-col overflow-hidden">
@@ -892,85 +1005,430 @@
 						<div class="flex items-start justify-between gap-4">
 							<div>
 								<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-									Metric {selectedMetricIdx + 1} of {expertMetrics.length} · {expertUser.subareaLabel}
+									{#if phase === 'scenario' && scenarioCount > 0}
+										Scenario {scenarioIdx + 1} of {scenarioCount} · {subareaLabelDisplay}
+									{:else}
+										{subareaLabelDisplay}
+									{/if}
 								</div>
 								<h1 class="mt-[3px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]">
 									{selectedMetric.name}
 								</h1>
-								{#if metricCriteriaText}
-									<p class="mt-[6px] max-w-[720px] text-[13px] leading-[1.6] text-[#4b5563]">
-										{metricCriteriaText}
-									</p>
+								{#if metricCriteriaText || displayExamples.length > 0}
+									<div class="mt-[4px] max-w-[720px]">
+										{#if metricCriteriaText}
+											<p class="text-[13px] leading-[1.6] text-[#4b5563]">
+												{metricCriteriaText}
+											</p>
+										{/if}
+										{#if displayExamples.length > 0}
+											<button
+												type="button"
+												class="mt-1 inline-flex cursor-pointer items-baseline gap-1 text-[13px] font-medium text-[#4b5563] underline decoration-dotted underline-offset-[3px] transition-colors duration-150 hover:text-[#111827]"
+												aria-expanded={examplesExpanded}
+												onclick={() => (examplesExpanded = !examplesExpanded)}
+											>
+												{examplesExpanded ? 'Hide examples' : 'See examples'}
+												<i
+													class="fa-solid fa-chevron-down text-[9px] transition-transform duration-150 {examplesExpanded
+														? 'rotate-180'
+														: ''}"
+												></i>
+											</button>
+											{#if examplesExpanded}
+												<ul
+													class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]"
+												>
+													{#each displayExamples as ex (ex)}
+														<li>{ex}</li>
+													{/each}
+												</ul>
+											{/if}
+										{/if}
+									</div>
 								{/if}
 							</div>
-							<!-- Metric pager (replaces removed sidebar) -->
-							<div class="flex flex-shrink-0 items-center gap-1.5">
-								<button
-									type="button"
-									class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
-									disabled={!canPrevMetric}
-									aria-label="Previous metric"
-									onclick={() => selectMetric(prevMetricIdx)}
-								>
-									<i class="fa-solid fa-chevron-left text-[11px]"></i>
-								</button>
-								<span class="text-[11px] font-semibold text-[#6b7280]">
-									{selectedMetricIdx + 1} / {expertMetrics.length}
-								</span>
-								<button
-									type="button"
-									class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
-									disabled={!canNextMetric}
-									aria-label="Next metric"
-									onclick={() => selectMetric(nextMetricIdx)}
-								>
-									<i class="fa-solid fa-chevron-right text-[11px]"></i>
-								</button>
-							</div>
+							<!-- Linear step pager within the current metric -->
+							{#if totalScenarioSteps > 0}
+								<div class="flex flex-shrink-0 items-center gap-1.5">
+									<button
+										type="button"
+										class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
+										disabled={!canPrevStep}
+										aria-label="Previous step"
+										onclick={stepBack}
+									>
+										<i class="fa-solid fa-chevron-left text-[11px]"></i>
+									</button>
+									<span class="min-w-[140px] text-center text-[11px] font-semibold text-[#6b7280]">
+										{#if phase === 'scenario' && scenarioCount > 0}
+											Scenario {scenarioIdx + 1}/{scenarioCount} · Model {modelIdx + 1}/{modelCount}
+										{:else}
+											Metric feedback
+										{/if}
+									</span>
+									<button
+										type="button"
+										class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
+										disabled={!canNextStep}
+										aria-label="Next step"
+										title={nextStepBlockedReason || undefined}
+										onclick={stepForward}
+									>
+										<i class="fa-solid fa-chevron-right text-[11px]"></i>
+									</button>
+								</div>
+							{/if}
 						</div>
 
-						<!-- Phase tabs -->
-						<div class="mt-4 -mb-px flex gap-1">
-							<button
-								class="cursor-pointer border-b-[2px] px-3 py-[6px] text-[12px] font-semibold transition-colors duration-150
-									{phase === 'feedback'
-									? 'border-[#00b3b0] text-[#00b3b0]'
-									: 'border-transparent text-[#6b7280] hover:text-[#111827]'}"
-								onclick={() => (phase = 'feedback')}
-							>
-								<i class="fa-solid fa-clipboard-question mr-1.5 text-[11px]"></i>
-								Metric feedback
-								{#if selectedMetricProgress.feedback.submitted}
-									<i class="fa-solid fa-check ml-1 text-[10px] text-[#16a34a]"></i>
-								{/if}
-							</button>
-							{#each selectedMetricScenarios as sc, sIdx (sc.scenario_id)}
-								{@const modelsDone = maskedModels.filter((mm) =>
-									selectedMetricProgress.evaluated.has(`${sc.scenario_id}__${mm.id}`)
-								).length}
-								<button
-									class="cursor-pointer border-b-[2px] px-3 py-[6px] text-[12px] font-semibold transition-colors duration-150
-										{phase === 'scenario' && scenarioIdx === sIdx
-										? 'border-[#00b3b0] text-[#00b3b0]'
-										: 'border-transparent text-[#6b7280] hover:text-[#111827]'}"
-									onclick={() => {
-										phase = 'scenario';
-										scenarioIdx = sIdx;
-										modelIdx = 0;
-										void persistDraft();
-									}}
-								>
-									Scenario {sIdx + 1}
-									<span class="ml-1 text-[10px] font-normal text-[#9ca3af]">
-										({modelsDone}/{maskedModels.length})
-									</span>
-								</button>
-							{/each}
+						<!-- Subtle horizontal progress bar (mirrors the completion CTA %) -->
+						<div class="mt-5 pb-4">
+							<div class="h-[3px] w-full overflow-hidden rounded-full bg-[#f1f5f4]">
+								<div
+									class="h-full rounded-full bg-gradient-to-r from-[#00b3b0] to-[#038d8f] transition-[width] duration-300 ease-out"
+									style="width: {headerProgressPct}%"
+								></div>
+							</div>
 						</div>
 					</div>
 
 					<!-- Phase body -->
 					<div class="flex flex-1 overflow-hidden bg-[#fafaf9]">
+					{#if showExitSurvey}
+						<div class="flex-1 overflow-y-auto px-8 py-8">
+							<div class="mx-auto max-w-[640px]">
+								{#if exitSurvey.submitted}
+									<div class="rounded-[14px] border border-[#00b3b0]/40 bg-white p-10 text-center">
+										<div
+											class="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#e0f7f7] text-[#00b3b0]"
+										>
+											<i class="fa-solid fa-check text-[18px]"></i>
+										</div>
+										<h2 class="mt-4 text-[18px] font-[700] text-[#111827]">Thank you!</h2>
+										<p
+											class="mx-auto mt-2 max-w-[420px] text-[13px] leading-[1.55] text-[#4b5563]"
+										>
+											Your evaluations and wrap-up survey have been submitted. We'll be in
+											touch about compensation via the payment method you provided.
+										</p>
+									</div>
+								{:else}
+									<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-8">
+										<h2 class="text-[18px] font-[700] text-[#111827]">
+											Thank you. The survey is now done.
+										</h2>
+										<p class="mt-2 text-[13px] leading-[1.55] text-[#6b7280]">
+											Do you have any other feedback for us?
+										</p>
+										<textarea
+											rows="4"
+											bind:value={exitSurvey.otherFeedback}
+											class="mt-3 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
+										></textarea>
+
+										<div class="mt-8 border-t border-[#f3f4f6] pt-6">
+											<h3 class="text-[15px] font-[700] text-[#111827]">
+												Please tell us more about yourself.
+											</h3>
+
+											<!-- Gender -->
+											<div class="mt-5">
+												<div class="text-[13px] font-semibold text-[#111827]">
+													What is your gender?
+												</div>
+												<div class="mt-3 flex flex-col gap-2">
+													{#each GENDER_OPTS as opt (opt.v)}
+														<label
+															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.gender === opt.v
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="exit-gender"
+																value={opt.v}
+																bind:group={exitSurvey.gender}
+																class="accent-[#00b3b0]"
+															/>
+															{opt.l}
+														</label>
+													{/each}
+													{#if exitSurvey.gender === 'other'}
+														<input
+															type="text"
+															bind:value={exitSurvey.genderOther}
+															placeholder="Please describe"
+															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+														/>
+													{/if}
+												</div>
+											</div>
+
+											<!-- Age -->
+											<div class="mt-6">
+												<div class="text-[13px] font-semibold text-[#111827]">
+													What is your age?
+												</div>
+												<div class="mt-3 flex flex-col gap-2">
+													{#each AGE_OPTS as opt (opt)}
+														<label
+															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.age === opt
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="exit-age"
+																value={opt}
+																bind:group={exitSurvey.age}
+																class="accent-[#00b3b0]"
+															/>
+															{opt}
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											<!-- Race/ethnicity -->
+											<div class="mt-6">
+												<div class="text-[13px] font-semibold text-[#111827]">
+													What is your race/ethnicity?
+												</div>
+												<div class="mt-3 flex flex-col gap-2">
+													{#each RACE_OPTS as opt (opt.v)}
+														<label
+															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.race === opt.v
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="exit-race"
+																value={opt.v}
+																bind:group={exitSurvey.race}
+																class="accent-[#00b3b0]"
+															/>
+															{opt.l}
+														</label>
+													{/each}
+													{#if exitSurvey.race === 'other'}
+														<input
+															type="text"
+															bind:value={exitSurvey.raceOther}
+															placeholder="Please describe"
+															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+														/>
+													{/if}
+												</div>
+											</div>
+
+											<!-- Role -->
+											<div class="mt-6">
+												<div class="text-[13px] font-semibold text-[#111827]">
+													What's your role?
+												</div>
+												<div class="mt-3 flex flex-col gap-2">
+													{#each ROLE_OPTS as opt (opt.v)}
+														<label
+															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.role === opt.v
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="exit-role"
+																value={opt.v}
+																bind:group={exitSurvey.role}
+																class="accent-[#00b3b0]"
+															/>
+															{opt.l}
+														</label>
+													{/each}
+													{#if exitSurvey.role === 'other'}
+														<input
+															type="text"
+															bind:value={exitSurvey.roleOther}
+															placeholder="Please describe"
+															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+														/>
+													{/if}
+												</div>
+											</div>
+
+											<!-- Evaluating for -->
+											<div class="mt-6">
+												<div class="text-[13px] font-semibold text-[#111827]">
+													Who are you primarily evaluating AI for?
+												</div>
+												<div class="mt-3 flex flex-col gap-2">
+													{#each EVAL_FOR_OPTS as opt (opt)}
+														<label
+															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.evaluatingFor === opt
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="exit-eval-for"
+																value={opt}
+																bind:group={exitSurvey.evaluatingFor}
+																class="accent-[#00b3b0]"
+															/>
+															{opt}
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											<!-- Context of use -->
+											<div class="mt-6">
+												<div class="text-[13px] font-semibold text-[#111827]">
+													Context of use you care most about
+												</div>
+												<div class="mt-3 flex flex-col gap-2">
+													{#each CONTEXT_OPTS as opt (opt.v)}
+														<label
+															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.context === opt.v
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="exit-context"
+																value={opt.v}
+																bind:group={exitSurvey.context}
+																class="accent-[#00b3b0]"
+															/>
+															{opt.l}
+														</label>
+													{/each}
+													{#if exitSurvey.context === 'other'}
+														<input
+															type="text"
+															bind:value={exitSurvey.contextOther}
+															placeholder="Please describe"
+															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+														/>
+													{/if}
+												</div>
+											</div>
+
+											<!-- Impact areas (multi) -->
+											<div class="mt-6">
+												<div class="text-[13px] font-semibold text-[#111827]">
+													Which impact areas matter most to you?
+													<span class="font-normal text-[#6b7280]">(Select all that apply)</span>
+												</div>
+												<div class="mt-3 flex flex-col gap-2">
+													{#each IMPACT_AREA_OPTS as area (area)}
+														{@const checked = exitSurvey.impactAreas.includes(area)}
+														<label
+															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{checked
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="checkbox"
+																{checked}
+																onchange={(ev) =>
+																	toggleImpactArea(
+																		area,
+																		(ev.currentTarget as HTMLInputElement).checked
+																	)}
+																class="accent-[#00b3b0]"
+															/>
+															{area}
+														</label>
+													{/each}
+													{#if exitSurvey.impactAreas.includes('Other')}
+														<input
+															type="text"
+															bind:value={exitSurvey.impactAreasOther}
+															placeholder="Please describe"
+															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+														/>
+													{/if}
+												</div>
+											</div>
+
+											<!-- Biggest concern -->
+											<div class="mt-6">
+												<label
+													class="text-[13px] font-semibold text-[#111827]"
+													for="exit-biggest-concern"
+												>
+													What's your single biggest concern about AI's impact on people?
+												</label>
+												<textarea
+													id="exit-biggest-concern"
+													rows="3"
+													bind:value={exitSurvey.biggestConcern}
+													class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
+												></textarea>
+											</div>
+
+											<!-- Payment -->
+											<div class="mt-6">
+												<label
+													class="text-[13px] font-semibold text-[#111827]"
+													for="exit-payment"
+												>
+													To receive your payment, please enter the best way to pay you (for
+													example, your Venmo or Zelle handle):
+												</label>
+												<input
+													id="exit-payment"
+													type="text"
+													bind:value={exitSurvey.paymentMethod}
+													class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
+												/>
+											</div>
+										</div>
+
+										<div class="mt-8 border-t border-[#f3f4f6] pt-5">
+											<p class="text-[12px] leading-[1.55] text-[#6b7280]">
+												If you have any additional comments or feedback about this survey or
+												the broader effort, please contact
+												<strong class="font-semibold text-[#374151]">Andre Kato</strong> at
+												<a
+													href="mailto:afkato@marshall.usc.edu?subject=ImpactBench Survey"
+													class="font-medium text-[#4b5563] underline decoration-dotted underline-offset-2 hover:text-[#111827]"
+												>
+													afkato@marshall.usc.edu
+												</a>
+												with the subject line "ImpactBench Survey".
+											</p>
+										</div>
+
+										<div class="mt-6 flex items-center justify-end">
+											<button
+												type="button"
+												class="inline-flex items-center gap-2 rounded-[10px] px-6 py-[10px] text-[13px] font-semibold transition-[filter,transform] duration-150
+													{exitSurveyReady && !exitSurvey.submitting
+													? 'cursor-pointer border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
+													: 'cursor-not-allowed border-none bg-[#e5e7eb] text-[#9ca3af]'}"
+												disabled={!exitSurveyReady || exitSurvey.submitting}
+												onclick={submitExitSurvey}
+											>
+												{#if exitSurvey.submitting}
+													<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
+												{:else}
+													<i class="fa-solid fa-paper-plane text-[11px]"></i> Submit survey
+												{/if}
+											</button>
+										</div>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{:else}
 						<div class="min-w-0 flex-shrink flex-grow basis-[65%] overflow-y-auto px-8 py-6">
 						{#if phase === 'feedback'}
 							<div class="mx-auto max-w-[720px] rounded-[14px] border border-[#e5e7eb] bg-white p-8">
@@ -982,7 +1440,7 @@
 								<!-- Q1: Relevance -->
 								<div class="mt-6">
 									<label class="text-[13px] font-semibold text-[#111827]">
-										How relevant is the “{selectedMetric.name}” metric for assessing the “{expertUser.subareaLabel}”
+										How relevant is the “{selectedMetric.name}” metric for assessing the “{subareaLabelDisplay}”
 										subarea goal?
 									</label>
 									<div class="mt-3 grid grid-cols-4 gap-3">
@@ -1120,46 +1578,67 @@
 									></textarea>
 								</div>
 
-								<div class="mt-6 flex items-center justify-between">
-									<span class="text-[12px] text-[#6b7280]">
-										{selectedMetricProgress.feedback.submitted
-											? 'Feedback saved. You can still edit it before continuing.'
-											: 'Save your feedback to continue to the scenarios.'}
-									</span>
+								<div class="mt-6 flex items-center justify-end">
 									<button
 										type="button"
 										class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={!selectedMetricProgress.feedback.relevance}
-										onclick={submitFeedback}
+										disabled={!selectedMetricProgress.feedback.relevance || scenarioCount === 0}
+										onclick={submitFeedbackAndAdvance}
 									>
-										<i class="fa-solid fa-check text-[11px]"></i>
-										{selectedMetricProgress.feedback.submitted ? 'Update feedback' : 'Save feedback'}
+										Next
+										<i class="fa-solid fa-arrow-right text-[11px]"></i>
 									</button>
 								</div>
 							</div>
 						{:else if currentScenario && currentMaskedModel}
 							<div class="mx-auto max-w-[900px]">
-								<!-- Content warning banner (persistent, subtle) -->
-								<div
-									class="mb-4 flex items-start gap-2.5 rounded-[8px] border border-[#e5e7eb] bg-[#f3f4f6] px-4 py-3 text-[12px] leading-[1.55] text-[#374151]"
-								>
-									<i class="fa-solid fa-circle-info mt-[3px] text-[11px] text-[#6b7280]"></i>
-									<span>
-										<span class="font-semibold text-[#1f2937]">Content note.</span>
-										These scenarios cover sensitive topics — including eating disorders,
-										self-harm, and violence — because accurate evaluation on the heaviest
-										subjects is exactly what this review depends on. The material is
-										intentionally realistic and can be difficult to read. Your progress is
-										saved locally, so you can stop at any time and pick up where you left off.
-										If you need support, please reach out to
-										<a
-											class="font-medium text-[#4b5563] underline decoration-dotted underline-offset-2 hover:text-[#111827]"
-											href="mailto:afkato@marshall.usc.edu?subject=ImpactBench Reviewer Support"
+								<!-- Content warning banner (dismissible; collapses to a hover pill) -->
+								{#if !contentNoteDismissed}
+									<div
+										class="mb-4 flex items-start gap-2.5 rounded-[8px] border border-[#e5e7eb] bg-[#f3f4f6] px-4 py-3 text-[12px] leading-[1.55] text-[#374151]"
+									>
+										<i class="fa-solid fa-circle-info mt-[3px] text-[11px] text-[#6b7280]"></i>
+										<span class="flex-1">
+											<span class="font-semibold text-[#1f2937]">Content note.</span>
+											These scenarios cover sensitive topics — including eating disorders,
+											self-harm, and violence — because accurate evaluation on the heaviest
+											subjects is exactly what this review depends on. The material is
+											intentionally realistic and can be difficult to read. Your progress is
+											saved locally, so you can stop at any time and pick up where you left off.
+										</span>
+										<button
+											type="button"
+											class="-mr-1 -mt-1 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#9ca3af] transition-colors duration-150 hover:bg-[#e5e7eb] hover:text-[#374151]"
+											aria-label="Dismiss content note"
+											onclick={() => (contentNoteDismissed = true)}
 										>
-											Andre Kato (afkato@marshall.usc.edu)
-										</a>.
-									</span>
-								</div>
+											<i class="fa-solid fa-xmark text-[11px]"></i>
+										</button>
+									</div>
+								{:else}
+									<div class="group relative mb-4 inline-block">
+										<button
+											type="button"
+											class="inline-flex cursor-help items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white px-3 py-1 text-[11px] font-semibold text-[#6b7280] transition-colors duration-150 hover:border-[#d1d5db] hover:bg-[#f9fafb] hover:text-[#374151]"
+											aria-describedby="content-note-hover"
+										>
+											<i class="fa-solid fa-circle-info text-[10px]"></i>
+											Content note
+										</button>
+										<div
+											id="content-note-hover"
+											role="tooltip"
+											class="pointer-events-none absolute left-0 top-full z-20 mt-1.5 w-[420px] rounded-[8px] border border-[#e5e7eb] bg-white px-4 py-3 text-[12px] leading-[1.55] text-[#374151] opacity-0 shadow-[0_8px_24px_rgba(15,23,42,0.1)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+										>
+											<span class="font-semibold text-[#1f2937]">Content note.</span>
+											These scenarios cover sensitive topics — including eating disorders,
+											self-harm, and violence — because accurate evaluation on the heaviest
+											subjects is exactly what this review depends on. The material is
+											intentionally realistic and can be difficult to read. Your progress is
+											saved locally, so you can stop at any time and pick up where you left off.
+										</div>
+									</div>
+								{/if}
 
 								<div>
 									<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
@@ -1169,7 +1648,7 @@
 										Scenario {scenarioIdx + 1} of {selectedMetricScenarios.length} · {currentMaskedModel.label}
 									</div>
 									<div class="mt-1 text-[15px] font-[700] text-[#111827]">
-										{currentScenario.title}
+										{currentScenarioTitle}
 									</div>
 
 									<!-- Conversation -->
@@ -1231,6 +1710,9 @@
 								{#if evaluations[currentEvalKey]}
 									{@const currentEval = evaluations[currentEvalKey]}
 									{@const canSubmit = evalProgress.pct >= 100 && !currentEval.submitting}
+									{@const showNext = currentEval.submitted && nextStep && nextStep.kind !== 'done'}
+									{@const showDone = currentEval.submitted && nextStep && nextStep.kind === 'done'}
+									{@const submitIsSecondary = showNext}
 									<div
 										class="expert-eval-scroll relative min-h-0 flex-1 overflow-y-auto px-5 py-3"
 									>
@@ -1502,12 +1984,17 @@
 											class="pointer-events-none absolute -top-8 right-0 left-0 h-8 bg-gradient-to-t from-white to-transparent"
 										></div>
 
+										<!-- Once the evaluation is submitted, the Next
+										     button becomes the primary CTA and "Update
+										     evaluation" demotes to a secondary style. -->
 										<button
 											type="button"
-											class="flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] border-none px-4 text-[13px] font-semibold transition-[filter,transform] duration-150
+											class="flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] px-4 text-[13px] font-semibold transition-[filter,transform] duration-150
 												{evalProgress.pct >= 100
-												? 'cursor-pointer bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
-												: 'cursor-not-allowed bg-[#e5e7eb] text-[#9ca3af]'}"
+												? submitIsSecondary
+													? 'cursor-pointer border border-[#00b3b0] bg-white text-[#00b3b0] hover:bg-[#e0f7f7]'
+													: 'cursor-pointer border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
+												: 'cursor-not-allowed border-none bg-[#e5e7eb] text-[#9ca3af]'}"
 											disabled={!canSubmit}
 											onclick={submitEvaluation}
 										>
@@ -1524,27 +2011,30 @@
 
 										<!-- Sequential Next button. Only appears once the current
 										     (scenario, model) evaluation has been submitted. -->
-										{#if currentEval.submitted && nextStep && nextStep.kind !== 'done'}
+										{#if showNext}
 											<button
 												type="button"
-												class="mt-2 flex h-[42px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#00b3b0] bg-white px-4 text-[13px] font-semibold text-[#00b3b0] transition-colors duration-150 hover:bg-[#e0f7f7]"
+												class="mt-2 flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 text-[13px] font-semibold text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] transition-[filter,transform] duration-150 hover:brightness-105 active:scale-[0.99]"
 												onclick={goToNext}
 											>
 												{nextStep.label}
 												<i class="fa-solid fa-arrow-right text-[11px]"></i>
 											</button>
-										{:else if currentEval.submitted && nextStep && nextStep.kind === 'done'}
-											<div
-												class="mt-2 flex h-[42px] w-full items-center justify-center gap-2 rounded-[10px] border border-[#16a34a] bg-[#dcfce7] px-4 text-[13px] font-semibold text-[#166534]"
+										{:else if showDone}
+											<button
+												type="button"
+												class="mt-2 flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 text-[13px] font-semibold text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] transition-[filter,transform] duration-150 hover:brightness-105 active:scale-[0.99]"
+												onclick={openExitSurvey}
 											>
-												<i class="fa-solid fa-check-circle text-[12px]"></i>
-												All metrics complete
-											</div>
+												<i class="fa-solid fa-flag-checkered text-[12px]"></i>
+												Finish &amp; complete survey
+											</button>
 										{/if}
 									</div>
 								{/if}
 							</aside>
 						{/if}
+					{/if}
 					</div>
 				{:else}
 					<div class="flex flex-1 items-center justify-center text-[#9ca3af]">
@@ -1556,11 +2046,20 @@
 	</main>
 </div>
 
-{#if !preReadAcknowledged && !formCompleted && !loading && !loadError}
+{#if !orientationAcknowledged && metricId}
+	<OrientationModal
+		metricName={selectedMetric?.name ?? ''}
+		definition={metricCriteriaText}
+		examples={displayExamples}
+		onProceed={acknowledgeOrientation}
+	/>
+{:else if !preReadAcknowledged}
 	<PreReadModal
 		onAcknowledge={acknowledgePreRead}
-		expertName={expertUser.name}
-		subareaLabel={expertUser.subareaLabel}
+		appsScriptUrl={APPS_SCRIPT_URL}
+		expertName={expertNameDisplay}
+		subareaLabel={subareaLabelDisplay}
+		{participantId}
 	/>
 {/if}
 
