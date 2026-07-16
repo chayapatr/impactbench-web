@@ -12,9 +12,9 @@
 			Use your personal link
 		</h1>
 		<p class="m-0 mb-6 text-[14px] leading-[1.6] text-[#6b7280]">
-			Each expert gets a unique form URL after submitting
-			<a href="/#expert" class="text-[#00b3b0] underline">Be an Expert</a>. Open that link to
-			continue your review — progress is saved automatically.
+			After you apply via
+			<a href="/#expert" class="text-[#00b3b0] underline">Be an Expert</a>, we'll send you a
+			personal review link. Open that link to continue — progress is saved automatically.
 		</p>
 		<a
 			href="/#expert"

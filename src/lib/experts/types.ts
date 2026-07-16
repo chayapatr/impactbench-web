@@ -26,12 +26,18 @@ export interface ExpertFormState {
 	phase?: 'feedback' | 'scenario';
 	scenarioIdx?: number;
 	modelIdx?: number;
+	/** Frozen per-metric scenario order (scenario_id[]), keyed by metric id. */
+	scenarioOrders?: Record<string, string[]>;
+	/** Frozen Model A/B/C mapping per (metric, scenario) pair, keyed by `${metricId}__${scenarioId}`. */
+	modelMappings?: Record<string, MaskedModel[]>;
+	orientationAcknowledged?: boolean;
 }
 
 export interface ExpertRow {
 	id: string;
 	name: string;
-	email: string;
+	/** Present on create; redacted (null) on capability-token reads. */
+	email: string | null;
 	job_title: string | null;
 	website: string | null;
 	cv_filename: string | null;

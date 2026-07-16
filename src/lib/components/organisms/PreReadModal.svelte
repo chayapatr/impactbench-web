@@ -1,33 +1,22 @@
 <script lang="ts">
 	/**
 	 * Full-screen "reviewer protocol" modal shown to expert reviewers the
-	 * first time they land on /experts. They must scroll through the
-	 * pre-read, tick an acknowledgment box, and sign by typing their full
+	 * first time they land on their personal form. They must scroll through
+	 * the pre-read, tick an acknowledgment box, and sign by typing their full
 	 * name before the evaluation workspace becomes usable.
 	 *
-	 * On submit, the acknowledgment is POSTed (via GET, matching the other
-	 * mock endpoints) to the same Apps Script webhook so it ends up in the
-	 * shared Google Sheet as `form_type=Expert-Acknowledgment`.
+	 * Persistence is handled by the parent (Supabase).
 	 */
 
 	interface Props {
 		/** Called with the signer's typed name when they successfully submit. */
-		onAcknowledge: (fullName: string) => void;
-		/** Apps Script webhook (Google Sheet destination) URL. */
-		appsScriptUrl: string;
-		/** Metadata written alongside the acknowledgment. */
+		onAcknowledge: (fullName: string) => void | Promise<void>;
+		/** Metadata shown in the modal (persistence is handled by the parent). */
 		expertName: string;
 		subareaLabel: string;
-		participantId: string;
 	}
 
-	let {
-		onAcknowledge,
-		appsScriptUrl,
-		expertName,
-		subareaLabel,
-		participantId
-	}: Props = $props();
+	let { onAcknowledge, expertName, subareaLabel }: Props = $props();
 
 	let fullName = $state('');
 	let confirmed = $state(false);
@@ -48,26 +37,21 @@
 		if (remaining <= 24) scrolledToEnd = true;
 	}
 
+	// Content that fits without overflow never fires scroll — check once bound.
+	$effect(() => {
+		if (!scrollEl) return;
+		handleScroll();
+		const id = requestAnimationFrame(handleScroll);
+		return () => cancelAnimationFrame(id);
+	});
+
 	async function submit() {
 		if (!canSubmit) return;
 		submitting = true;
 		error = null;
-		const params = new URLSearchParams({
-			form_type: 'Expert-Acknowledgment',
-			participant_id: participantId,
-			expert_name: expertName,
-			subarea: subareaLabel,
-			signed_name: trimmedName,
-			document: 'HumaneBench_PreRead_Protocol',
-			document_version: '2026-01',
-			acknowledged_at: new Date().toISOString(),
-			user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : ''
-		}).toString();
 		try {
-			await fetch(`${appsScriptUrl}?${params}`, { method: 'GET', mode: 'no-cors' });
-			onAcknowledge(trimmedName);
+			await onAcknowledge(trimmedName);
 		} catch (e) {
-			// no-cors requests don't surface real errors, but keep a guard just in case
 			error = e instanceof Error ? e.message : String(e);
 		} finally {
 			submitting = false;
@@ -94,7 +78,8 @@
 			</h2>
 			<p class="mt-1 text-[12px] text-[#6b7280]">
 				Please read the full protocol below. You must scroll to the end, tick the
-				acknowledgment, and sign with your full legal name to begin the evaluation.
+				acknowledgment, and sign with your full legal name to begin the evaluation
+				({expertName} · {subareaLabel}).
 			</p>
 		</div>
 

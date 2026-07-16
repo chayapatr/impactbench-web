@@ -164,9 +164,7 @@
 
 	let expertCvFile = $state<File | null>(null);
 	let expertCvDragging = $state(false);
-	let createdExpertLink = $state<string | null>(null);
 	let expertFormError = $state<string | null>(null);
-	let linkCopied = $state(false);
 
 	function onExpertCvSelected(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
@@ -259,25 +257,16 @@
 				method: 'POST',
 				mode: 'no-cors',
 				headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-				body: JSON.stringify(data)
+				body: JSON.stringify({
+					...data,
+					expert_id: expert.id
+				})
 			});
 
-			createdExpertLink = `${window.location.origin}/experts/${expert.id}`;
-			linkCopied = false;
 			formStates.expert = 'success';
 		} catch (e) {
 			expertFormError = e instanceof Error ? e.message : String(e);
 			formStates.expert = 'idle';
-		}
-	}
-
-	async function copyExpertLink() {
-		if (!createdExpertLink) return;
-		try {
-			await navigator.clipboard.writeText(createdExpertLink);
-			linkCopied = true;
-		} catch {
-			linkCopied = false;
 		}
 	}
 
@@ -632,28 +621,13 @@
 						subareas of expertise selected below.
 					</p>
 					<div class="form-card">
-						{#if formStates.expert === 'success' && createdExpertLink}
+						{#if formStates.expert === 'success'}
 							<div class="px-5 py-10 text-center">
 								<div class="mb-4 text-[3rem]">🧠</div>
 								<h3 class="m-0 mb-2 text-[1.25rem] font-bold text-[#111827]">Thank you!</h3>
-								<p class="m-0 mb-5 text-[14px] text-[#6b7280]">
-									Your personal evaluation form is ready. Save this link — you can return anytime
-									to continue until you finish.
+								<p class="m-0 text-[14px] leading-[1.6] text-[#6b7280]">
+									We've received your application. We'll get in touch shortly with next steps.
 								</p>
-								<div
-									class="mb-4 break-all rounded-[10px] border border-[#e5e7eb] bg-[#f9fafb] px-4 py-3 text-left text-[13px] text-[#111827]"
-								>
-									<a href={createdExpertLink} class="text-[#00b3b0] underline">{createdExpertLink}</a>
-								</div>
-								<div class="flex flex-wrap items-center justify-center gap-2">
-									<button type="button" class="btn-submit" onclick={copyExpertLink}>
-										<i class="fa-solid fa-copy"></i>
-										{linkCopied ? 'Copied!' : 'Copy link'}
-									</button>
-									<a href={createdExpertLink} class="btn-submit no-underline">
-										<i class="fa-solid fa-arrow-right"></i> Open form
-									</a>
-								</div>
 							</div>
 						{:else}
 							<form
