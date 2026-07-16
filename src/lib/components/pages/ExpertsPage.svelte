@@ -984,32 +984,36 @@
 								<h1 class="mt-[3px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]">
 									{selectedMetric.name}
 								</h1>
-								{#if metricCriteriaText}
-									<p class="mt-[4px] max-w-[720px] text-[13px] leading-[1.6] text-[#4b5563]">
-										{metricCriteriaText}
-									</p>
-								{/if}
-								{#if displayExamples.length > 0}
-									<div class="mt-2 max-w-[720px]">
-										<button
-											type="button"
-											class="inline-flex cursor-pointer items-center gap-1.5 rounded-[6px] px-1 py-0.5 text-[11px] font-semibold tracking-[0.02em] text-[#00b3b0] transition-colors duration-150 hover:text-[#038d8f]"
-											aria-expanded={examplesExpanded}
-											onclick={() => (examplesExpanded = !examplesExpanded)}
-										>
-											{examplesExpanded ? 'Hide examples' : 'See examples'}
-											<i
-												class="fa-solid fa-chevron-down text-[9px] transition-transform duration-150 {examplesExpanded
-													? 'rotate-180'
-													: ''}"
-											></i>
-										</button>
-										{#if examplesExpanded}
-											<ul class="mt-1 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]">
-												{#each displayExamples as ex (ex)}
-													<li>{ex}</li>
-												{/each}
-											</ul>
+								{#if metricCriteriaText || displayExamples.length > 0}
+									<div class="mt-[4px] max-w-[720px]">
+										{#if metricCriteriaText}
+											<p class="text-[13px] leading-[1.6] text-[#4b5563]">
+												{metricCriteriaText}
+											</p>
+										{/if}
+										{#if displayExamples.length > 0}
+											<button
+												type="button"
+												class="mt-1 inline-flex cursor-pointer items-baseline gap-1 text-[13px] font-medium text-[#4b5563] underline decoration-dotted underline-offset-[3px] transition-colors duration-150 hover:text-[#111827]"
+												aria-expanded={examplesExpanded}
+												onclick={() => (examplesExpanded = !examplesExpanded)}
+											>
+												{examplesExpanded ? 'Hide examples' : 'See examples'}
+												<i
+													class="fa-solid fa-chevron-down text-[9px] transition-transform duration-150 {examplesExpanded
+														? 'rotate-180'
+														: ''}"
+												></i>
+											</button>
+											{#if examplesExpanded}
+												<ul
+													class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]"
+												>
+													{#each displayExamples as ex (ex)}
+														<li>{ex}</li>
+													{/each}
+												</ul>
+											{/if}
 										{/if}
 									</div>
 								{/if}
