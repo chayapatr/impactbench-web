@@ -141,17 +141,25 @@ export function getParticipantId(): string {
 }
 
 /**
- * Return the expert's masked model list ("Model A/B/C" → real ids), with the
- * real ids shuffled once per participant and persisted so a refresh doesn't
- * reveal which model is which. The real id is *only* used for looking up
- * conversation data and is submitted alongside each evaluation so the
- * backend can un-mask it.
+ * Return the "Model A/B/C" → real-id mapping for a specific (participant,
+ * metric, scenario) triple. The shuffle is done once per triple (Fisher–
+ * Yates with Math.random) and persisted, so reloading the same scenario
+ * keeps its mapping stable — but switching scenarios reshuffles independently.
+ *
+ * That means within one reviewer's session, "Model A" may mean Gemini on
+ * scenario 1 and Claude on scenario 2 — while every scenario still covers
+ * all three real models (once each as A, B, and C).
+ *
+ * Real ids are only used to fetch conversation data and are submitted
+ * alongside each evaluation so the backend can un-mask them.
  */
-export function getExpertMaskedModels(participantId: string): MaskedModel[] {
+export function getExpertMaskedModels(
+	participantId: string,
+	metricId: string,
+	scenarioId: string
+): MaskedModel[] {
 	const labels = ['Model A', 'Model B', 'Model C'];
-	// Namespaced per participant so every reviewer — even two people on the
-	// same slug — gets an independent Model A/B/C → real-id randomisation.
-	const storageKey = `${EXPERT_MASK_STORAGE_KEY}__${participantId}`;
+	const storageKey = `${EXPERT_MASK_STORAGE_KEY}__${participantId}__${metricId}__${scenarioId}`;
 
 	// Try to restore a previously randomised assignment so the mapping is
 	// stable across reloads for the same expert.

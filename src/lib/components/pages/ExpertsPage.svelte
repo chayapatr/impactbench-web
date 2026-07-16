@@ -121,6 +121,10 @@
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
 
+	// Model A/B/C → real-id mapping. Reshuffled independently for every
+	// (participant, metric, scenario) triple so "Model A" doesn't consistently
+	// stand for the same real model within one session, while each scenario
+	// still covers all three real models exactly once.
 	let maskedModels: MaskedModel[] = $state([]);
 	// Anonymous per-browser id used to key model-mask + scenario shuffles and
 	// submitted with every payload so backend rows can be joined per reviewer
@@ -301,6 +305,17 @@
 			: []
 	);
 	const currentScenario = $derived(selectedMetricScenarios[scenarioIdx] ?? null);
+	// Reshuffle Model A/B/C whenever the current scenario changes so the
+	// mapping is stable within a scenario but independent across scenarios.
+	$effect(() => {
+		if (participantId === 'ssr') return;
+		if (!selectedMetric || !currentScenario) return;
+		maskedModels = getExpertMaskedModels(
+			participantId,
+			selectedMetric.id,
+			currentScenario.scenario_id
+		);
+	});
 	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
 	// Scenario detail carries the full user goal; the index copy is truncated
 	// at ~80 chars upstream. Prefer the loaded detail when available so the
@@ -375,7 +390,8 @@
 					])
 				)
 			);
-			maskedModels = getExpertMaskedModels(participantId);
+			// masked models are now assigned per (participant, metric, scenario)
+			// via a reactive effect above, so nothing to set here.
 
 			// Per-slug routes pass a metricId to scope the flow to one metric;
 			// the default /experts route falls back to the full
