@@ -18,9 +18,16 @@
 		/** Metadata written alongside the acknowledgment. */
 		expertName: string;
 		subareaLabel: string;
+		participantId: string;
 	}
 
-	let { onAcknowledge, appsScriptUrl, expertName, subareaLabel }: Props = $props();
+	let {
+		onAcknowledge,
+		appsScriptUrl,
+		expertName,
+		subareaLabel,
+		participantId
+	}: Props = $props();
 
 	let fullName = $state('');
 	let confirmed = $state(false);
@@ -47,6 +54,7 @@
 		error = null;
 		const params = new URLSearchParams({
 			form_type: 'Expert-Acknowledgment',
+			participant_id: participantId,
 			expert_name: expertName,
 			subarea: subareaLabel,
 			signed_name: trimmedName,

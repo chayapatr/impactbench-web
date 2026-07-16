@@ -22,6 +22,7 @@
 		EXPERT_BENCHMARK_SLUG,
 		getExpertMaskedModels,
 		getShuffledScenarios,
+		getParticipantId,
 		type MaskedModel
 	} from '$lib/expert-config';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
@@ -121,6 +122,10 @@
 	let loadError = $state<string | null>(null);
 
 	let maskedModels: MaskedModel[] = $state([]);
+	// Anonymous per-browser id used to key model-mask + scenario shuffles and
+	// submitted with every payload so backend rows can be joined per reviewer
+	// without exposing their identity in the URL.
+	let participantId = $state('ssr');
 	let expertMetrics: ExpertMetric[] = $state([]);
 	let progress: Record<string, MetricProgress> = $state({});
 	let unlocked: Set<string> = $state(new Set());
@@ -287,6 +292,7 @@
 	const selectedMetricScenarios = $derived<ScenarioMeta[]>(
 		selectedMetric
 			? getShuffledScenarios(
+					participantId,
 					selectedMetric.id,
 					(appState.scenarioIndex?.[selectedMetric.id] ?? []).filter(
 						(sc) => sc.age === 'adult'
@@ -305,6 +311,12 @@
 
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
+		// Anonymous per-browser participant id. Persisted on first visit so
+		// randomised assignments (model mask + scenario order) stay stable
+		// across reloads for the same reviewer while differing between
+		// reviewers.
+		participantId = getParticipantId();
+
 		// Restore prior orientation ack (per metricId) so we don't re-prompt
 		// on refresh. Skipped entirely for the multi-metric /experts route.
 		if (typeof window !== 'undefined') {
@@ -363,7 +375,7 @@
 					])
 				)
 			);
-			maskedModels = getExpertMaskedModels(expertNameDisplay);
+			maskedModels = getExpertMaskedModels(participantId);
 
 			// Per-slug routes pass a metricId to scope the flow to one metric;
 			// the default /experts route falls back to the full
@@ -512,6 +524,7 @@
 		form.submitting = true;
 		const params = new URLSearchParams({
 			form_type: 'Expert-Evaluation',
+			participant_id: participantId,
 			expert_name: expertNameDisplay,
 			subarea: subareaLabelDisplay,
 			metric_id: selectedMetric.id,
@@ -645,6 +658,7 @@
 				: (CONTEXT_OPTS.find((o) => o.v === exitSurvey.context)?.l ?? exitSurvey.context);
 		const params = new URLSearchParams({
 			form_type: 'Expert-ExitSurvey',
+			participant_id: participantId,
 			expert_name: expertNameDisplay,
 			subarea: subareaLabelDisplay,
 			metric_id: metricId ?? '',
@@ -2029,6 +2043,7 @@
 		appsScriptUrl={APPS_SCRIPT_URL}
 		expertName={expertNameDisplay}
 		subareaLabel={subareaLabelDisplay}
+		{participantId}
 	/>
 {/if}
 

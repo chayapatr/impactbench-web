@@ -107,20 +107,51 @@ const EXPERT_MODEL_POOL: readonly string[] = [
 const EXPERT_MASK_STORAGE_KEY = 'impactbench.expertModelMapping.v1';
 
 /**
+ * Anonymous per-browser participant id. Generated once on first visit and
+ * persisted, so any subsequent randomisation (model mask, scenario order)
+ * can be namespaced per participant — preventing anyone reading the source
+ * or comparing browsers from inferring which real model maps to which
+ * masked label.
+ */
+const PARTICIPANT_ID_KEY = 'impactbench.participantId.v1';
+
+export function getParticipantId(): string {
+	if (typeof window === 'undefined') return 'ssr';
+	try {
+		const existing = window.localStorage.getItem(PARTICIPANT_ID_KEY);
+		if (existing && existing.trim()) return existing;
+	} catch {
+		// ignore
+	}
+	let id: string;
+	try {
+		id = crypto.randomUUID();
+	} catch {
+		id =
+			'p_' +
+			Math.random().toString(36).slice(2, 10) +
+			Date.now().toString(36);
+	}
+	try {
+		window.localStorage.setItem(PARTICIPANT_ID_KEY, id);
+	} catch {
+		// ignore
+	}
+	return id;
+}
+
+/**
  * Return the expert's masked model list ("Model A/B/C" → real ids), with the
- * real ids shuffled once per browser and persisted so a refresh doesn't
+ * real ids shuffled once per participant and persisted so a refresh doesn't
  * reveal which model is which. The real id is *only* used for looking up
  * conversation data and is submitted alongside each evaluation so the
  * backend can un-mask it.
  */
-export function getExpertMaskedModels(expertKey?: string): MaskedModel[] {
+export function getExpertMaskedModels(participantId: string): MaskedModel[] {
 	const labels = ['Model A', 'Model B', 'Model C'];
-	// Namespaced per expert so each of the /experts/{slug} reviewers gets an
-	// independent Model A/B/C → real-id randomisation. Without a key, all
-	// slugs on the same browser would share one mapping.
-	const storageKey = expertKey
-		? `${EXPERT_MASK_STORAGE_KEY}__${expertKey}`
-		: EXPERT_MASK_STORAGE_KEY;
+	// Namespaced per participant so every reviewer — even two people on the
+	// same slug — gets an independent Model A/B/C → real-id randomisation.
+	const storageKey = `${EXPERT_MASK_STORAGE_KEY}__${participantId}`;
 
 	// Try to restore a previously randomised assignment so the mapping is
 	// stable across reloads for the same expert.
@@ -170,12 +201,13 @@ export function getExpertMaskedModels(expertKey?: string): MaskedModel[] {
 	return mapping;
 }
 
-// Persisted per-metric scenario ordering so each expert sees a stable but
-// randomised sequence across reloads. Keyed by metricId; the stored array
+// Persisted per-participant, per-metric scenario ordering so each reviewer
+// sees a stable but randomised sequence across reloads. The stored array
 // is only trusted if it references exactly the same set of scenario_ids.
 const EXPERT_SCENARIO_ORDER_KEY = 'impactbench.expertScenarioOrder.v1';
 
 export function getShuffledScenarios<T extends { scenario_id: string }>(
+	participantId: string,
 	metricId: string,
 	scenarios: T[]
 ): T[] {
@@ -195,8 +227,9 @@ export function getShuffledScenarios<T extends { scenario_id: string }>(
 		// ignore corrupt storage
 	}
 
+	const storeKey = `${participantId}__${metricId}`;
 	const byId = new Map(scenarios.map((s) => [s.scenario_id, s]));
-	const saved = store[metricId];
+	const saved = store[storeKey];
 	if (
 		Array.isArray(saved) &&
 		saved.length === scenarios.length &&
@@ -211,7 +244,7 @@ export function getShuffledScenarios<T extends { scenario_id: string }>(
 		const j = Math.floor(Math.random() * (i + 1));
 		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
 	}
-	store[metricId] = shuffled.map((s) => s.scenario_id);
+	store[storeKey] = shuffled.map((s) => s.scenario_id);
 	try {
 		window.localStorage.setItem(EXPERT_SCENARIO_ORDER_KEY, JSON.stringify(store));
 	} catch {
