@@ -22,6 +22,7 @@
 		EXPERT_BENCHMARK_SLUG,
 		getExpertMaskedModels,
 		getShuffledScenarios,
+		getParticipantId,
 		type MaskedModel
 	} from '$lib/expert-config';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
@@ -120,7 +121,15 @@
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
 
+	// Model A/B/C → real-id mapping. Reshuffled independently for every
+	// (participant, metric, scenario) triple so "Model A" doesn't consistently
+	// stand for the same real model within one session, while each scenario
+	// still covers all three real models exactly once.
 	let maskedModels: MaskedModel[] = $state([]);
+	// Anonymous per-browser id used to key model-mask + scenario shuffles and
+	// submitted with every payload so backend rows can be joined per reviewer
+	// without exposing their identity in the URL.
+	let participantId = $state('ssr');
 	let expertMetrics: ExpertMetric[] = $state([]);
 	let progress: Record<string, MetricProgress> = $state({});
 	let unlocked: Set<string> = $state(new Set());
@@ -287,6 +296,7 @@
 	const selectedMetricScenarios = $derived<ScenarioMeta[]>(
 		selectedMetric
 			? getShuffledScenarios(
+					participantId,
 					selectedMetric.id,
 					(appState.scenarioIndex?.[selectedMetric.id] ?? []).filter(
 						(sc) => sc.age === 'adult'
@@ -295,6 +305,17 @@
 			: []
 	);
 	const currentScenario = $derived(selectedMetricScenarios[scenarioIdx] ?? null);
+	// Reshuffle Model A/B/C whenever the current scenario changes so the
+	// mapping is stable within a scenario but independent across scenarios.
+	$effect(() => {
+		if (participantId === 'ssr') return;
+		if (!selectedMetric || !currentScenario) return;
+		maskedModels = getExpertMaskedModels(
+			participantId,
+			selectedMetric.id,
+			currentScenario.scenario_id
+		);
+	});
 	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
 	// Scenario detail carries the full user goal; the index copy is truncated
 	// at ~80 chars upstream. Prefer the loaded detail when available so the
@@ -305,6 +326,12 @@
 
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
+		// Anonymous per-browser participant id. Persisted on first visit so
+		// randomised assignments (model mask + scenario order) stay stable
+		// across reloads for the same reviewer while differing between
+		// reviewers.
+		participantId = getParticipantId();
+
 		// Restore prior orientation ack (per metricId) so we don't re-prompt
 		// on refresh. Skipped entirely for the multi-metric /experts route.
 		if (typeof window !== 'undefined') {
@@ -363,7 +390,8 @@
 					])
 				)
 			);
-			maskedModels = getExpertMaskedModels(expertNameDisplay);
+			// masked models are now assigned per (participant, metric, scenario)
+			// via a reactive effect above, so nothing to set here.
 
 			// Per-slug routes pass a metricId to scope the flow to one metric;
 			// the default /experts route falls back to the full
@@ -512,6 +540,7 @@
 		form.submitting = true;
 		const params = new URLSearchParams({
 			form_type: 'Expert-Evaluation',
+			participant_id: participantId,
 			expert_name: expertNameDisplay,
 			subarea: subareaLabelDisplay,
 			metric_id: selectedMetric.id,
@@ -645,6 +674,7 @@
 				: (CONTEXT_OPTS.find((o) => o.v === exitSurvey.context)?.l ?? exitSurvey.context);
 		const params = new URLSearchParams({
 			form_type: 'Expert-ExitSurvey',
+			participant_id: participantId,
 			expert_name: expertNameDisplay,
 			subarea: subareaLabelDisplay,
 			metric_id: metricId ?? '',
@@ -2029,6 +2059,7 @@
 		appsScriptUrl={APPS_SCRIPT_URL}
 		expertName={expertNameDisplay}
 		subareaLabel={subareaLabelDisplay}
+		{participantId}
 	/>
 {/if}
 
