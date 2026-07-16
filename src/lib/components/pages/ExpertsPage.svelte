@@ -25,6 +25,7 @@
 		type MaskedModel
 	} from '$lib/expert-config';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
+	import OrientationModal from '$lib/components/organisms/OrientationModal.svelte';
 
 	// ── Props ─────────────────────────────────────────────────────
 	// The default (no props) route shows the multi-metric HumaneBench ×
@@ -146,6 +147,15 @@
 	let preReadAcknowledged = $state(false);
 	let preReadSignerName = $state<string | null>(null);
 
+	// Metric-scoped orientation. Only shown on per-slug routes where a
+	// metricId is provided; the default multi-metric /experts flow skips it.
+	const ORIENTATION_STORAGE_KEY = 'impactbench.expertOrientation.v1';
+	let orientationAcknowledged = $state(false);
+
+	// Collapsible examples in the metric header. Closed by default so the
+	// header stays compact; toggled via the "See examples" caret.
+	let examplesExpanded = $state(false);
+
 	// ── Derived helpers ───────────────────────────────────────────
 	// Resolved copy: prop overrides win; otherwise fall back to the
 	// MOCK_EXPERT_USER / R2 data defaults.
@@ -190,6 +200,25 @@
 
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
+		// Restore prior orientation ack (per metricId) so we don't re-prompt
+		// on refresh. Skipped entirely for the multi-metric /experts route.
+		if (typeof window !== 'undefined') {
+			if (!metricId) {
+				orientationAcknowledged = true;
+			} else {
+				try {
+					const raw = window.localStorage.getItem(ORIENTATION_STORAGE_KEY);
+					if (raw) {
+						const parsed = JSON.parse(raw) as Record<string, boolean>;
+						if (parsed && parsed[metricId] === true) {
+							orientationAcknowledged = true;
+						}
+					}
+				} catch {
+					// ignore corrupt storage
+				}
+			}
+		}
 		// Restore any prior pre-read acknowledgment so we don't re-prompt on refresh.
 		if (typeof window !== 'undefined') {
 			try {
@@ -443,6 +472,18 @@
 			} catch {
 				// ignore
 			}
+		}
+	}
+	function acknowledgeOrientation() {
+		orientationAcknowledged = true;
+		if (typeof window === 'undefined' || !metricId) return;
+		try {
+			const raw = window.localStorage.getItem(ORIENTATION_STORAGE_KEY);
+			const store = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+			store[metricId] = true;
+			window.localStorage.setItem(ORIENTATION_STORAGE_KEY, JSON.stringify(store));
+		} catch {
+			// ignore
 		}
 	}
 	function logOut() {
@@ -760,20 +801,32 @@
 									{selectedMetric.name}
 								</h1>
 								{#if metricCriteriaText}
-									<p class="mt-[6px] max-w-[720px] text-[13px] leading-[1.6] text-[#4b5563]">
+									<p class="mt-[4px] max-w-[720px] text-[13px] leading-[1.6] text-[#4b5563]">
 										{metricCriteriaText}
 									</p>
 								{/if}
 								{#if displayExamples.length > 0}
-									<div class="mt-3 max-w-[720px]">
-										<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-											Examples
-										</div>
-										<ul class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]">
-											{#each displayExamples as ex (ex)}
-												<li>{ex}</li>
-											{/each}
-										</ul>
+									<div class="mt-2 max-w-[720px]">
+										<button
+											type="button"
+											class="inline-flex cursor-pointer items-center gap-1.5 rounded-[6px] px-1 py-0.5 text-[11px] font-semibold tracking-[0.02em] text-[#00b3b0] transition-colors duration-150 hover:text-[#038d8f]"
+											aria-expanded={examplesExpanded}
+											onclick={() => (examplesExpanded = !examplesExpanded)}
+										>
+											{examplesExpanded ? 'Hide examples' : 'See examples'}
+											<i
+												class="fa-solid fa-chevron-down text-[9px] transition-transform duration-150 {examplesExpanded
+													? 'rotate-180'
+													: ''}"
+											></i>
+										</button>
+										{#if examplesExpanded}
+											<ul class="mt-1 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]">
+												{#each displayExamples as ex (ex)}
+													<li>{ex}</li>
+												{/each}
+											</ul>
+										{/if}
 									</div>
 								{/if}
 							</div>
@@ -1407,7 +1460,14 @@
 	</main>
 </div>
 
-{#if !preReadAcknowledged}
+{#if !orientationAcknowledged && metricId}
+	<OrientationModal
+		metricName={selectedMetric?.name ?? ''}
+		definition={metricCriteriaText}
+		examples={displayExamples}
+		onProceed={acknowledgeOrientation}
+	/>
+{:else if !preReadAcknowledged}
 	<PreReadModal
 		onAcknowledge={acknowledgePreRead}
 		appsScriptUrl={APPS_SCRIPT_URL}
