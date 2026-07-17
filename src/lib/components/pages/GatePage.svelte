@@ -270,15 +270,9 @@
 		}
 	}
 
-	function openTab(tab: 'request' | 'expert' | 'support' | 'feedback') {
-		activeTab = tab;
-		const el = document.getElementById('gate-tabs-section');
-		if (el) el.scrollIntoView({ behavior: 'smooth' });
-		// Remove hash so navigating back tabs doesn't re-trigger scroll
-		if (window.location.hash) history.replaceState(null, '', window.location.pathname);
-	}
+	type GateTab = 'request' | 'expert' | 'support' | 'feedback';
 
-	const HASH_TAB_MAP: Record<string, 'request' | 'expert' | 'support' | 'feedback'> = {
+	const HASH_TAB_MAP: Record<string, GateTab> = {
 		'#access': 'request',
 		'#expert': 'expert',
 		'#support': 'support',
@@ -286,18 +280,47 @@
 		'#survey': 'feedback'
 	};
 
+	const TAB_HASH: Record<GateTab, string> = {
+		request: '#access',
+		expert: '#expert',
+		support: '#support',
+		feedback: '#feedback'
+	};
+
+	function scrollToGateTabs() {
+		const el = document.getElementById('gate-tabs-section');
+		if (el) el.scrollIntoView({ behavior: 'smooth' });
+	}
+
+	/** Sync the active tab into the URL so tabs are deep-linkable (/#expert, etc.). */
+	function setTabHash(tab: GateTab) {
+		const hash = TAB_HASH[tab];
+		if (window.location.hash === hash) return;
+		history.replaceState(null, '', `${window.location.pathname}${hash}`);
+	}
+
+	function openTab(tab: GateTab, opts: { scroll?: boolean; updateHash?: boolean } = {}) {
+		const { scroll = true, updateHash = true } = opts;
+		activeTab = tab;
+		if (updateHash) setTabHash(tab);
+		if (scroll) scrollToGateTabs();
+	}
+
+	function applyHashFromLocation(scroll = true) {
+		const hash = window.location.hash;
+		const tab = hash ? HASH_TAB_MAP[hash] : null;
+		if (tab) openTab(tab, { scroll, updateHash: false });
+		if (hash === '#survey') openSurvey();
+	}
+
 	$effect(() => {
 		(window as unknown as Record<string, unknown>).openGateTab = openTab;
 
-		// Open the right tab if URL has a hash
-		const hash = window.location.hash;
-		if (hash && HASH_TAB_MAP[hash]) openTab(HASH_TAB_MAP[hash]);
-		if (hash === '#survey') openSurvey();
+		// Open the right tab if URL has a hash (e.g. /#expert).
+		applyHashFromLocation(true);
 
 		function onHashChange() {
-			const h = window.location.hash;
-			if (h && HASH_TAB_MAP[h]) openTab(HASH_TAB_MAP[h]);
-			if (h === '#survey') openSurvey();
+			applyHashFromLocation(true);
 		}
 		window.addEventListener('hashchange', onHashChange);
 		return () => window.removeEventListener('hashchange', onHashChange);
@@ -495,7 +518,7 @@
 							{activeTab === tab
 							? 'bg-white text-[#111827] shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_10px_rgba(15,23,42,0.06)]'
 							: 'bg-transparent text-[#6b7280] hover:text-[#111827]'}"
-						onclick={() => (activeTab = tab as typeof activeTab)}
+						onclick={() => openTab(tab as GateTab, { scroll: false })}
 					>
 						<i class="fa-solid {icon} text-[12px] opacity-90"></i>
 						{label}
