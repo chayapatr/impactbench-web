@@ -1,4 +1,4 @@
-import type { MaskedModel } from '$lib/expert-config';
+import type { ExpertChoiceOrder, MaskedModel } from '$lib/expert-config';
 
 export type ExpertStatus = 'in_progress' | 'completed';
 
@@ -30,6 +30,11 @@ export interface ExpertFormState {
 	scenarioOrders?: Record<string, string[]>;
 	/** Frozen Model A/B/C mapping per (metric, scenario) pair, keyed by `${metricId}__${scenarioId}`. */
 	modelMappings?: Record<string, MaskedModel[]>;
+	/**
+	 * Frozen per-expert yes/no and pass/fail display polarity.
+	 * Not-sure / borderline is always last; first option is randomised once.
+	 */
+	choiceOrder?: ExpertChoiceOrder;
 	orientationAcknowledged?: boolean;
 }
 

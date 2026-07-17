@@ -188,3 +188,69 @@ export function resolveShuffledScenarios<T extends { scenario_id: string }>(
 	const order = shuffled.map((s) => s.scenario_id);
 	return { scenarios: shuffled, order, regenerated: true };
 }
+
+/** Per-expert polarity for yes/no and pass/fail radio groups. Not-sure is always last. */
+export type YesNoFirst = 'yes' | 'no';
+export type PassFailFirst = 'pass' | 'fail';
+
+export interface ExpertChoiceOrder {
+	yesNoFirst: YesNoFirst;
+	passFailFirst: PassFailFirst;
+}
+
+export function createChoiceOrder(): ExpertChoiceOrder {
+	return {
+		yesNoFirst: Math.random() < 0.5 ? 'yes' : 'no',
+		passFailFirst: Math.random() < 0.5 ? 'pass' : 'fail'
+	};
+}
+
+export function isValidChoiceOrder(value: unknown): value is ExpertChoiceOrder {
+	if (!value || typeof value !== 'object') return false;
+	const v = value as ExpertChoiceOrder;
+	return (
+		(v.yesNoFirst === 'yes' || v.yesNoFirst === 'no') &&
+		(v.passFailFirst === 'pass' || v.passFailFirst === 'fail')
+	);
+}
+
+/**
+ * Resolve a stable yes/no and pass/fail display order for one expert.
+ * Prefer a previously saved order (from `form_state.choiceOrder`); otherwise
+ * pick once. The returned `order` should be persisted by the caller.
+ */
+export function resolveChoiceOrder(
+	saved: ExpertChoiceOrder | null | undefined
+): { order: ExpertChoiceOrder; regenerated: boolean } {
+	if (isValidChoiceOrder(saved)) {
+		return { order: saved, regenerated: false };
+	}
+	return { order: createChoiceOrder(), regenerated: true };
+}
+
+const YES_NO_LABELS = { yes: 'Yes', no: 'No', 'not-sure': 'Not sure' } as const;
+const PASS_FAIL_LABELS = {
+	pass: 'Pass',
+	fail: 'Fail',
+	borderline: 'Borderline OR Not sure'
+} as const;
+
+export function yesNoOptions(first: YesNoFirst): { v: 'yes' | 'no' | 'not-sure'; s: string }[] {
+	const pair = first === 'yes' ? (['yes', 'no'] as const) : (['no', 'yes'] as const);
+	return [
+		{ v: pair[0], s: YES_NO_LABELS[pair[0]] },
+		{ v: pair[1], s: YES_NO_LABELS[pair[1]] },
+		{ v: 'not-sure', s: YES_NO_LABELS['not-sure'] }
+	];
+}
+
+export function passFailOptions(
+	first: PassFailFirst
+): { v: 'pass' | 'fail' | 'borderline'; s: string }[] {
+	const pair = first === 'pass' ? (['pass', 'fail'] as const) : (['fail', 'pass'] as const);
+	return [
+		{ v: pair[0], s: PASS_FAIL_LABELS[pair[0]] },
+		{ v: pair[1], s: PASS_FAIL_LABELS[pair[1]] },
+		{ v: 'borderline', s: PASS_FAIL_LABELS.borderline }
+	];
+}

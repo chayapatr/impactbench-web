@@ -296,7 +296,12 @@
 	function setTabHash(tab: GateTab) {
 		const hash = TAB_HASH[tab];
 		if (window.location.hash === hash) return;
-		history.replaceState(null, '', `${window.location.pathname}${hash}`);
+		// Keep path + query; only swap the fragment — never strip the hash.
+		history.replaceState(
+			null,
+			'',
+			`${window.location.pathname}${window.location.search}${hash}`
+		);
 	}
 
 	function openTab(tab: GateTab, opts: { scroll?: boolean; updateHash?: boolean } = {}) {
@@ -512,17 +517,30 @@
 		<div class="mx-auto max-w-[880px]">
 			<!-- Tab nav -->
 			<div class="mb-7 flex w-full flex-wrap gap-1 rounded-[12px] bg-[#f3f4f6] p-1" role="tablist">
-				{#each [['request', 'fa-key', 'Request Access'], ['expert', 'fa-user-check', 'Be an Expert'], ['support', 'fa-hand-holding-heart', 'Support Benchmarking Efforts'], ['feedback', 'fa-comment-dots', 'Feedback']] as [tab, icon, label] (tab)}
-					<button
-						class="inline-flex min-w-0 flex-auto cursor-pointer items-center justify-center gap-2 rounded-[8px] border-none px-3 py-[8px] text-[13px] font-semibold whitespace-nowrap transition-all duration-[180ms]
+				{#each (
+					[
+						['request', 'fa-key', 'Request Access', '#access'],
+						['expert', 'fa-user-check', 'Be an Expert', '#expert'],
+						['support', 'fa-hand-holding-heart', 'Support Benchmarking Efforts', '#support'],
+						['feedback', 'fa-comment-dots', 'Feedback', '#feedback']
+					] as const
+				) as [tab, icon, label, href] (tab)}
+					<a
+						{href}
+						role="tab"
+						aria-selected={activeTab === tab}
+						class="inline-flex min-w-0 flex-auto cursor-pointer items-center justify-center gap-2 rounded-[8px] border-none px-3 py-[8px] text-[13px] font-semibold whitespace-nowrap no-underline transition-all duration-[180ms]
 							{activeTab === tab
 							? 'bg-white text-[#111827] shadow-[0_1px_2px_rgba(15,23,42,0.06),0_4px_10px_rgba(15,23,42,0.06)]'
 							: 'bg-transparent text-[#6b7280] hover:text-[#111827]'}"
-						onclick={() => openTab(tab as GateTab, { scroll: false })}
+						onclick={(e) => {
+							e.preventDefault();
+							openTab(tab, { scroll: false });
+						}}
 					>
 						<i class="fa-solid {icon} text-[12px] opacity-90"></i>
 						{label}
-					</button>
+					</a>
 				{/each}
 			</div>
 
