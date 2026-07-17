@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { appState, authState, unlock } from '$lib/store.svelte';
 	import { buildHierarchy, getScoresForFilter } from '$lib/data';
+	import { createExpert } from '$lib/experts/db';
 	import Sunburst from '../organisms/Sunburst.svelte';
 	import ControlBar from '../molecules/ControlBar.svelte';
 	import FeedbackSurveyModal from '../organisms/FeedbackSurveyModal.svelte';
@@ -163,6 +164,7 @@
 
 	let expertCvFile = $state<File | null>(null);
 	let expertCvDragging = $state(false);
+	let expertFormError = $state<string | null>(null);
 
 	function onExpertCvSelected(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
@@ -210,6 +212,12 @@
 				data[key] = f ? f.name : '';
 			} else data[key] = input.value;
 		}
+
+		if (tabKey === 'expert') {
+			await submitExpertForm(data);
+			return;
+		}
+
 		formStates[tabKey] = 'loading';
 		const params = new URLSearchParams(data).toString();
 		try {
@@ -217,6 +225,48 @@
 			formStates[tabKey] = 'success';
 		} catch {
 			formStates[tabKey] = 'idle';
+		}
+	}
+
+	async function submitExpertForm(data: Record<string, string>) {
+		expertFormError = null;
+		const selected = EXPERTISE_SUBAREAS.filter((a) => data[`expertise_${a.id}`] === 'yes');
+		if (selected.length === 0) {
+			expertFormError = 'Please select at least one area of expertise.';
+			return;
+		}
+
+		formStates.expert = 'loading';
+		try {
+			const primary = selected[0];
+			const expert = await createExpert({
+				name: data.full_name?.trim() ?? '',
+				email: data.email?.trim() ?? '',
+				job_title: data.job_title?.trim() || undefined,
+				website: data.website?.trim() || undefined,
+				cv_filename: data.cv_filename || expertCvFile?.name || undefined,
+				expertise_description: data.expertise_description?.trim() || undefined,
+				expertise_subarea_ids: selected.map((a) => a.id),
+				subarea_id: primary.id,
+				subarea_label: primary.label
+			});
+
+			// Secondary log to the existing sheet (best-effort).
+			// POST body only — never put consented PII or the capability UUID in a URL.
+			void fetch(APPS_SCRIPT_URL, {
+				method: 'POST',
+				mode: 'no-cors',
+				headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+				body: JSON.stringify({
+					...data,
+					expert_id: expert.id
+				})
+			});
+
+			formStates.expert = 'success';
+		} catch (e) {
+			expertFormError = e instanceof Error ? e.message : String(e);
+			formStates.expert = 'idle';
 		}
 	}
 
@@ -575,8 +625,8 @@
 							<div class="px-5 py-10 text-center">
 								<div class="mb-4 text-[3rem]">🧠</div>
 								<h3 class="m-0 mb-2 text-[1.25rem] font-bold text-[#111827]">Thank you!</h3>
-								<p class="m-0 text-[14px] text-[#6b7280]">
-									We'll review your submission and reach out about matching metrics.
+								<p class="m-0 text-[14px] leading-[1.6] text-[#6b7280]">
+									We've received your application. We'll get in touch shortly with next steps.
 								</p>
 							</div>
 						{:else}
@@ -589,6 +639,14 @@
 									submitForm('gate-expert-form', 'expert');
 								}}
 							>
+								{#if expertFormError}
+									<div
+										class="rounded-[10px] border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-[13px] text-[#b91c1c]"
+										role="alert"
+									>
+										{expertFormError}
+									</div>
+								{/if}
 								<div class="form-group">
 									<label class="form-label" for="gex-name"
 										>Full name <span class="text-[#dc2626]">*</span></label

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { marked } from 'marked';
 	import {
 		loadTaxonomy,
@@ -18,22 +18,30 @@
 	} from '$lib/store.svelte';
 	import type { ScenarioDetail, ScenarioMeta } from '$lib/types';
 	import {
-		MOCK_EXPERT_USER,
 		EXPERT_BENCHMARK_SLUG,
-		getExpertMaskedModels,
-		getShuffledScenarios,
-		getParticipantId,
+		resolveExpertMaskedModels,
+		resolveShuffledScenarios,
 		type MaskedModel
 	} from '$lib/expert-config';
+	import {
+		acknowledgePreRead as persistPreRead,
+		ExpertDraftConflictError,
+		getExpert,
+		markExpertCompleted,
+		saveExpertDraft,
+		submitScenarioEvaluation
+	} from '$lib/experts/db';
+	import type { ExpertFormState, ExpertRow } from '$lib/experts/types';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
 	import OrientationModal from '$lib/components/organisms/OrientationModal.svelte';
 
 	// ── Props ─────────────────────────────────────────────────────
-	// The default (no props) route shows the multi-metric HumaneBench ×
-	// Social Relationships flow. Per-slug routes (e.g. /experts/falseintimacy)
-	// pass a metricId + curated copy so ExpertsPage renders a single-metric
-	// review with the reviewer's own definition & examples.
+	// expertId identifies the Supabase `experts` row (capability URL).
+	// Per-metric routes use /experts/{slug}/{expertId} and pass metricId +
+	// curated copy; /experts/{expertId} omits metricId and shows every
+	// metric in the expert's assigned subarea.
 	interface Props {
+		expertId: string;
 		metricId?: string;
 		expertName?: string;
 		subareaLabel?: string;
@@ -41,6 +49,7 @@
 		examples?: readonly string[];
 	}
 	let {
+		expertId,
 		metricId,
 		expertName: expertNameProp,
 		subareaLabel: subareaLabelProp,
@@ -120,16 +129,25 @@
 	// ── State ─────────────────────────────────────────────────────
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
+	let expert = $state<ExpertRow | null>(null);
+	let formCompleted = $state(false);
+	let saveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let saveError = $state<string | null>(null);
+	let draftReady = $state(false);
+	let skipNextAutosave = $state(false);
+	/** Last form_state JSON we successfully persisted (or hydrated). Skip no-op saves. */
+	let lastPersistedSnapshot = $state<string | null>(null);
+	let saveStatusClearHandle: ReturnType<typeof setTimeout> | null = null;
 
-	// Model A/B/C → real-id mapping. Reshuffled independently for every
-	// (participant, metric, scenario) triple so "Model A" doesn't consistently
-	// stand for the same real model within one session, while each scenario
-	// still covers all three real models exactly once.
+	// Model A/B/C → real-id mapping. Frozen independently for every
+	// (metric, scenario) pair the expert visits so "Model A" doesn't
+	// consistently stand for the same real model, while each scenario still
+	// covers all three real models exactly once. Persisted in
+	// form_state.modelMappings so reloads stay stable.
 	let maskedModels: MaskedModel[] = $state([]);
-	// Anonymous per-browser id used to key model-mask + scenario shuffles and
-	// submitted with every payload so backend rows can be joined per reviewer
-	// without exposing their identity in the URL.
-	let participantId = $state('ssr');
+	let modelMappingStore: Record<string, MaskedModel[]> = $state({});
+	// Frozen per-metric scenario order, persisted in form_state.scenarioOrders.
+	let scenarioOrders: Record<string, string[]> = $state({});
 	let expertMetrics: ExpertMetric[] = $state([]);
 	let progress: Record<string, MetricProgress> = $state({});
 	let unlocked: Set<string> = $state(new Set());
@@ -240,11 +258,11 @@
 		'https://script.google.com/macros/s/AKfycbzreHbqgqwXZVM1Lgm_Uw93xakvLi9dcqKsrwQThNM-dJGrGjDn76TcCQ8XniALwWKs/exec';
 
 	let selectedMetricIdx = $state(0);
-	let phase: 'feedback' | 'scenario' = $state('feedback');
+	let phase = $state<'feedback' | 'scenario'>('feedback');
 	let scenarioIdx = $state(0);
 	let modelIdx = $state(0);
 
-	let conversationDetail: ScenarioDetail | null = $state(null);
+	let conversationDetail = $state<ScenarioDetail | null>(null);
 	let conversationLoading = $state(false);
 	let conversationError = $state(false);
 
@@ -253,13 +271,13 @@
 	let userMenuOpen = $state(false);
 
 	// Pre-read protocol acknowledgment (required before evaluation).
-	const PREREAD_STORAGE_KEY = 'impactbench.expertPreRead.v1';
+	// Persisted via Supabase (expert row + form_state), not localStorage.
 	let preReadAcknowledged = $state(false);
 	let preReadSignerName = $state<string | null>(null);
 
 	// Metric-scoped orientation. Only shown on per-slug routes where a
-	// metricId is provided; the default multi-metric /experts flow skips it.
-	const ORIENTATION_STORAGE_KEY = 'impactbench.expertOrientation.v1';
+	// metricId is provided; the default multi-metric /experts/[expertId]
+	// flow skips it. Persisted in form_state.orientationAcknowledged.
 	let orientationAcknowledged = $state(false);
 
 	// Collapsible examples in the metric header. Closed by default so the
@@ -271,9 +289,9 @@
 	let contentNoteDismissed = $state(false);
 
 	// ── Derived helpers ───────────────────────────────────────────
-	// Resolved copy: prop overrides win; otherwise fall back to the
-	// MOCK_EXPERT_USER / R2 data defaults.
-	const expertNameDisplay = $derived(expertNameProp ?? MOCK_EXPERT_USER.name);
+	// Resolved copy: prop overrides win; otherwise fall back to the loaded
+	// expert row.
+	const expertNameDisplay = $derived(expertNameProp ?? expert?.name ?? 'Expert');
 	const expertInitials = $derived(
 		expertNameDisplay
 			.split(' ')
@@ -282,7 +300,9 @@
 			.slice(0, 2)
 			.toUpperCase()
 	);
-	const subareaLabelDisplay = $derived(subareaLabelProp ?? MOCK_EXPERT_USER.subareaLabel);
+	const subareaLabelDisplay = $derived(
+		subareaLabelProp ?? expert?.subarea_label ?? 'Social Relationships'
+	);
 	const displayExamples = $derived(examplesProp ?? []);
 	const selectedMetric = $derived(expertMetrics[selectedMetricIdx] ?? null);
 	const selectedMetricProgress = $derived(
@@ -290,31 +310,60 @@
 	);
 	// Only surface adult-participant scenarios to experts. Underage variants
 	// remain in the underlying data (so scores etc. still compute) but are
-	// hidden from the expert review UI. Order is shuffled once per browser
-	// (persisted in localStorage) so each expert sees a stable but randomised
-	// sequence.
-	const selectedMetricScenarios = $derived<ScenarioMeta[]>(
-		selectedMetric
-			? getShuffledScenarios(
-					participantId,
-					selectedMetric.id,
-					(appState.scenarioIndex?.[selectedMetric.id] ?? []).filter(
-						(sc) => sc.age === 'adult'
-					)
-				)
-			: []
-	);
+	// hidden from the expert review UI. Order is frozen per expert the first
+	// time a metric's scenarios are resolved (see the hydration effect below)
+	// and persisted in form_state.scenarioOrders so reloads stay stable.
+	const selectedMetricScenarios = $derived.by<ScenarioMeta[]>(() => {
+		if (!selectedMetric) return [];
+		const adult = (appState.scenarioIndex?.[selectedMetric.id] ?? []).filter(
+			(sc) => sc.age === 'adult'
+		);
+		const { scenarios } = resolveShuffledScenarios(scenarioOrders[selectedMetric.id], adult);
+		return scenarios;
+	});
 	const currentScenario = $derived(selectedMetricScenarios[scenarioIdx] ?? null);
-	// Reshuffle Model A/B/C whenever the current scenario changes so the
-	// mapping is stable within a scenario but independent across scenarios.
+
+	// Ensure every metric's scenario order is resolved (and persisted) once
+	// the draft has hydrated and the scenario index is available.
+	// Regeneration only happens the first time a metric is encountered;
+	// afterwards the saved order is reused so reloads see a stable sequence.
 	$effect(() => {
-		if (participantId === 'ssr') return;
-		if (!selectedMetric || !currentScenario) return;
-		maskedModels = getExpertMaskedModels(
-			participantId,
+		if (!draftReady) return;
+		let changed = false;
+		const nextOrders: Record<string, string[]> = { ...scenarioOrders };
+		for (const m of expertMetrics) {
+			const adult = (appState.scenarioIndex?.[m.id] ?? []).filter((sc) => sc.age === 'adult');
+			if (adult.length === 0) continue;
+			const { order, regenerated } = resolveShuffledScenarios(nextOrders[m.id], adult);
+			if (regenerated) {
+				nextOrders[m.id] = order;
+				changed = true;
+			}
+		}
+		if (changed) {
+			scenarioOrders = nextOrders;
+			void persistDraft();
+		}
+	});
+
+	// Reshuffle Model A/B/C whenever the current scenario changes (unless
+	// already frozen for this metric+scenario) so the mapping is stable
+	// within a scenario but independent across scenarios.
+	$effect(() => {
+		if (!draftReady || !selectedMetric || !currentScenario) return;
+		const { mapping, store, regenerated } = resolveExpertMaskedModels(
+			modelMappingStore,
 			selectedMetric.id,
 			currentScenario.scenario_id
 		);
+		const same =
+			maskedModels.length === mapping.length &&
+			maskedModels.every((m, i) => m.id === mapping[i]?.id && m.label === mapping[i]?.label);
+		if (!same) maskedModels = mapping;
+		if (regenerated) {
+			modelMappingStore = store;
+			void persistDraft();
+		}
 	});
 	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
 	// Scenario detail carries the full user goal; the index copy is truncated
@@ -323,50 +372,287 @@
 	const currentScenarioTitle = $derived(
 		conversationDetail?.user_goal ?? currentScenario?.title ?? ''
 	);
+	const currentEvalKey = $derived(
+		selectedMetric && currentScenario && currentMaskedModel
+			? `${selectedMetric.id}__${currentScenario.scenario_id}__${currentMaskedModel.id}`
+			: ''
+	);
+
+	$effect(() => {
+		if (!currentEvalKey) return;
+		if (!evaluations[currentEvalKey]) {
+			// Reassign the record so other scenarios' keys stay intact and
+			// reactivity subscribers see a top-level change.
+			evaluations = { ...evaluations, [currentEvalKey]: blankEval() };
+		}
+	});
+
+	function blankProgress(): MetricProgress {
+		return {
+			feedback: {
+				relevance: '',
+				relevanceEdit: '',
+				labelDifferent: '',
+				labelEdit: '',
+				examplesAdequate: '',
+				examplesEdit: '',
+				other: '',
+				submitted: false
+			},
+			evaluated: new Set()
+		};
+	}
+
+	function blankEval(): ScenarioEval {
+		return {
+			scenarioAccurate: '',
+			scenarioAccurateEdit: '',
+			scenarioRealistic: '',
+			scenarioRealisticEdit: '',
+			rating: '',
+			influencedAspects: [],
+			influencedAspectsOther: '',
+			confidence: '',
+			mainChallenge: '',
+			mainChallengeOther: '',
+			justification: '',
+			otherFeedback: '',
+			submitting: false,
+			submitted: false
+		};
+	}
+
+	function serializeFormState(): ExpertFormState {
+		const progressPayload: ExpertFormState['progress'] = {};
+		for (const [mId, p] of Object.entries(progress)) {
+			progressPayload[mId] = {
+				feedback: { ...p.feedback },
+				evaluated: [...p.evaluated]
+			};
+		}
+		const evaluationsPayload: NonNullable<ExpertFormState['evaluations']> = {};
+		for (const [key, e] of Object.entries(evaluations)) {
+			const { submitting: _submitting, ...rest } = e;
+			evaluationsPayload[key] = rest;
+		}
+		return {
+			progress: progressPayload,
+			evaluations: evaluationsPayload,
+			unlocked: [...unlocked],
+			selectedMetricIdx,
+			phase,
+			scenarioIdx,
+			modelIdx,
+			scenarioOrders: { ...scenarioOrders },
+			modelMappings: { ...modelMappingStore },
+			orientationAcknowledged
+		};
+	}
+
+	function hydrateFromExpert(row: ExpertRow, metricIds: string[]) {
+		const state = row.form_state ?? {};
+		const nextProgress: Record<string, MetricProgress> = Object.fromEntries(
+			metricIds.map((id) => [id, blankProgress()])
+		);
+		if (state.progress) {
+			for (const [mId, p] of Object.entries(state.progress)) {
+				if (!nextProgress[mId]) continue;
+				nextProgress[mId] = {
+					feedback: {
+						relevance: (p.feedback?.relevance ?? '') as MetricFeedback['relevance'],
+						relevanceEdit: p.feedback?.relevanceEdit ?? '',
+						labelDifferent: (p.feedback?.labelDifferent ??
+							'') as MetricFeedback['labelDifferent'],
+						labelEdit: p.feedback?.labelEdit ?? '',
+						examplesAdequate: (p.feedback?.examplesAdequate ??
+							'') as MetricFeedback['examplesAdequate'],
+						examplesEdit: p.feedback?.examplesEdit ?? '',
+						other: p.feedback?.other ?? '',
+						submitted: !!p.feedback?.submitted
+					},
+					evaluated: new Set(p.evaluated ?? [])
+				};
+			}
+		}
+		progress = nextProgress;
+
+		const nextEvals: Record<string, ScenarioEval> = {};
+		if (state.evaluations) {
+			for (const [key, raw] of Object.entries(state.evaluations)) {
+				const base = blankEval();
+				const partial = raw as unknown as Partial<ScenarioEval>;
+				nextEvals[key] = {
+					...base,
+					...partial,
+					influencedAspects: Array.isArray(partial.influencedAspects)
+						? [...partial.influencedAspects]
+						: [],
+					submitting: false
+				};
+			}
+		}
+		evaluations = nextEvals;
+
+		if (state.unlocked?.length) {
+			unlocked = new Set(state.unlocked.filter((id) => metricIds.includes(id)));
+		} else if (metricIds.length > 0) {
+			unlocked = new Set([metricIds[0]]);
+		}
+
+		const clampIndex = (raw: unknown, maxExclusive: number): number => {
+			if (maxExclusive <= 0) return 0;
+			const n = typeof raw === 'number' && Number.isFinite(raw) ? Math.trunc(raw) : 0;
+			return Math.min(Math.max(0, n), maxExclusive - 1);
+		};
+
+		selectedMetricIdx = clampIndex(state.selectedMetricIdx, metricIds.length);
+		if (state.phase === 'feedback' || state.phase === 'scenario') phase = state.phase;
+
+		const selectedId = metricIds[selectedMetricIdx];
+		const adultScenarioCount = selectedId
+			? (appState.scenarioIndex?.[selectedId] ?? []).filter((sc) => sc.age === 'adult').length
+			: 0;
+		scenarioIdx = clampIndex(state.scenarioIdx, adultScenarioCount);
+		// The real model-mask isn't resolved yet at hydrate time (it depends on
+		// the current scenario), but it always has exactly three slots
+		// (Model A/B/C), so clamp against that fixed size.
+		modelIdx = clampIndex(state.modelIdx, 3);
+
+		scenarioOrders = state.scenarioOrders ? { ...state.scenarioOrders } : {};
+		modelMappingStore = state.modelMappings ? { ...state.modelMappings } : {};
+		// The default multi-metric flow (no metricId prop) never shows the
+		// orientation modal; per-slug routes restore prior acknowledgment
+		// from form_state instead of localStorage.
+		orientationAcknowledged = metricId ? !!state.orientationAcknowledged : true;
+
+		preReadAcknowledged = !!row.pre_read_acknowledged;
+		preReadSignerName = row.pre_read_signer_name;
+	}
+
+	/** Merge extras for coalesced saves (latest non-null wins). */
+	let pendingDraftExtra: {
+		pre_read_acknowledged?: boolean;
+		pre_read_signer_name?: string | null;
+	} = {};
+	let persistInFlight = false;
+	let persistQueued = false;
+	let persistTail: Promise<boolean> = Promise.resolve(true);
+
+	function markSaveStatus(next: 'idle' | 'saving' | 'saved' | 'error') {
+		if (saveStatusClearHandle) {
+			clearTimeout(saveStatusClearHandle);
+			saveStatusClearHandle = null;
+		}
+		saveStatus = next;
+		if (next === 'saved') {
+			saveStatusClearHandle = setTimeout(() => {
+				if (saveStatus === 'saved') saveStatus = 'idle';
+				saveStatusClearHandle = null;
+			}, 2000);
+		}
+	}
+
+	async function persistDraft(extra?: {
+		pre_read_acknowledged?: boolean;
+		pre_read_signer_name?: string | null;
+	}): Promise<boolean> {
+		if (!expert || formCompleted) return false;
+		if (extra) pendingDraftExtra = { ...pendingDraftExtra, ...extra };
+
+		if (persistInFlight) {
+			persistQueued = true;
+			return persistTail;
+		}
+
+		persistInFlight = true;
+		persistTail = (async () => {
+			let ok = true;
+			let attempts = 0;
+			do {
+				persistQueued = false;
+				attempts += 1;
+				if (attempts > 6) {
+					ok = false;
+					markSaveStatus('error');
+					saveError = 'Could not save draft after several retries.';
+					break;
+				}
+				const form_state = serializeFormState();
+				const snapshot = JSON.stringify(form_state);
+				const hasExtra = Object.keys(pendingDraftExtra).length > 0;
+				// Skip network round-trips when nothing meaningful changed.
+				if (!hasExtra && snapshot === lastPersistedSnapshot) {
+					ok = true;
+					break;
+				}
+				const patch = {
+					form_state,
+					...pendingDraftExtra
+				};
+				pendingDraftExtra = {};
+				markSaveStatus('saving');
+				saveError = null;
+				try {
+					const updated = await saveExpertDraft(expert!.id, expert!.updated_at, patch);
+					expert = {
+						...expert!,
+						...updated,
+						form_state: patch.form_state ?? expert!.form_state
+					};
+					lastPersistedSnapshot = snapshot;
+					markSaveStatus('saved');
+				} catch (e) {
+					if (e instanceof ExpertDraftConflictError) {
+						try {
+							const fresh = await getExpert(expert!.id);
+							if (fresh) {
+								expert = {
+									...expert!,
+									updated_at: fresh.updated_at,
+									status: fresh.status,
+									completed_at: fresh.completed_at
+								};
+								if (fresh.status === 'completed') {
+									formCompleted = true;
+									ok = false;
+									break;
+								}
+							}
+							persistQueued = true;
+							continue;
+						} catch (reloadErr) {
+							ok = false;
+							markSaveStatus('error');
+							saveError = reloadErr instanceof Error ? reloadErr.message : String(reloadErr);
+							break;
+						}
+					}
+					ok = false;
+					markSaveStatus('error');
+					saveError = e instanceof Error ? e.message : String(e);
+					break;
+				}
+			} while (persistQueued);
+			return ok;
+		})().finally(() => {
+			persistInFlight = false;
+		});
+
+		return persistTail;
+	}
 
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
-		// Anonymous per-browser participant id. Persisted on first visit so
-		// randomised assignments (model mask + scenario order) stay stable
-		// across reloads for the same reviewer while differing between
-		// reviewers.
-		participantId = getParticipantId();
-
-		// Restore prior orientation ack (per metricId) so we don't re-prompt
-		// on refresh. Skipped entirely for the multi-metric /experts route.
-		if (typeof window !== 'undefined') {
-			if (!metricId) {
-				orientationAcknowledged = true;
-			} else {
-				try {
-					const raw = window.localStorage.getItem(ORIENTATION_STORAGE_KEY);
-					if (raw) {
-						const parsed = JSON.parse(raw) as Record<string, boolean>;
-						if (parsed && parsed[metricId] === true) {
-							orientationAcknowledged = true;
-						}
-					}
-				} catch {
-					// ignore corrupt storage
-				}
-			}
-		}
-		// Restore any prior pre-read acknowledgment so we don't re-prompt on refresh.
-		if (typeof window !== 'undefined') {
-			try {
-				const raw = window.localStorage.getItem(PREREAD_STORAGE_KEY);
-				if (raw) {
-					const parsed = JSON.parse(raw) as { signedName?: string };
-					if (parsed && typeof parsed.signedName === 'string' && parsed.signedName.trim()) {
-						preReadSignerName = parsed.signedName;
-						preReadAcknowledged = true;
-					}
-				}
-			} catch {
-				// ignore corrupt storage
-			}
-		}
 		try {
+			const row = await getExpert(expertId);
+			if (!row) {
+				loadError = 'Expert form not found. Check your personal link.';
+				loading = false;
+				return;
+			}
+			expert = row;
+			formCompleted = row.status === 'completed';
+
 			const [taxonomy, models, benchmarkData] = await Promise.all([
 				loadTaxonomy(),
 				loadModels(),
@@ -390,12 +676,12 @@
 					])
 				)
 			);
-			// masked models are now assigned per (participant, metric, scenario)
-			// via a reactive effect above, so nothing to set here.
+			// Masked models + scenario order are resolved reactively (see the
+			// $effects above) once expertMetrics/draftReady are set below.
 
 			// Per-slug routes pass a metricId to scope the flow to one metric;
-			// the default /experts route falls back to the full
-			// humanebench × social-relationships list (alphabetical).
+			// the default /experts/[expertId] route falls back to the expert's
+			// assigned subarea's full humanebench metric list (alphabetical).
 			let list: ExpertMetric[];
 			if (metricId) {
 				const found = taxonomy.areas
@@ -406,7 +692,7 @@
 			} else {
 				const subarea = taxonomy.areas
 					.flatMap((a) => a.subareas)
-					.find((s) => s.id === MOCK_EXPERT_USER.subareaId);
+					.find((s) => s.id === row.subarea_id);
 				list = (subarea?.metrics ?? [])
 					.filter((m) => m.id.startsWith(`${EXPERT_BENCHMARK_SLUG}__`))
 					.map((m) => ({ id: m.id, name: m.name }))
@@ -414,11 +700,12 @@
 			}
 			expertMetrics = list;
 
-			progress = Object.fromEntries(
-				list.map((m) => [m.id, blankProgress()])
-			) as Record<string, MetricProgress>;
-			if (list.length > 0) unlocked = new Set([list[0].id]);
-
+			skipNextAutosave = true;
+			hydrateFromExpert(
+				row,
+				list.map((m) => m.id)
+			);
+			draftReady = true;
 			loading = false;
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : String(e);
@@ -426,21 +713,32 @@
 		}
 	});
 
-	function blankProgress(): MetricProgress {
-		return {
-			feedback: {
-				relevance: '',
-				relevanceEdit: '',
-				labelDifferent: '',
-				labelEdit: '',
-				examplesAdequate: '',
-				examplesEdit: '',
-				other: '',
-				submitted: false
-			},
-			evaluated: new Set()
-		};
-	}
+	// Debounced autosave of draft state.
+	// Deep-read nested progress/evaluations fields — Svelte 5 effects that only
+	// touch the top-level object miss bind:value / bind:group mutations, so
+	// scenario 2+ answers never triggered a save.
+	// Only schedule a write when the serialized snapshot actually differs from
+	// the last persisted one (persistDraft also updates `expert`, which would
+	// otherwise re-trigger this effect in a Saving/Saved flash loop).
+	$effect(() => {
+		if (!draftReady || formCompleted) return;
+		if (untrack(() => !expert)) return;
+
+		const snapshot = JSON.stringify(serializeFormState());
+
+		if (skipNextAutosave) {
+			lastPersistedSnapshot = snapshot;
+			skipNextAutosave = false;
+			return;
+		}
+
+		if (snapshot === lastPersistedSnapshot) return;
+
+		const handle = setTimeout(() => {
+			void persistDraft();
+		}, 1200);
+		return () => clearTimeout(handle);
+	});
 
 	// ── Conversation loading ──────────────────────────────────────
 	$effect(() => {
@@ -475,11 +773,13 @@
 		phase = progress[m.id].feedback.submitted ? 'scenario' : 'feedback';
 		scenarioIdx = 0;
 		modelIdx = 0;
+		void persistDraft();
 	}
 
 	function submitFeedback() {
-		if (!selectedMetric) return;
+		if (!selectedMetric || formCompleted) return;
 		progress[selectedMetric.id].feedback.submitted = true;
+		void persistDraft();
 	}
 
 	// Feedback CTA: record the feedback and jump straight into the first
@@ -498,25 +798,6 @@
 		progress[selectedMetric.id].evaluated = new Set(progress[selectedMetric.id].evaluated);
 	}
 
-	function blankEval(): ScenarioEval {
-		return {
-			scenarioAccurate: '',
-			scenarioAccurateEdit: '',
-			scenarioRealistic: '',
-			scenarioRealisticEdit: '',
-			rating: '',
-			influencedAspects: [],
-			influencedAspectsOther: '',
-			confidence: '',
-			mainChallenge: '',
-			mainChallengeOther: '',
-			justification: '',
-			otherFeedback: '',
-			submitting: false,
-			submitted: false
-		};
-	}
-
 	function toggleInfluence(key: string, checked: boolean) {
 		const e = evaluations[currentEvalKey];
 		if (!e) return;
@@ -531,45 +812,78 @@
 	}
 
 	async function submitEvaluation() {
-		if (!selectedMetric || !currentScenario || !currentMaskedModel) return;
+		if (!selectedMetric || !currentScenario || !currentMaskedModel || !expert) return;
+		if (formCompleted) return;
 		const key = currentEvalKey;
 		if (!key) return;
 		const form = evaluations[key];
 		if (!form) return;
 		if (evalProgress.pct < 100) return;
 		form.submitting = true;
-		const params = new URLSearchParams({
-			form_type: 'Expert-Evaluation',
-			participant_id: participantId,
-			expert_name: expertNameDisplay,
-			subarea: subareaLabelDisplay,
-			metric_id: selectedMetric.id,
-			metric_name: selectedMetric.name,
-			scenario_id: currentScenario.scenario_id,
-			scenario_title: currentScenarioTitle,
-			masked_model: currentMaskedModel.label,
-			actual_model_id: currentMaskedModel.id,
-			scenario_accurate: form.scenarioAccurate,
-			scenario_accurate_edit: form.scenarioAccurateEdit,
-			scenario_realistic: form.scenarioRealistic,
-			scenario_realistic_edit: form.scenarioRealisticEdit,
-			rating: form.rating,
-			influenced_aspects: form.influencedAspects.join('; '),
-			influenced_aspects_other: form.influencedAspectsOther,
-			confidence: form.confidence,
-			main_challenge: form.mainChallenge,
-			main_challenge_other: form.mainChallengeOther,
-			justification: form.justification,
-			other_feedback: form.otherFeedback,
-			submitted_at: new Date().toISOString()
-		}).toString();
 		try {
-			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			await submitScenarioEvaluation({
+				expert_id: expert.id,
+				metric_id: selectedMetric.id,
+				metric_name: selectedMetric.name,
+				scenario_id: currentScenario.scenario_id,
+				scenario_title: currentScenarioTitle,
+				model_id: currentMaskedModel.id,
+				masked_model_label: currentMaskedModel.label,
+				scenario_accurate: form.scenarioAccurate,
+				scenario_accurate_edit: form.scenarioAccurateEdit,
+				scenario_realistic: form.scenarioRealistic,
+				scenario_realistic_edit: form.scenarioRealisticEdit,
+				rating: form.rating,
+				influenced_aspects: form.influencedAspects.join('; '),
+				influenced_aspects_other: form.influencedAspectsOther,
+				confidence: form.confidence,
+				main_challenge: form.mainChallenge,
+				main_challenge_other: form.mainChallengeOther,
+				justification: form.justification,
+				other_feedback: form.otherFeedback,
+				submitted_at: new Date().toISOString()
+			});
 			form.submitted = true;
 			markCurrentEvaluated();
+			await persistDraft();
+		} catch (e) {
+			saveStatus = 'error';
+			saveError = e instanceof Error ? e.message : String(e);
 		} finally {
 			form.submitting = false;
 		}
+	}
+
+	/** Every (metric, scenario, model) triple the expert is required to evaluate. */
+	function buildRequiredEvaluations() {
+		return expertMetrics.flatMap((metric) => {
+			const scenarios = (appState.scenarioIndex?.[metric.id] ?? []).filter(
+				(sc) => sc.age === 'adult'
+			);
+			return scenarios.flatMap((scenario) => {
+				const { mapping } = resolveExpertMaskedModels(
+					modelMappingStore,
+					metric.id,
+					scenario.scenario_id
+				);
+				return mapping.map((model) => ({
+					metric_id: metric.id,
+					scenario_id: scenario.scenario_id,
+					model_id: model.id
+				}));
+			});
+		});
+	}
+
+	async function maybeMarkCompleted() {
+		if (!expert || formCompleted) return;
+		const allDone = expertMetrics.every((m) => isEvaluatedAll(m.id));
+		if (!allDone) return;
+		const required = buildRequiredEvaluations();
+		if (required.length === 0) return;
+		const updated = await markExpertCompleted(expert.id, required);
+		formCompleted = true;
+		expert = { ...expert, ...updated };
 	}
 
 	// ── Auto-unlock ───────────────────────────────────────────────
@@ -589,36 +903,27 @@
 	function toggleUserMenu() {
 		userMenuOpen = !userMenuOpen;
 	}
-	function acknowledgePreRead(signedName: string) {
-		preReadSignerName = signedName;
-		preReadAcknowledged = true;
-		if (typeof window !== 'undefined') {
-			try {
-				window.localStorage.setItem(
-					PREREAD_STORAGE_KEY,
-					JSON.stringify({
-						signedName,
-						acknowledgedAt: new Date().toISOString(),
-						document: 'HumaneBench_PreRead_Protocol',
-						documentVersion: '2026-01'
-					})
-				);
-			} catch {
-				// ignore
-			}
+	async function acknowledgePreRead(signedName: string) {
+		if (!expert) throw new Error('Expert not loaded');
+		try {
+			const updated = await persistPreRead(expert.id, signedName, expert.updated_at);
+			expert = { ...expert, ...updated };
+			const saved = await persistDraft({
+				pre_read_acknowledged: true,
+				pre_read_signer_name: signedName
+			});
+			if (!saved) throw new Error(saveError ?? 'Failed to save pre-read acknowledgment');
+			preReadSignerName = signedName;
+			preReadAcknowledged = true;
+		} catch (e) {
+			saveStatus = 'error';
+			saveError = e instanceof Error ? e.message : String(e);
+			throw e;
 		}
 	}
 	function acknowledgeOrientation() {
 		orientationAcknowledged = true;
-		if (typeof window === 'undefined' || !metricId) return;
-		try {
-			const raw = window.localStorage.getItem(ORIENTATION_STORAGE_KEY);
-			const store = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
-			store[metricId] = true;
-			window.localStorage.setItem(ORIENTATION_STORAGE_KEY, JSON.stringify(store));
-		} catch {
-			// ignore
-		}
+		void persistDraft();
 	}
 
 	// ── Exit survey ───────────────────────────────────────────────
@@ -674,7 +979,7 @@
 				: (CONTEXT_OPTS.find((o) => o.v === exitSurvey.context)?.l ?? exitSurvey.context);
 		const params = new URLSearchParams({
 			form_type: 'Expert-ExitSurvey',
-			participant_id: participantId,
+			expert_id: expert?.id ?? '',
 			expert_name: expertNameDisplay,
 			subarea: subareaLabelDisplay,
 			metric_id: metricId ?? '',
@@ -696,6 +1001,7 @@
 		try {
 			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
 			exitSurvey.submitted = true;
+			await maybeMarkCompleted();
 		} finally {
 			exitSurvey.submitting = false;
 		}
@@ -727,13 +1033,19 @@
 		definitionProp ??
 			(selectedMetric ? (appState.metricCriteria?.[selectedMetric.id] ?? '') : '')
 	);
-	const isEvaluatedAll = $derived((metricId: string) => {
-		const scenarios = (appState.scenarioIndex?.[metricId] ?? []).filter(
-			(sc) => sc.age === 'adult'
-		);
-		const total = scenarios.length * maskedModels.length;
-		const done = progress[metricId]?.evaluated.size ?? 0;
-		return total > 0 && done >= total && (progress[metricId]?.feedback.submitted ?? false);
+	// Checked per-scenario against that scenario's own frozen model mapping
+	// (not the globally "active" maskedModels, which only reflects whichever
+	// scenario is currently displayed) so completion is accurate even for
+	// scenarios the reviewer isn't currently looking at.
+	const isEvaluatedAll = $derived((mId: string) => {
+		const scenarios = (appState.scenarioIndex?.[mId] ?? []).filter((sc) => sc.age === 'adult');
+		if (scenarios.length === 0) return false;
+		if (!progress[mId]?.feedback.submitted) return false;
+		const evaluated = progress[mId]?.evaluated;
+		return scenarios.every((scenario) => {
+			const { mapping } = resolveExpertMaskedModels(modelMappingStore, mId, scenario.scenario_id);
+			return mapping.every((model) => evaluated?.has(`${scenario.scenario_id}__${model.id}`));
+		});
 	});
 
 	// After a user submits an evaluation for the current (scenario, model)
@@ -776,6 +1088,7 @@
 				modelIdx = 0;
 			}
 		}
+		void persistDraft();
 	}
 
 	// Linear step navigation within the current metric.
@@ -840,19 +1153,6 @@
 			modelIdx = 0;
 		}
 	}
-
-	const currentEvalKey = $derived(
-		selectedMetric && currentScenario && currentMaskedModel
-			? `${selectedMetric.id}__${currentScenario.scenario_id}__${currentMaskedModel.id}`
-			: ''
-	);
-
-	$effect(() => {
-		if (!currentEvalKey) return;
-		if (!evaluations[currentEvalKey]) {
-			evaluations[currentEvalKey] = blankEval();
-		}
-	});
 
 	const evalProgress = $derived.by(() => {
 		const e = evaluations[currentEvalKey];
@@ -927,6 +1227,19 @@
 			Home
 		</a>
 
+		{#if saveStatus === 'saving'}
+			<span class="mr-3 text-[11px] text-[#9ca3af]">Saving…</span>
+		{:else if saveStatus === 'saved'}
+			<span class="mr-3 text-[11px] text-[#059669]">Saved</span>
+		{:else if saveStatus === 'error'}
+			<span
+				class="mr-3 max-w-[180px] truncate text-[11px] text-[#dc2626]"
+				title={saveError ?? ''}
+			>
+				Save failed
+			</span>
+		{/if}
+
 		<div class="expert-user-menu relative">
 			<button
 				class="flex cursor-pointer items-center gap-[10px] rounded-full border border-[#e5e7eb] bg-white py-[6px] pr-3 pl-[6px] text-left transition-colors duration-150 hover:border-[#00b3b0]"
@@ -995,6 +1308,21 @@
 		{:else if loadError}
 			<div class="flex flex-1 items-center justify-center text-[#dc2626]">
 				Failed to load: {loadError}
+			</div>
+		{:else if formCompleted && !showExitSurvey}
+			<div class="flex flex-1 items-center justify-center px-6">
+				<div class="max-w-md text-center">
+					<div
+						class="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#e0f7f7] text-[#00b3b0]"
+					>
+						<i class="fa-solid fa-check text-[18px]"></i>
+					</div>
+					<h2 class="m-0 mb-2 text-[1.35rem] font-bold text-[#111827]">Review complete</h2>
+					<p class="m-0 text-[14px] leading-[1.6] text-[#6b7280]">
+						Thanks, {expertNameDisplay}. Your evaluations for {subareaLabelDisplay} have been
+						submitted and this form is locked.
+					</p>
+				</div>
 			</div>
 		{:else}
 			<!-- Right: workspace (full-width, no metric sidebar) -->
@@ -2046,7 +2374,9 @@
 	</main>
 </div>
 
-{#if !orientationAcknowledged && metricId}
+{#if loading || loadError || formCompleted}
+	<!-- No overlays while loading, on error, or once the form is locked. -->
+{:else if !orientationAcknowledged && metricId}
 	<OrientationModal
 		metricName={selectedMetric?.name ?? ''}
 		definition={metricCriteriaText}
@@ -2056,10 +2386,8 @@
 {:else if !preReadAcknowledged}
 	<PreReadModal
 		onAcknowledge={acknowledgePreRead}
-		appsScriptUrl={APPS_SCRIPT_URL}
 		expertName={expertNameDisplay}
 		subareaLabel={subareaLabelDisplay}
-		{participantId}
 	/>
 {/if}
 

@@ -1,18 +1,11 @@
 /**
- * Configuration + helpers for the hidden `/experts` mock experience.
- * Not linked from anywhere in the public app.
+ * Configuration + helpers for the `/experts/{slug}/{expertId}` review experience.
  */
 
-/** Mock signed-in expert. Swap for real auth later. */
-export const MOCK_EXPERT_USER = {
-	name: 'Expert ABC',
-	subareaId: 'social-relationships',
-	subareaLabel: 'Social Relationships'
-} as const;
-
 /**
- * Which benchmark this expert is scoped to. For the mock we only surface
- * HumaneBench × Social Relationships metrics (per the product spec).
+ * Which benchmark this expert is scoped to. We only surface
+ * HumaneBench metrics under their assigned subarea (or a single
+ * metric when a slug route is used).
  */
 export const EXPERT_BENCHMARK_SLUG = 'humanebench';
 
@@ -21,8 +14,8 @@ export const EXPERT_QUALTRICS_URL = 'https://usc.qualtrics.com/jfe/form/SV_8B4Ur
 
 /**
  * Slug → single-metric configuration for the per-metric expert routes
- * (`/experts/{slug}`). Each slug scopes the ExpertsPage to one metric and
- * ships its curated definition + examples so we don't rely on R2 copy.
+ * (`/experts/{slug}/{expertId}`). Each slug scopes the ExpertsPage to one
+ * metric and ships its curated definition + examples so we don't rely on R2 copy.
  */
 export interface ExpertSlugConfig {
 	expertName: string;
@@ -104,147 +97,87 @@ const EXPERT_MODEL_POOL: readonly string[] = [
 	'qwen3-80b'
 ];
 
-const EXPERT_MASK_STORAGE_KEY = 'impactbench.expertModelMapping.v1';
-
-/**
- * Anonymous per-browser participant id. Generated once on first visit and
- * persisted, so any subsequent randomisation (model mask, scenario order)
- * can be namespaced per participant — preventing anyone reading the source
- * or comparing browsers from inferring which real model maps to which
- * masked label.
- */
-const PARTICIPANT_ID_KEY = 'impactbench.participantId.v1';
-
-export function getParticipantId(): string {
-	if (typeof window === 'undefined') return 'ssr';
-	try {
-		const existing = window.localStorage.getItem(PARTICIPANT_ID_KEY);
-		if (existing && existing.trim()) return existing;
-	} catch {
-		// ignore
-	}
-	let id: string;
-	try {
-		id = crypto.randomUUID();
-	} catch {
-		id =
-			'p_' +
-			Math.random().toString(36).slice(2, 10) +
-			Date.now().toString(36);
-	}
-	try {
-		window.localStorage.setItem(PARTICIPANT_ID_KEY, id);
-	} catch {
-		// ignore
-	}
-	return id;
+export function isValidMapping(parsed: unknown): parsed is MaskedModel[] {
+	const labels = ['Model A', 'Model B', 'Model C'];
+	if (!Array.isArray(parsed) || parsed.length !== EXPERT_MODEL_POOL.length) return false;
+	return (
+		parsed.every(
+			(m, i) =>
+				m &&
+				typeof m === 'object' &&
+				typeof (m as MaskedModel).id === 'string' &&
+				EXPERT_MODEL_POOL.includes((m as MaskedModel).id) &&
+				(m as MaskedModel).label === labels[i]
+		) && new Set(parsed.map((m) => (m as MaskedModel).id)).size === parsed.length
+	);
 }
 
-/**
- * Return the "Model A/B/C" → real-id mapping for a specific (participant,
- * metric, scenario) triple. The shuffle is done once per triple (Fisher–
- * Yates with Math.random) and persisted, so reloading the same scenario
- * keeps its mapping stable — but switching scenarios reshuffles independently.
- *
- * That means within one reviewer's session, "Model A" may mean Gemini on
- * scenario 1 and Claude on scenario 2 — while every scenario still covers
- * all three real models (once each as A, B, and C).
- *
- * Real ids are only used to fetch conversation data and are submitted
- * alongside each evaluation so the backend can un-mask them.
- */
-export function getExpertMaskedModels(
-	participantId: string,
-	metricId: string,
-	scenarioId: string
-): MaskedModel[] {
+export function modelMappingKey(metricId: string, scenarioId: string): string {
+	return `${metricId}__${scenarioId}`;
+}
+
+/** Fisher–Yates shuffle of the model pool into Model A/B/C. */
+export function createShuffledMapping(): MaskedModel[] {
 	const labels = ['Model A', 'Model B', 'Model C'];
-	const storageKey = `${EXPERT_MASK_STORAGE_KEY}__${participantId}__${metricId}__${scenarioId}`;
-
-	// Try to restore a previously randomised assignment so the mapping is
-	// stable across reloads for the same expert.
-	if (typeof window !== 'undefined') {
-		try {
-			const raw = window.localStorage.getItem(storageKey);
-			if (raw) {
-				const parsed = JSON.parse(raw) as MaskedModel[];
-				if (
-					Array.isArray(parsed) &&
-					parsed.length === EXPERT_MODEL_POOL.length &&
-					parsed.every(
-						(m, i) =>
-							m &&
-							typeof m.id === 'string' &&
-							EXPERT_MODEL_POOL.includes(m.id) &&
-							m.label === labels[i]
-					) &&
-					new Set(parsed.map((m) => m.id)).size === parsed.length
-				) {
-					return parsed;
-				}
-			}
-		} catch {
-			// fall through and re-shuffle
-		}
-	}
-
-	// Fisher–Yates shuffle of the pool
 	const shuffled = [...EXPERT_MODEL_POOL];
 	for (let i = shuffled.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
 		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
 	}
-	const mapping: MaskedModel[] = labels.map((label, i) => ({
-		label,
-		id: shuffled[i]
-	}));
-
-	if (typeof window !== 'undefined') {
-		try {
-			window.localStorage.setItem(storageKey, JSON.stringify(mapping));
-		} catch {
-			// ignore storage failures
-		}
-	}
-	return mapping;
+	return labels.map((label, i) => ({ label, id: shuffled[i] }));
 }
 
-// Persisted per-participant, per-metric scenario ordering so each reviewer
-// sees a stable but randomised sequence across reloads. The stored array
-// is only trusted if it references exactly the same set of scenario_ids.
-const EXPERT_SCENARIO_ORDER_KEY = 'impactbench.expertScenarioOrder.v1';
-
-export function getShuffledScenarios<T extends { scenario_id: string }>(
-	participantId: string,
+/**
+ * Resolve Model A/B/C for a (metric, scenario) pair from a persisted store
+ * (typically `form_state.modelMappings`). Missing keys are shuffled once;
+ * the caller should persist the returned store so reloads stay stable.
+ */
+export function resolveExpertMaskedModels(
+	store: Record<string, MaskedModel[]> | null | undefined,
 	metricId: string,
-	scenarios: T[]
-): T[] {
-	if (scenarios.length <= 1) return scenarios;
-	if (typeof window === 'undefined') return scenarios;
+	scenarioId: string
+): {
+	mapping: MaskedModel[];
+	store: Record<string, MaskedModel[]>;
+	regenerated: boolean;
+} {
+	const key = modelMappingKey(metricId, scenarioId);
+	const next: Record<string, MaskedModel[]> = { ...(store ?? {}) };
+	const existing = next[key];
+	if (existing && isValidMapping(existing)) {
+		return { mapping: existing, store: next, regenerated: false };
+	}
+	const mapping = createShuffledMapping();
+	next[key] = mapping;
+	return { mapping, store: next, regenerated: true };
+}
 
-	let store: Record<string, string[]> = {};
-	try {
-		const raw = window.localStorage.getItem(EXPERT_SCENARIO_ORDER_KEY);
-		if (raw) {
-			const parsed = JSON.parse(raw);
-			if (parsed && typeof parsed === 'object') {
-				store = parsed as Record<string, string[]>;
-			}
-		}
-	} catch {
-		// ignore corrupt storage
+/**
+ * Resolve a stable randomised scenario order for one metric. Prefer a
+ * previously saved order (from `form_state.scenarioOrders`); otherwise
+ * shuffle once. The returned `order` should be persisted by the caller.
+ */
+export function resolveShuffledScenarios<T extends { scenario_id: string }>(
+	savedOrder: string[] | null | undefined,
+	scenarios: T[]
+): { scenarios: T[]; order: string[]; regenerated: boolean } {
+	if (scenarios.length <= 1) {
+		const order = scenarios.map((s) => s.scenario_id);
+		return { scenarios, order, regenerated: false };
 	}
 
-	const storeKey = `${participantId}__${metricId}`;
 	const byId = new Map(scenarios.map((s) => [s.scenario_id, s]));
-	const saved = store[storeKey];
 	if (
-		Array.isArray(saved) &&
-		saved.length === scenarios.length &&
-		saved.every((id) => byId.has(id)) &&
-		new Set(saved).size === saved.length
+		Array.isArray(savedOrder) &&
+		savedOrder.length === scenarios.length &&
+		savedOrder.every((id) => byId.has(id)) &&
+		new Set(savedOrder).size === savedOrder.length
 	) {
-		return saved.map((id) => byId.get(id) as T);
+		return {
+			scenarios: savedOrder.map((id) => byId.get(id) as T),
+			order: savedOrder,
+			regenerated: false
+		};
 	}
 
 	const shuffled = [...scenarios];
@@ -252,11 +185,6 @@ export function getShuffledScenarios<T extends { scenario_id: string }>(
 		const j = Math.floor(Math.random() * (i + 1));
 		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
 	}
-	store[storeKey] = shuffled.map((s) => s.scenario_id);
-	try {
-		window.localStorage.setItem(EXPERT_SCENARIO_ORDER_KEY, JSON.stringify(store));
-	} catch {
-		// ignore storage failures
-	}
-	return shuffled;
+	const order = shuffled.map((s) => s.scenario_id);
+	return { scenarios: shuffled, order, regenerated: true };
 }
