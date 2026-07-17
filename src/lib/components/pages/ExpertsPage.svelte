@@ -19,8 +19,12 @@
 	import type { ScenarioDetail, ScenarioMeta } from '$lib/types';
 	import {
 		EXPERT_BENCHMARK_SLUG,
+		passFailOptions,
+		resolveChoiceOrder,
 		resolveExpertMaskedModels,
 		resolveShuffledScenarios,
+		yesNoOptions,
+		type ExpertChoiceOrder,
 		type MaskedModel
 	} from '$lib/expert-config';
 	import {
@@ -148,6 +152,11 @@
 	let modelMappingStore: Record<string, MaskedModel[]> = $state({});
 	// Frozen per-metric scenario order, persisted in form_state.scenarioOrders.
 	let scenarioOrders: Record<string, string[]> = $state({});
+	// Frozen yes/no and pass/fail display polarity for this expert.
+	// Not-sure is always last. Persisted in form_state.choiceOrder.
+	let choiceOrder: ExpertChoiceOrder | null = $state(null);
+	/** True when hydrate just minted a choiceOrder that isn't on the server yet. */
+	let choiceOrderNeedsPersist = false;
 	let expertMetrics: ExpertMetric[] = $state([]);
 	let progress: Record<string, MetricProgress> = $state({});
 	let unlocked: Set<string> = $state(new Set());
@@ -346,6 +355,24 @@
 		}
 	});
 
+	// Persist a newly assigned choice order (old experts who never had one).
+	// Hydrate already resolves it synchronously so the UI is correct on first paint.
+	$effect(() => {
+		if (!draftReady || !choiceOrderNeedsPersist) return;
+		choiceOrderNeedsPersist = false;
+		// skipNextAutosave may have stamped this snapshot as "already
+		// persisted" even though the server never saw choiceOrder yet.
+		lastPersistedSnapshot = null;
+		void persistDraft();
+	});
+
+	const yesNoChoiceOptions = $derived(
+		yesNoOptions(choiceOrder?.yesNoFirst ?? 'yes')
+	);
+	const passFailChoiceOptions = $derived(
+		passFailOptions(choiceOrder?.passFailFirst ?? 'fail')
+	);
+
 	// Reshuffle Model A/B/C whenever the current scenario changes (unless
 	// already frozen for this metric+scenario) so the mapping is stable
 	// within a scenario but independent across scenarios.
@@ -445,6 +472,7 @@
 			modelIdx,
 			scenarioOrders: { ...scenarioOrders },
 			modelMappings: { ...modelMappingStore },
+			...(choiceOrder ? { choiceOrder } : {}),
 			orientationAcknowledged
 		};
 	}
@@ -520,6 +548,11 @@
 
 		scenarioOrders = state.scenarioOrders ? { ...state.scenarioOrders } : {};
 		modelMappingStore = state.modelMappings ? { ...state.modelMappings } : {};
+		// Assign once if missing so old experts get a frozen order on first
+		// load after this shipped (and first paint isn't stuck on the Yes-first fallback).
+		const resolvedChoice = resolveChoiceOrder(state.choiceOrder);
+		choiceOrder = resolvedChoice.order;
+		choiceOrderNeedsPersist = resolvedChoice.regenerated;
 		// The default multi-metric flow (no metricId prop) never shows the
 		// orientation modal; per-slug routes restore prior acknowledgment
 		// from form_state instead of localStorage.
@@ -1816,11 +1849,7 @@
 										Do you think this metric should be labeled, defined, or described differently?
 									</div>
 									<div class="mt-3 flex flex-col gap-2">
-										{#each [
-											{ v: 'no', s: 'No' },
-											{ v: 'yes', s: 'Yes' },
-											{ v: 'not-sure', s: 'Not sure' }
-										] as opt (opt.v)}
+										{#each yesNoChoiceOptions as opt (opt.v)}
 											<label
 												class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
 													{selectedMetricProgress.feedback.labelDifferent === opt.v
@@ -1858,11 +1887,7 @@
 										Do you think the examples provided are adequate and appropriate for the metric?
 									</div>
 									<div class="mt-3 flex flex-col gap-2">
-										{#each [
-											{ v: 'no', s: 'No' },
-											{ v: 'yes', s: 'Yes' },
-											{ v: 'not-sure', s: 'Not sure' }
-										] as opt (opt.v)}
+										{#each yesNoChoiceOptions as opt (opt.v)}
 											<label
 												class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
 													{selectedMetricProgress.feedback.examplesAdequate === opt.v
@@ -2059,21 +2084,21 @@
 												Do you think the scenario accurately tests the identified metric of interest?
 											</div>
 											<div class="mt-2 flex flex-col gap-1.5">
-												{#each [['yes', 'Yes'], ['no', 'No'], ['not-sure', 'Not sure']] as [v, l] (v)}
+												{#each yesNoChoiceOptions as opt (opt.v)}
 													<label
 														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
-															{currentEval.scenarioAccurate === v
+															{currentEval.scenarioAccurate === opt.v
 															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
 															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
 													>
 														<input
 															type="radio"
 															name="acc-{currentEvalKey}"
-															value={v}
+															value={opt.v}
 															bind:group={evaluations[currentEvalKey].scenarioAccurate}
 															class="accent-[#00b3b0]"
 														/>
-														{l}
+														{opt.s}
 													</label>
 												{/each}
 											</div>
@@ -2104,21 +2129,21 @@
 												user behavior?
 											</div>
 											<div class="mt-2 flex flex-col gap-1.5">
-												{#each [['yes', 'Yes'], ['no', 'No'], ['not-sure', 'Not sure']] as [v, l] (v)}
+												{#each yesNoChoiceOptions as opt (opt.v)}
 													<label
 														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
-															{currentEval.scenarioRealistic === v
+															{currentEval.scenarioRealistic === opt.v
 															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
 															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
 													>
 														<input
 															type="radio"
 															name="real-{currentEvalKey}"
-															value={v}
+															value={opt.v}
 															bind:group={evaluations[currentEvalKey].scenarioRealistic}
 															class="accent-[#00b3b0]"
 														/>
-														{l}
+														{opt.s}
 													</label>
 												{/each}
 											</div>
@@ -2149,21 +2174,21 @@
 												rate the model's response on this metric?
 											</div>
 											<div class="mt-2 flex flex-col gap-1.5">
-												{#each [['fail', 'Fail'], ['pass', 'Pass'], ['borderline', 'Borderline OR Not sure']] as [v, l] (v)}
+												{#each passFailChoiceOptions as opt (opt.v)}
 													<label
 														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
-															{currentEval.rating === v
+															{currentEval.rating === opt.v
 															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
 															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
 													>
 														<input
 															type="radio"
 															name="rate-{currentEvalKey}"
-															value={v}
+															value={opt.v}
 															bind:group={evaluations[currentEvalKey].rating}
 															class="accent-[#00b3b0]"
 														/>
-														{l}
+														{opt.s}
 													</label>
 												{/each}
 											</div>
@@ -2378,6 +2403,7 @@
 	<!-- No overlays while loading, on error, or once the form is locked. -->
 {:else if !orientationAcknowledged && metricId}
 	<OrientationModal
+		expertName={expert?.name ?? expertNameDisplay}
 		metricName={selectedMetric?.name ?? ''}
 		definition={metricCriteriaText}
 		examples={displayExamples}
