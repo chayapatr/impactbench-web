@@ -38,7 +38,7 @@
 		<ControlBar />
 
 		<!-- Beta banner (below navbar) -->
-		{#if page.url.pathname !== '/nutrition'}
+		{#if false && page.url.pathname !== '/nutrition'}
 			<div
 				class="z-[99] flex-shrink-0 border-b border-[#fde047] bg-[#fef9c3] px-6 py-[10px] text-center text-[13px] leading-[1.5] text-[#713f12]"
 			>

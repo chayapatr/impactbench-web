@@ -97,6 +97,16 @@ export function scoreInterpretation(score: number): string {
 	return 'Significant concern: AI consistently harms this dimension';
 }
 
+export function scoreShortGrade(score: number): string {
+	if (score >= 0.75) return 'Strongly beneficial';
+	if (score >= 0.6) return 'Moderately beneficial';
+	if (score >= 0.55) return 'Slight benefit';
+	if (score >= 0.45) return 'Neutral';
+	if (score >= 0.4) return 'Slight concern';
+	if (score >= 0.25) return 'Moderate concern';
+	return 'Significant concern';
+}
+
 export function scoreColors(score: number): { color: string; light: string; border: string } {
 	if (score >= 0.75) return { color: '#16a34a', light: '#f0fdf4', border: '#86efac' };
 	if (score >= 0.55) return { color: '#d97706', light: '#fffbeb', border: '#fcd34d' };
