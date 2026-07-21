@@ -2,7 +2,6 @@
 	import { appState, sidebarBack, openScenarioPanel, scenarioPanelState } from '$lib/store.svelte';
 	import { scoreColors } from '$lib/scores';
 	import {
-		getModelName,
 		getScores,
 		filterScenariosByAge,
 		findMetricInTaxonomy,
@@ -29,9 +28,6 @@
 </script>
 
 <StickyHeader {backLabel} onBack={sidebarBack}>
-	{#snippet right()}
-		<span class="truncate text-[11px] font-semibold text-[#9ca3af]">{getModelName(appState)}</span>
-	{/snippet}
 	{#snippet banner()}
 		<ColoredBanner color={metricColors.color} title={metricName} {score} total={metricFrac.total}>
 			<div class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">

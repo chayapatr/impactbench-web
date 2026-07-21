@@ -19,6 +19,7 @@
 	import Sidebar from '$lib/components/organisms/Sidebar.svelte';
 	import Leaderboard from '$lib/components/organisms/Leaderboard.svelte';
 	import ScenarioPanel from '$lib/components/organisms/sidebar/ScenarioPanel.svelte';
+	import UnifiedBreadcrumbHeader from '$lib/components/molecules/UnifiedBreadcrumbHeader.svelte';
 
 	let sunburstRef: Sunburst | undefined = $state();
 
@@ -52,6 +53,14 @@
 			sunburstRef?.focusNode(top.areaId, 'area');
 		} else if (top.type === 'subarea') {
 			sunburstRef?.focusNode(top.subareaId, 'subarea');
+		}
+	});
+
+	// Auto-close scenario/metric side panel when leaving subarea/metric context
+	$effect(() => {
+		const top = sidebarState.navStack[sidebarState.navStack.length - 1];
+		if (top.type !== 'subarea' && top.type !== 'metric' && scenarioPanelState.open) {
+			closeScenarioPanel();
 		}
 	});
 
@@ -143,12 +152,12 @@
 				<div class="flex items-center gap-3">
 					<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]">Bad behavior</span>
 					<div
-						class="h-[10px] flex-1 rounded-[5px]"
+						class="h-[6px] flex-1 rounded-[3px]"
 						style="background:linear-gradient(to right,#dc2626,#e5e7eb)"
 					></div>
 					<div class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#9ca3af]"></div>
 					<div
-						class="h-[10px] flex-1 rounded-[5px]"
+						class="h-[6px] flex-1 rounded-[3px]"
 						style="background:linear-gradient(to right,#e5e7eb,#16a34a)"
 					></div>
 					<span class="text-[12px] font-medium whitespace-nowrap text-[#444444]">Good behavior</span
@@ -156,32 +165,45 @@
 				</div>
 			</div>
 		</div>
+		<!-- Footer one-liner -->
+		<div class="flex-shrink-0 pt-2 pb-3 text-center text-[11px] text-[#9ca3af]">
+			<a href="https://www.media.mit.edu/" target="_blank" rel="noopener" class="underline underline-offset-2 hover:text-[#6b7280]">MIT Media Lab</a>
+			· 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307 USA ·
+			<a href="https://accessibility.mit.edu/" target="_blank" rel="noopener" class="underline underline-offset-2 hover:text-[#6b7280]">Accessibility [↗]</a>
+		</div>
 	</div>
-
-	<!-- RIGHT: Sidebar panel (360px) -->
-	<aside
-		class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-[#fafaf9]"
+	<!-- RIGHT: two side panels sharing a unified breadcrumb header -->
+	<div
+		class="flex h-full flex-shrink-0 flex-col overflow-hidden"
+		style="width: {scenarioPanelState.open && scenarioPanelState.metricId ? 720 : 360}px"
 	>
-		<Sidebar
-			onOpenNutritionLabel={() => {
-				smartNutritionState.open = true;
-			}}
-			onEditFocus={() => {
-				smartExploreState.initialText = leaderboardState.smartFocusNode?.userText ?? '';
-				smartExploreState.open = true;
-			}}
-			onClearFocus={handleClearFocus}
-		/>
-	</aside>
+		<UnifiedBreadcrumbHeader />
+		<div class="flex h-full min-h-0 flex-1">
+			<aside
+				class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white"
+			>
+				<Sidebar
+					onOpenNutritionLabel={() => {
+						smartNutritionState.open = true;
+					}}
+					onEditFocus={() => {
+						smartExploreState.initialText = leaderboardState.smartFocusNode?.userText ?? '';
+						smartExploreState.open = true;
+					}}
+					onClearFocus={handleClearFocus}
+				/>
+			</aside>
 
-	<!-- FAR RIGHT: Metric/scenario detail side-panel -->
-	{#if scenarioPanelState.open && scenarioPanelState.metricId}
-		<aside
-			class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white shadow-[-4px_0_12px_-6px_rgba(0,0,0,0.08)]"
-		>
-			<div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto">
-				<ScenarioPanel backLabel="Close" onBack={closeScenarioPanel} />
-			</div>
-		</aside>
-	{/if}
+			<!-- FAR RIGHT: Metric/scenario detail side-panel -->
+			{#if scenarioPanelState.open && scenarioPanelState.metricId}
+				<aside
+					class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-[#fdfdfc]"
+				>
+					<div class="sidebar-scroll flex flex-1 flex-col overflow-y-auto">
+						<ScenarioPanel backLabel="Close" onBack={closeScenarioPanel} />
+					</div>
+				</aside>
+			{/if}
+		</div>
+	</div>
 </div>

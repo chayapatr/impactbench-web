@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { appState, sidebarBack, sidebarPush } from '$lib/store.svelte';
-	import { scoreColors } from '$lib/scores';
+	import { scoreColors, scoreShortGrade } from '$lib/scores';
 	import { AREA_DESCRIPTIONS, SUBAREA_DESCRIPTIONS } from '$lib/descriptions';
 	import {
-		getModelName,
 		computeAreaScore,
 		computeSubareaScore,
 		areaPassFraction,
@@ -29,48 +28,40 @@
 </script>
 
 {#if area}
-	<StickyHeader backLabel="All Areas" onBack={sidebarBack}>
-		{#snippet right()}
-			<ModelAgeChip modelName={getModelName(appState)} age={appState.filters.age} />
-		{/snippet}
-	</StickyHeader>
-
-	<!-- Flat header: label + icon/title + description, no left bar, no score chip -->
-	<div class="border-b border-[#e5e7eb] bg-[#f9fafb] px-[14px] pt-[10px] pb-[12px]">
-		<div class="mb-[3px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">
-			Well-being Area
-		</div>
-		<div class="flex items-center gap-2">
-			<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
-			<span class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]">{area.name}</span>
-		</div>
+	<!-- Description -->
+	<div class="px-[14px] pt-[14px] pb-[12px]">
 		{#if areaDesc}
-			<p class="mt-[6px] text-[12px] leading-[1.6] text-balance text-[#6b7280]">{areaDesc}</p>
+			<div class="mb-[3px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
+				Area Description
+			</div>
+			<p class="text-[12px] leading-[1.6] text-balance text-[#374151]">{areaDesc}</p>
 		{/if}
 	</div>
 
 	<SectionLabel text="Subareas" />
-	<div class="flex flex-col gap-[6px] px-[14px] pb-4">
+	<div class="flex flex-col gap-[8px] px-[14px] pb-4">
 		{#each area.subareas as sub (sub.id)}
 			{@const subScore = computeSubareaScore(appState, sub.id)}
 			{@const subFrac = subareaPassFraction(appState, sub.id)}
 			{@const subDesc = SUBAREA_DESCRIPTIONS[sub.id] ?? ''}
+			{@const grade = scoreShortGrade(subScore)}
 			<button
-				class="flex w-full cursor-pointer flex-col rounded-[10px] border-[1.5px] border-[#e5e7eb] bg-white px-4 py-[10px] text-left transition-[border-color] duration-150 hover:border-[#00b3b0]"
+				class="flex w-full cursor-pointer flex-col rounded-[10px] bg-white px-4 py-[14px] text-left transition-[transform,box-shadow] duration-150 hover:-translate-y-px"
+				style="box-shadow: 0 1px 4px rgba(0,0,0,0.10);"
 				onclick={() => sidebarPush({ type: 'subarea', subareaId: sub.id })}
 			>
 				<div class="flex items-center justify-between gap-2">
-					<div class="flex min-w-0 flex-1 items-center gap-2">
-						<i class="fa-solid {sub.icon} flex-shrink-0 text-[15px]"></i>
-						<span class="truncate text-[13px] font-semibold text-[#1a1a1a]">{sub.name}</span>
-					</div>
-					<ScorePill score={subScore} total={subFrac.total} />
+					<span class="truncate text-[13px] font-semibold text-[#1a1a1a]">{sub.name}</span>
+					<ScorePill score={subScore} total={subFrac.total} neutral />
 				</div>
 				{#if subDesc}
-					<div class="mt-[5px] text-[11px] leading-[1.35] text-balance text-[#9ca3af]">
+					<div class="mt-[3px] text-[12px] leading-[1.45] text-balance text-[#6b7280]">
 						{subDesc}
 					</div>
 				{/if}
+				<div class="mt-[6px] text-[11px] font-medium text-[#9ca3af]">
+					{grade}
+				</div>
 			</button>
 		{/each}
 	</div>

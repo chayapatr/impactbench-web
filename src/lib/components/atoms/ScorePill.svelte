@@ -5,14 +5,16 @@
 		score: number;
 		total?: number;
 		size?: 'sm' | 'md';
+		neutral?: boolean;
 	}
 
-	let { score, total, size = 'md' }: Props = $props();
+	let { score, total, size = 'md', neutral = false }: Props = $props();
 	const passed = $derived(total !== undefined ? Math.round(score * total) : null);
 </script>
 
 <span
 	class="inline-block flex-shrink-0 rounded-[6px] py-[1px] text-center font-semibold
 		{size === 'sm' ? 'min-w-[26px] px-[5px] text-[10px]' : 'min-w-[30px] px-[6px] text-[11px]'}"
-	style={scorePillStyle(score)}>{passed !== null ? `${passed}/${total}` : formatScore(score)}</span
+	style={neutral ? 'background:#f3f4f6;color:#6b7280' : scorePillStyle(score)}
+	>{passed !== null ? `${passed}/${total}` : formatScore(score)}</span
 >

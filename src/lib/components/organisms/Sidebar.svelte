@@ -111,27 +111,6 @@
 		</div>
 	{/if}
 
-	<!-- Model header (hidden in drill-down mode) -->
-	<div class="flex-shrink-0 border-b border-[#f3f4f6] {isFocused ? 'hidden' : ''}" id="sb-header">
-		<div class="px-[14px] pt-[20px] pb-[14px]">
-			<div class="flex items-center gap-3">
-				<div class="min-w-0 flex-1">
-					<div
-						class="mb-[3px] text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
-					>
-						{getModelProvider(appState)}
-					</div>
-					<div
-						class="truncate text-[16px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]"
-					>
-						{getModelName(appState)}
-					</div>
-				</div>
-				<ScorePill score={overallScore} total={overallTotal} />
-			</div>
-		</div>
-	</div>
-
 	<!-- Panel router -->
 	<div class="flex-1 overflow-y-auto text-[14px]" id="summary-panel">
 		{#if top.type === 'overview'}
@@ -153,25 +132,6 @@
 		{/if}
 	</div>
 
-	<!-- Site footer -->
-	<div class="flex flex-shrink-0 flex-col gap-1.5 border-t border-[#f3f4f6] px-4 py-3">
-		<p class="text-[11px] leading-[1.5] text-[#9ca3af]">
-			<a
-				href="https://www.media.mit.edu/"
-				target="_blank"
-				rel="noopener"
-				class="text-[#9ca3af] underline underline-offset-2 hover:text-[#6b7280]">MIT Media Lab</a
-			>
-			· 77 Mass. Ave., E14/E15, Cambridge, MA 02139-4307 USA ⋅
-			<a
-				href="https://accessibility.mit.edu/"
-				target="_blank"
-				rel="noopener"
-				class="text-[#9ca3af] underline underline-offset-2 hover:text-[#6b7280]"
-				>Accessibility [↗]</a
-			>
-		</p>
-	</div>
 </div>
 
 <style>

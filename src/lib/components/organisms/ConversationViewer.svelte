@@ -55,7 +55,16 @@
 			<div class="mb-[3px] text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
 				Scenario
 			</div>
-			<div class="text-[12px] font-[600] text-[#374151]">{metricName}</div>
+			<div class="flex items-start gap-[8px]">
+				<div class="min-w-0 flex-1 text-[12px] font-[600] text-[#374151]">{metricName}</div>
+				{#if pass !== null}
+					<span
+						class="mt-[1px] flex-shrink-0 rounded-full px-[8px] py-[2px] text-[10px] font-bold"
+						style={pass ? 'background:#dcfce7;color:#16a34a' : 'background:#fee2e2;color:#dc2626'}
+						>{pass ? 'Pass' : 'Fail'}</span
+					>
+				{/if}
+			</div>
 		</div>
 
 		{#if scenarioDetail.persona}

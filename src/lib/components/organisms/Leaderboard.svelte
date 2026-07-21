@@ -210,7 +210,6 @@
 	<div class="px-5 pt-[14px] pb-[10px]">
 		<div class="flex items-center justify-between gap-2">
 			<h2 class="flex items-center gap-2 text-[15px] font-[800] tracking-[-0.01em] text-[#1a1a1a]">
-				<i class="fa-solid fa-trophy text-[12px] text-[#f59e0b]"></i>
 				Model Rankings
 			</h2>
 			<span
@@ -244,7 +243,7 @@
 {#if navContext().mode !== 'overview'}
 	{@const ctx = navContext()}
 	<div
-		class="mx-3 mt-1 mb-[6px] rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-[10px] py-[8px]"
+		class="mx-3 mt-1 mb-[6px] hidden rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-[10px] py-[8px]"
 	>
 		<div class="mb-[4px] text-[10px] font-[700] tracking-[0.06em] text-[#9ca3af] uppercase">
 			Scoring based on
