@@ -12,6 +12,7 @@
 		smartExploreState,
 		scenarioPanelState,
 		openScenarioPanel,
+		openMetricPanel,
 		closeScenarioPanel
 	} from '$lib/store.svelte';
 	import Sunburst from '$lib/components/organisms/Sunburst.svelte';
@@ -173,8 +174,8 @@
 		/>
 	</aside>
 
-	<!-- FAR RIGHT: Scenario detail side-panel (only when a scenario is selected) -->
-	{#if scenarioPanelState.open && scenarioPanelState.scenarioMeta && scenarioPanelState.metricId}
+	<!-- FAR RIGHT: Metric/scenario detail side-panel -->
+	{#if scenarioPanelState.open && scenarioPanelState.metricId}
 		<aside
 			class="flex h-full w-[360px] flex-shrink-0 flex-col overflow-hidden border-l border-[#e5e7eb] bg-white shadow-[-4px_0_12px_-6px_rgba(0,0,0,0.08)]"
 		>

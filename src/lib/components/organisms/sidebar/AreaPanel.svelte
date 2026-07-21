@@ -33,28 +33,21 @@
 		{#snippet right()}
 			<ModelAgeChip modelName={getModelName(appState)} age={appState.filters.age} />
 		{/snippet}
-		{#snippet banner()}
-			<ColoredBanner color={areaColors.color} title={area.name} score={areaScore}>
-				<div class="mb-[4px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">
-					Well-being Area
-				</div>
-				<div class="flex items-center gap-2">
-					<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
-					<span
-						class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]"
-						>{area.name}</span
-					>
-					<ScorePill score={areaScore} total={areaFrac.total} />
-				</div>
-			</ColoredBanner>
-		{/snippet}
 	</StickyHeader>
 
-	{#if areaDesc}
-		<div class="px-[14px] pt-3 pb-2">
-			<p class="text-[12px] leading-[1.6] text-balance text-[#6b7280]">{areaDesc}</p>
+	<!-- Flat header: label + icon/title + description, no left bar, no score chip -->
+	<div class="border-b border-[#e5e7eb] bg-[#f9fafb] px-[14px] pt-[10px] pb-[12px]">
+		<div class="mb-[3px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">
+			Well-being Area
 		</div>
-	{/if}
+		<div class="flex items-center gap-2">
+			<i class="fa-solid {area.icon} flex-shrink-0 text-[15px]"></i>
+			<span class="min-w-0 flex-1 text-[15px] leading-[1.2] font-[800] tracking-[-0.02em] text-[#1a1a1a]">{area.name}</span>
+		</div>
+		{#if areaDesc}
+			<p class="mt-[6px] text-[12px] leading-[1.6] text-balance text-[#6b7280]">{areaDesc}</p>
+		{/if}
+	</div>
 
 	<SectionLabel text="Subareas" />
 	<div class="flex flex-col gap-[6px] px-[14px] pb-4">

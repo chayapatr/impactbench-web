@@ -38,6 +38,12 @@ export function openScenarioPanel(metricId: string, scenarioMeta: import('../typ
 	scenarioPanelState.scenarioMeta = scenarioMeta;
 }
 
+export function openMetricPanel(metricId: string) {
+	scenarioPanelState.open = true;
+	scenarioPanelState.metricId = metricId;
+	scenarioPanelState.scenarioMeta = null;
+}
+
 export function closeScenarioPanel() {
 	scenarioPanelState.open = false;
 	scenarioPanelState.metricId = null;
