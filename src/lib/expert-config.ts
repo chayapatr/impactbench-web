@@ -91,7 +91,7 @@ export interface MaskedModel {
  * The (only) three models we present to experts. Real ids are preserved on
  * the backend when submissions are made, but experts see Model A/B/C only.
  */
-const EXPERT_MODEL_POOL: readonly string[] = [
+export const EXPERT_MODEL_POOL: readonly string[] = [
 	'claude-sonnet-4-6',
 	'gemini-2-5-pro',
 	'qwen3-80b'
@@ -219,9 +219,10 @@ export function isValidChoiceOrder(value: unknown): value is ExpertChoiceOrder {
  * Prefer a previously saved order (from `form_state.choiceOrder`); otherwise
  * pick once. The returned `order` should be persisted by the caller.
  */
-export function resolveChoiceOrder(
-	saved: ExpertChoiceOrder | null | undefined
-): { order: ExpertChoiceOrder; regenerated: boolean } {
+export function resolveChoiceOrder(saved: ExpertChoiceOrder | null | undefined): {
+	order: ExpertChoiceOrder;
+	regenerated: boolean;
+} {
 	if (isValidChoiceOrder(saved)) {
 		return { order: saved, regenerated: false };
 	}
