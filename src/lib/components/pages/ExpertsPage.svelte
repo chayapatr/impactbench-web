@@ -38,6 +38,10 @@
 	} from '$lib/experts/db';
 	import type { ExpertFormState, ExpertRow } from '$lib/experts/types';
 	import { validateAdminKey } from '$lib/admin/db';
+	import {
+		ADMIN_PREVIEW_PATH_ID,
+		takeAdminPreviewHandoff
+	} from '$lib/store/admin.svelte';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
 	import OrientationModal from '$lib/components/organisms/OrientationModal.svelte';
 
@@ -705,18 +709,24 @@
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
 		try {
-			// Prefer admin-key detection first so dry-run links never hit expert
-			// RPCs (and never get tripped by a truthy empty get_expert payload).
+			// Admin dry-run uses path id "preview" + an in-memory handoff of the
+			// capability key (never put the admin UUID in the URL).
 			let row: ExpertRow | null = null;
-			const isAdmin = await validateAdminKey(expertId);
-			if (isAdmin) {
+			if (expertId === ADMIN_PREVIEW_PATH_ID) {
+				const handoffKey = takeAdminPreviewHandoff();
+				if (!handoffKey || !(await validateAdminKey(handoffKey))) {
+					loadError =
+						'Admin preview session missing or expired. Open Test form from the admin dashboard again.';
+					loading = false;
+					return;
+				}
 				previewMode = true;
 				const now = new Date().toISOString();
 				const slugConfig = metricId
 					? Object.values(EXPERT_SLUG_METRICS).find((m) => m.metricId === metricId)
 					: null;
 				row = {
-					id: expertId,
+					id: ADMIN_PREVIEW_PATH_ID,
 					name: expertNameProp ?? slugConfig?.expertName ?? 'Admin preview',
 					email: null,
 					job_title: null,

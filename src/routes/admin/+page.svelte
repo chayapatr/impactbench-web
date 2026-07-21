@@ -2,7 +2,13 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { adminState, setAdminKey, clearAdminKey } from '$lib/store/admin.svelte';
+	import {
+		adminState,
+		setAdminKey,
+		clearAdminKey,
+		armAdminPreviewHandoff,
+		ADMIN_PREVIEW_PATH_ID
+	} from '$lib/store/admin.svelte';
 	import { appState } from '$lib/store.svelte';
 	import { EXPERT_MODEL_POOL, EXPERT_SLUG_METRICS } from '$lib/expert-config';
 	import { loadScenarioDetail } from '$lib/data';
@@ -276,7 +282,8 @@
 
 	function openTestForm() {
 		if (!adminState.key || !selectedExpertSlug) return;
-		goto(`/experts/${selectedExpertSlug}/${adminState.key}`);
+		armAdminPreviewHandoff();
+		goto(`/experts/${selectedExpertSlug}/${ADMIN_PREVIEW_PATH_ID}`);
 	}
 
 	onMount(() => {
