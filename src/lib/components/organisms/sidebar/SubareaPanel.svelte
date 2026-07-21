@@ -48,6 +48,26 @@
 		if (ratio >= 0.35) return 'background:#ffedd5;color:#ea580c';
 		return 'background:#fee2e2;color:#dc2626';
 	}
+
+	// Badge tooltip — rendered at fixed position so it "goes over" the
+	// sidebar's overflow boundary instead of getting clipped.
+	let badgeTip = $state<{
+		x: number;
+		y: number;
+		type: 'positive' | 'negative';
+	} | null>(null);
+
+	function showBadgeTip(e: MouseEvent, type: 'positive' | 'negative') {
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		badgeTip = {
+			x: rect.right + 8,
+			y: rect.top + rect.height / 2,
+			type
+		};
+	}
+	function hideBadgeTip() {
+		badgeTip = null;
+	}
 </script>
 
 {#if subareaTuple}
@@ -83,25 +103,17 @@
 				onclick={() => openMetricPanel(m.id)}
 			>
 				<!-- type badge with tooltip -->
-				<div class="group relative flex-shrink-0">
+				<div
+					class="relative flex-shrink-0"
+					onmouseenter={(e) => showBadgeTip(e, m.type)}
+					onmouseleave={hideBadgeTip}
+				>
 					<span
 						class="inline-flex h-[20px] w-[20px] items-center justify-center rounded-full"
 						style={m.type === 'negative' ? 'background:#f3f4f6;color:#c4b5fd' : 'background:#f3f4f6;color:#93c5fd'}
 					>
 						<i class="fa-solid {m.type === 'negative' ? 'fa-shield' : 'fa-star'}" style="font-size:8px"></i>
 					</span>
-					<div
-						class="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-[200px] -translate-x-1/2 rounded-[8px] bg-[#1a1a1a] px-[10px] py-[8px] text-[11px] leading-[1.45] text-white opacity-0 shadow-lg transition-opacity duration-100 group-hover:opacity-100"
-					>
-						<div class="mb-[3px] font-semibold">
-							{m.type === 'negative' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
-						</div>
-						<div class="text-[#d1d5db]">
-							{m.type === 'negative'
-								? 'This metric is about how much this model avoids exhibiting bad behavior.'
-								: 'This metric is about how much this model promotes good behavior.'}
-						</div>
-					</div>
 				</div>
 				<span class="min-w-0 flex-1 text-[12px] leading-[1.35] {isActive ? 'font-semibold text-[#1a1a1a]' : 'font-medium text-[#374151]'}">{m.name}</span>
 				<span
@@ -164,4 +176,20 @@
 			{/each}
 		</div>
 	{/if}
+{/if}
+
+{#if badgeTip}
+	<div
+		class="pointer-events-none fixed z-[2000] w-[220px] -translate-y-1/2 rounded-[8px] bg-[#1a1a1a] px-[10px] py-[8px] text-[11px] leading-[1.45] text-white shadow-lg"
+		style="left:{badgeTip.x}px;top:{badgeTip.y}px"
+	>
+		<div class="mb-[3px] font-semibold">
+			{badgeTip.type === 'negative' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
+		</div>
+		<div class="text-[#d1d5db]">
+			{badgeTip.type === 'negative'
+				? 'This metric is about how much this model avoids exhibiting bad behavior.'
+				: 'This metric is about how much this model promotes good behavior.'}
+		</div>
+	</div>
 {/if}
