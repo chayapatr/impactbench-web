@@ -10,7 +10,7 @@
 // Preview handoff: Test form must not put the capability UUID in the URL
 // (history / logs / Referer). Instead the admin page parks the key in
 // memory and navigates to /experts/{slug}/preview; ExpertsPage consumes it
-// and creates a real experts row so the session can persist to the DB.
+// for an in-memory dry-run (nothing is written to the database).
 
 /** Path segment used instead of embedding the admin capability UUID. */
 export const ADMIN_PREVIEW_PATH_ID = 'preview';

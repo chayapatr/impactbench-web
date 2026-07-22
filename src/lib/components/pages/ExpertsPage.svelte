@@ -21,7 +21,6 @@
 		EXPERT_BENCHMARK_SLUG,
 		formatGuidingScenarioQuestion,
 		EXPERT_SLUG_METRICS,
-		reviewSubareaIdForMetric,
 		reviewSubareaLabelForMetric,
 		passFailOptions,
 		resolveChoiceOrder,
@@ -35,7 +34,6 @@
 	import {
 		acknowledgePreRead as persistPreRead,
 		ExpertDraftConflictError,
-		createExpert,
 		getExpert,
 		markExpertCompleted,
 		saveExpertDraft,
@@ -659,6 +657,25 @@
 		if (!expert || formCompleted) return false;
 		if (extra) pendingDraftExtra = { ...pendingDraftExtra, ...extra };
 
+		// Dry-run admin Test form: keep local state in sync, never hit Supabase.
+		if (previewMode) {
+			const form_state = serializeFormState();
+			const snapshot = JSON.stringify(form_state);
+			const hasExtra = Object.keys(pendingDraftExtra).length > 0;
+			if (!hasExtra && snapshot === lastPersistedSnapshot) return true;
+			const patch = { form_state, ...pendingDraftExtra };
+			pendingDraftExtra = {};
+			expert = {
+				...expert,
+				form_state: patch.form_state ?? expert.form_state,
+				pre_read_acknowledged: patch.pre_read_acknowledged ?? expert.pre_read_acknowledged,
+				pre_read_signer_name: patch.pre_read_signer_name ?? expert.pre_read_signer_name,
+				updated_at: new Date().toISOString()
+			};
+			lastPersistedSnapshot = snapshot;
+			return true;
+		}
+
 		if (persistInFlight) {
 			persistQueued = true;
 			return persistTail;
@@ -751,8 +768,8 @@
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
 		try {
-			// Admin Test form: validate the one-shot handoff, then create a real
-			// experts row so drafts/evals persist like a normal review session.
+			// Admin Test form: validate the one-shot handoff, then use an
+			// in-memory expert (nothing is written to the database).
 			let row: ExpertRow | null = null;
 			if (expertId === ADMIN_PREVIEW_PATH_ID) {
 				const handoffKey = takeAdminPreviewHandoff();
@@ -763,29 +780,30 @@
 					return;
 				}
 				previewMode = true;
+				const now = new Date().toISOString();
 				const slugConfig = metricId
 					? Object.values(EXPERT_SLUG_METRICS).find((m) => m.metricId === metricId)
 					: null;
-				const subareaLabel =
-					subareaLabelProp ?? slugConfig?.subareaLabel ?? 'Social Relationships';
-				const subareaId =
-					(metricId ? reviewSubareaIdForMetric(metricId) : null) ??
-					'social-relationships';
-				const stamp = Date.now();
-				row = await createExpert({
-					name: 'Admin test',
-					email: `admin-test+${stamp}@impactbench.test`,
-					expertise_description: 'Created via admin Test form (persisted session).',
-					expertise_subarea_ids: [subareaId],
-					subarea_id: subareaId,
-					subarea_label: subareaLabel
-				});
-				// Skip pre-read / orientation gates for admin testers.
-				row = await saveExpertDraft(row.id, row.updated_at, {
+				row = {
+					id: ADMIN_PREVIEW_PATH_ID,
+					name: expertNameProp ?? slugConfig?.expertName ?? 'Admin preview',
+					email: null,
+					job_title: null,
+					website: null,
+					cv_filename: null,
+					expertise_description: null,
+					expertise_subarea_ids: [],
+					subarea_id: 'admin-preview',
+					subarea_label: subareaLabelProp ?? slugConfig?.subareaLabel ?? 'Admin preview',
+					model_mapping: null,
+					form_state: { orientationAcknowledged: true },
 					pre_read_acknowledged: true,
-					pre_read_signer_name: 'Admin test',
-					form_state: { orientationAcknowledged: true }
-				});
+					pre_read_signer_name: 'Admin preview',
+					status: 'in_progress',
+					completed_at: null,
+					created_at: now,
+					updated_at: now
+				};
 			} else {
 				row = await getExpert(expertId);
 				if (!row || !row.id || !row.updated_at) {
@@ -970,29 +988,31 @@
 		if (evalProgress.pct < 100) return;
 		form.submitting = true;
 		try {
-			await submitScenarioEvaluation({
-				expert_id: expert.id,
-				metric_id: selectedMetric.id,
-				metric_name: selectedMetric.name,
-				scenario_id: currentScenario.scenario_id,
-				scenario_title: guidingScenarioQuestion || currentScenarioTitle,
-				model_id: currentMaskedModel.id,
-				masked_model_label: currentMaskedModel.label,
-				scenario_question_appropriate: form.scenarioQuestionAppropriate,
-				scenario_accurate: form.scenarioAccurate,
-				scenario_accurate_edit: form.scenarioAccurateEdit,
-				scenario_realistic: form.scenarioRealistic,
-				scenario_realistic_edit: form.scenarioRealisticEdit,
-				rating: form.rating,
-				influenced_aspects: form.influencedAspects.join('; '),
-				influenced_aspects_other: form.influencedAspectsOther,
-				confidence: form.confidence,
-				main_challenge: form.mainChallenge,
-				main_challenge_other: form.mainChallengeOther,
-				justification: form.justification,
-				other_feedback: form.otherFeedback,
-				submitted_at: new Date().toISOString()
-			});
+			if (!previewMode) {
+				await submitScenarioEvaluation({
+					expert_id: expert.id,
+					metric_id: selectedMetric.id,
+					metric_name: selectedMetric.name,
+					scenario_id: currentScenario.scenario_id,
+					scenario_title: guidingScenarioQuestion || currentScenarioTitle,
+					model_id: currentMaskedModel.id,
+					masked_model_label: currentMaskedModel.label,
+					scenario_question_appropriate: form.scenarioQuestionAppropriate,
+					scenario_accurate: form.scenarioAccurate,
+					scenario_accurate_edit: form.scenarioAccurateEdit,
+					scenario_realistic: form.scenarioRealistic,
+					scenario_realistic_edit: form.scenarioRealisticEdit,
+					rating: form.rating,
+					influenced_aspects: form.influencedAspects.join('; '),
+					influenced_aspects_other: form.influencedAspectsOther,
+					confidence: form.confidence,
+					main_challenge: form.mainChallenge,
+					main_challenge_other: form.mainChallengeOther,
+					justification: form.justification,
+					other_feedback: form.otherFeedback,
+					submitted_at: new Date().toISOString()
+				});
+			}
 			form.submitted = true;
 			markCurrentEvaluated();
 			await persistDraft();
@@ -1031,6 +1051,16 @@
 		if (!allDone) return;
 		const required = buildRequiredEvaluations();
 		if (required.length === 0) return;
+		if (previewMode) {
+			formCompleted = true;
+			expert = {
+				...expert,
+				status: 'completed',
+				completed_at: new Date().toISOString(),
+				updated_at: new Date().toISOString()
+			};
+			return;
+		}
 		const updated = await markExpertCompleted(expert.id, required);
 		formCompleted = true;
 		expert = { ...expert, ...updated };
@@ -1056,6 +1086,22 @@
 	async function acknowledgePreRead(signedName: string) {
 		if (!expert) throw new Error('Expert not loaded');
 		try {
+			if (previewMode) {
+				expert = {
+					...expert,
+					pre_read_acknowledged: true,
+					pre_read_signer_name: signedName,
+					updated_at: new Date().toISOString()
+				};
+				await persistDraft({
+					pre_read_acknowledged: true,
+					pre_read_signer_name: signedName
+				});
+				preReadSignerName = signedName;
+				preReadAcknowledged = true;
+				return;
+			}
+
 			// Wait out any in-flight autosave so we don't sign with a stale
 			// updated_at (or worse, undefined after a failed concurrent write).
 			if (persistInFlight) await persistTail;
@@ -1160,7 +1206,9 @@
 			submitted_at: new Date().toISOString()
 		}).toString();
 		try {
-			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			if (!previewMode) {
+				await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			}
 			exitSurvey.submitted = true;
 			await maybeMarkCompleted();
 		} finally {
@@ -1394,22 +1442,10 @@
 		{#if previewMode}
 			<span
 				class="mr-3 rounded-full bg-[#fff7ed] px-2.5 py-[3px] text-[11px] font-semibold text-[#c2410c]"
-				title="Admin Test form session — answers are saved to the database."
+				title="Admin Test form — try the form freely. Nothing is written to the database."
 			>
 				Admin test
 			</span>
-			{#if saveStatus === 'saving'}
-				<span class="mr-3 text-[11px] text-[#9ca3af]">Saving…</span>
-			{:else if saveStatus === 'saved'}
-				<span class="mr-3 text-[11px] text-[#059669]">Saved</span>
-			{:else if saveStatus === 'error'}
-				<span
-					class="mr-3 max-w-[180px] truncate text-[11px] text-[#dc2626]"
-					title={saveError ?? ''}
-				>
-					Save failed
-				</span>
-			{/if}
 			<a
 				href="/admin"
 				class="inline-flex items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white px-3 py-[6px] text-[12px] font-semibold text-[#374151] transition-colors duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0]"
@@ -1521,11 +1557,11 @@
 						<i class="fa-solid fa-check text-[18px]"></i>
 					</div>
 					<h2 class="m-0 mb-2 text-[1.35rem] font-bold text-[#111827]">
-						{previewMode ? 'Admin test complete' : 'Review complete'}
+						{previewMode ? 'Preview complete' : 'Review complete'}
 					</h2>
 					<p class="m-0 mb-6 text-[14px] leading-[1.6] text-[#6b7280]">
 						{#if previewMode}
-							This admin Test form session was saved to the database.
+							This was an admin dry-run — nothing was saved.
 						{:else}
 							Thanks, {expertNameDisplay}. Your evaluations for {subareaLabelDisplay} have been
 							submitted.
