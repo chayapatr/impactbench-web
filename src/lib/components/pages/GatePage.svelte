@@ -4,6 +4,11 @@
 	import { appState, authState, unlock } from '$lib/store.svelte';
 	import { buildHierarchy, getScoresForFilter } from '$lib/data';
 	import { createExpert } from '$lib/experts/db';
+	import {
+		COUNTRIES,
+		RESTRICTED_COUNTRIES,
+		RESTRICTED_COUNTRY_MESSAGE
+	} from '$lib/countries';
 	import Sunburst from '../organisms/Sunburst.svelte';
 	import ControlBar from '../molecules/ControlBar.svelte';
 	import FeedbackSurveyModal from '../organisms/FeedbackSurveyModal.svelte';
@@ -165,6 +170,11 @@
 	let expertCvFile = $state<File | null>(null);
 	let expertCvDragging = $state(false);
 	let expertFormError = $state<string | null>(null);
+	let expertCountry = $state('');
+	let expertMitCompensation = $state('');
+	const expertCountryError = $derived(
+		RESTRICTED_COUNTRIES.has(expertCountry) ? RESTRICTED_COUNTRY_MESSAGE : null
+	);
 
 	function onExpertCvSelected(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
@@ -207,7 +217,9 @@
 			if (!input.name && !input.id) continue;
 			const key = input.name || input.id;
 			if (input.type === 'checkbox') data[key] = (input as HTMLInputElement).checked ? 'yes' : 'no';
-			else if (input.type === 'file') {
+			else if (input.type === 'radio') {
+				if ((input as HTMLInputElement).checked) data[key] = input.value;
+			} else if (input.type === 'file') {
 				const f = (input as HTMLInputElement).files?.[0];
 				data[key] = f ? f.name : '';
 			} else data[key] = input.value;
@@ -230,6 +242,14 @@
 
 	async function submitExpertForm(data: Record<string, string>) {
 		expertFormError = null;
+		if (RESTRICTED_COUNTRIES.has(data.country ?? '')) {
+			expertFormError = RESTRICTED_COUNTRY_MESSAGE;
+			return;
+		}
+		if (!data.mit_compensation) {
+			expertFormError = 'Please answer whether you have received compensation from MIT.';
+			return;
+		}
 		const selected = EXPERTISE_SUBAREAS.filter((a) => data[`expertise_${a.id}`] === 'yes');
 		if (selected.length === 0) {
 			expertFormError = 'Please select at least one area of expertise.';
@@ -731,6 +751,64 @@
 								</div>
 
 								<div class="form-group">
+									<label class="form-label" for="gex-country"
+										>Country <span class="text-[#dc2626]">*</span></label
+									>
+									<select
+										class="form-input form-select"
+										id="gex-country"
+										name="country"
+										autocomplete="country-name"
+										bind:value={expertCountry}
+										aria-invalid={expertCountryError ? 'true' : undefined}
+										aria-describedby={expertCountryError ? 'gex-country-error' : undefined}
+										required
+									>
+										<option value="">Select a country…</option>
+										{#each COUNTRIES as country (country)}
+											<option value={country}>{country}</option>
+										{/each}
+									</select>
+									{#if expertCountryError}
+										<p
+											id="gex-country-error"
+											class="m-0 mt-2 text-[13px] leading-[1.4] text-[#b91c1c]"
+											role="alert"
+										>
+											{expertCountryError}
+										</p>
+									{/if}
+								</div>
+
+								<div class="form-group">
+									<span class="form-label" id="gex-mit-comp-label"
+										>Have you received compensation from MIT during this calendar year?
+										<span class="text-[#dc2626]">*</span></span
+									>
+									<div
+										class="mt-1 flex flex-col gap-2"
+										role="radiogroup"
+										aria-labelledby="gex-mit-comp-label"
+									>
+										{#each ['Yes', 'No'] as option (option)}
+											<label
+												class="expertise-check"
+												class:is-selected={expertMitCompensation === option}
+											>
+												<input
+													type="radio"
+													name="mit_compensation"
+													value={option}
+													bind:group={expertMitCompensation}
+													required
+												/>
+												<span>{option}</span>
+											</label>
+										{/each}
+									</div>
+								</div>
+
+								<div class="form-group">
 									<label class="form-label" for="gex-website"
 										>Website <span class="font-normal text-[#9ca3af]">(if applicable)</span></label
 									>
@@ -813,7 +891,11 @@
 									></textarea>
 								</div>
 
-								<button type="submit" class="btn-submit" disabled={formStates.expert === 'loading'}>
+								<button
+									type="submit"
+									class="btn-submit"
+									disabled={formStates.expert === 'loading' || !!expertCountryError}
+								>
 									{#if formStates.expert === 'loading'}
 										<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
 									{:else}
@@ -1561,7 +1643,13 @@
 		border-color: #00b3b0;
 		background: #f0fbfa;
 	}
-	.expertise-check input[type='checkbox'] {
+	.expertise-check.is-selected {
+		border-color: #00b3b0;
+		background: #e0f7f7;
+		color: #0f4f50;
+	}
+	.expertise-check input[type='checkbox'],
+	.expertise-check input[type='radio'] {
 		width: 16px;
 		height: 16px;
 		accent-color: #00b3b0;
