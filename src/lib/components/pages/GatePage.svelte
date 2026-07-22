@@ -265,6 +265,8 @@
 				job_title: data.job_title?.trim() || undefined,
 				website: data.website?.trim() || undefined,
 				cv_filename: data.cv_filename || expertCvFile?.name || undefined,
+				country: data.country?.trim() ?? '',
+				mit_compensation: data.mit_compensation === 'Yes' ? 'Yes' : 'No',
 				expertise_description: data.expertise_description?.trim() || undefined,
 				expertise_subarea_ids: selected.map((a) => a.id),
 				subarea_id: primary.id,

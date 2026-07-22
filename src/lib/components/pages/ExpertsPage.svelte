@@ -791,6 +791,8 @@
 					job_title: null,
 					website: null,
 					cv_filename: null,
+					country: null,
+					mit_compensation: null,
 					expertise_description: null,
 					expertise_subarea_ids: [],
 					subarea_id: 'admin-preview',

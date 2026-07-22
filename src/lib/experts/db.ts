@@ -44,7 +44,9 @@ export async function createExpert(input: CreateExpertInput): Promise<ExpertRow>
 		p_expertise_description: input.expertise_description ?? null,
 		p_expertise_subarea_ids: input.expertise_subarea_ids,
 		p_subarea_id: input.subarea_id,
-		p_subarea_label: input.subarea_label
+		p_subarea_label: input.subarea_label,
+		p_country: input.country,
+		p_mit_compensation: input.mit_compensation
 	});
 
 	if (error) throw new Error(error.message);
