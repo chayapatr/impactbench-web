@@ -88,23 +88,6 @@ export function reviewSubareaLabelForMetric(metricId: string): string | null {
 	return hit?.subareaLabel ?? null;
 }
 
-/** Taxonomy / signup subarea id for a review metric's fixed subarea label. */
-export function reviewSubareaIdForMetric(metricId: string): string | null {
-	const label = reviewSubareaLabelForMetric(metricId);
-	if (!label) return null;
-	const byLabel: Record<string, string> = {
-		'Safety & Protection': 'safety-protection',
-		'Social Relationships': 'social-relationships',
-		'Education, Career & Finance': 'education-career-finance',
-		'Mental Wellbeing': 'mental-wellbeing',
-		'Autonomy Preservation': 'autonomy-preservation',
-		'Creativity & Cognitive Expression': 'creativity-cognitive-expression',
-		'Self-Determination': 'self-determination',
-		Learning: 'learning'
-	};
-	return byLabel[label] ?? null;
-}
-
 export interface MaskedModel {
 	label: string; // "Model A"
 	id: string; // real model id, still used for data lookups
