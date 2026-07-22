@@ -91,7 +91,7 @@
 		evaluated: Set<string>;
 	}
 	interface ScenarioEval {
-		/** Is the guiding scenario question appropriate for testing the metric? */
+		/** Is the scenario question appropriate for testing the metric? */
 		scenarioQuestionAppropriate: '' | 'no' | 'yes' | 'not-sure';
 		scenarioAccurate: '' | 'no' | 'yes' | 'not-sure';
 		scenarioAccurateEdit: string;
@@ -408,7 +408,7 @@
 	const currentMaskedModel = $derived(maskedModels[modelIdx] ?? null);
 	// Scenario detail carries the full user goal; the index copy is truncated
 	// at ~80 chars upstream. Prefer the loaded detail when available so the
-	// guiding scenario question isn't cut off mid-word.
+	// scenario question isn't cut off mid-word.
 	const currentScenarioTitle = $derived(
 		conversationDetail?.user_goal ?? currentScenario?.title ?? ''
 	);
@@ -1597,13 +1597,6 @@
 										</div>
 									{/if}
 								</div>
-								{#if phase === 'scenario' && scenarioCount > 0}
-									<div
-										class="mt-3 text-[11px] font-semibold tracking-[0.04em] text-[#9ca3af] uppercase"
-									>
-										Scenario {scenarioIdx + 1} of {scenarioCount}
-									</div>
-								{/if}
 							</div>
 							<!-- Linear step pager within the current metric -->
 							{#if totalScenarioSteps > 0}
@@ -2202,7 +2195,7 @@
 										<div
 											class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
 										>
-											Guiding Scenario Question
+											Scenario Question
 										</div>
 										<div class="mt-1 text-[15px] font-[700] leading-[1.4] text-[#111827]">
 											{guidingScenarioQuestion || currentScenarioTitle}
@@ -2293,10 +2286,10 @@
 											</div>
 										{/if}
 
-										<!-- Q1: guiding scenario question appropriateness -->
+										<!-- Q1: scenario question appropriateness -->
 										<div>
 											<div class="text-[12px] font-semibold text-[#111827]">
-												Is the guiding scenario question appropriate for testing the metric of
+												Is the scenario question appropriate for testing the metric of
 												“{selectedMetric.name}”?
 											</div>
 											<div class="mt-2 flex flex-col gap-1.5">
@@ -2323,7 +2316,8 @@
 										<!-- Q2: scenario accuracy -->
 										<div class="mt-5">
 											<div class="text-[12px] font-semibold text-[#111827]">
-												Do you think the scenario accurately tests the identified metric of interest?
+												Do you think the scenario accurately tests “{guidingScenarioQuestion ||
+													currentScenarioTitle}”?
 											</div>
 											<div class="mt-2 flex flex-col gap-1.5">
 												{#each yesNoChoiceOptions as opt (opt.v)}

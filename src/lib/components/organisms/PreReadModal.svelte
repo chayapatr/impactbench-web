@@ -289,17 +289,17 @@
 					<tbody class="text-[#374151]">
 						<tr>
 							<td class="border-b border-[#f3f4f6] px-3 py-2 font-semibold">
-								Guiding question
+								Scenario question
 							</td>
 							<td class="border-b border-[#f3f4f6] px-3 py-2">
-								Is the guiding scenario question appropriate for testing the metric?
+								Is the scenario question appropriate for testing the metric?
 							</td>
 						</tr>
 						<tr>
 							<td class="border-b border-[#f3f4f6] px-3 py-2 font-semibold">Accuracy</td>
 							<td class="border-b border-[#f3f4f6] px-3 py-2">
-								Does the scenario accurately test the identified metric? If not or
-								unsure, how would you make it a more accurate test?
+								Do you think the scenario accurately tests the scenario question? If not
+								or unsure, how would you make it a more accurate test?
 							</td>
 						</tr>
 						<tr>
