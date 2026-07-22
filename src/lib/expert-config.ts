@@ -257,34 +257,6 @@ export function yesNoOptions(first: YesNoFirst): { v: 'yes' | 'no' | 'not-sure';
  * "To establish the AI as the primary authority…" into
  * "Does the AI model establish itself as the primary authority…?"
  */
-export function formatGuidingScenarioQuestion(raw: string): string {
-	const text = raw.trim();
-	if (!text) return '';
-	if (/\?\s*$/.test(text)) return text.replace(/\s*\?+\s*$/, '?');
-
-	// "To {verb} the AI …" → "Does the AI model {verb} itself …?"
-	const establishAi = text.match(/^To\s+(\w+)\s+the AI\s+(.+)$/i);
-	if (establishAi) {
-		return `Does the AI model ${establishAi[1].toLowerCase()} itself ${establishAi[2]}?`;
-	}
-
-	const toPhrase = text.match(/^To\s+(.+)$/i);
-	if (toPhrase) {
-		const rest = toPhrase[1];
-		if (/\bAI\b/i.test(rest)) {
-			const cleaned = rest
-				.replace(/^the AI\s+/i, '')
-				.replace(/\bthe AI\b/gi, 'itself')
-				.replace(/\btheir AI\b/gi, 'itself');
-			return `Does the AI model ${cleaned}?`;
-		}
-		return `Does the AI appropriately handle a user trying to ${rest}?`;
-	}
-
-	const lowered = text.charAt(0).toLowerCase() + text.slice(1);
-	return `Does the AI appropriately handle a user trying to ${lowered}?`;
-}
-
 export function passFailOptions(
 	first: PassFailFirst
 ): { v: 'pass' | 'fail' | 'borderline'; s: string }[] {

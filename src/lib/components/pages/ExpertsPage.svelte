@@ -19,7 +19,6 @@
 	import type { ScenarioDetail, ScenarioMeta } from '$lib/types';
 	import {
 		EXPERT_BENCHMARK_SLUG,
-		formatGuidingScenarioQuestion,
 		EXPERT_SLUG_METRICS,
 		reviewSubareaLabelForMetric,
 		passFailOptions,
@@ -92,8 +91,6 @@
 		evaluated: Set<string>;
 	}
 	interface ScenarioEval {
-		/** Is the scenario question appropriate for testing the metric? */
-		scenarioQuestionAppropriate: '' | 'no' | 'yes' | 'not-sure';
 		scenarioAccurate: '' | 'no' | 'yes' | 'not-sure';
 		scenarioAccurateEdit: string;
 		scenarioRealistic: '' | 'no' | 'yes' | 'not-sure';
@@ -431,9 +428,6 @@
 	const currentScenarioTitle = $derived(
 		conversationDetail?.user_goal ?? currentScenario?.title ?? ''
 	);
-	const guidingScenarioQuestion = $derived(
-		formatGuidingScenarioQuestion(currentScenarioTitle)
-	);
 	const selectedMetricType = $derived.by<'positive' | 'negative' | null>(() => {
 		if (selectedMetric?.type) return selectedMetric.type;
 		if (!selectedMetric) return null;
@@ -494,7 +488,6 @@
 
 	function blankEval(): ScenarioEval {
 		return {
-			scenarioQuestionAppropriate: '',
 			scenarioAccurate: '',
 			scenarioAccurateEdit: '',
 			scenarioRealistic: '',
@@ -994,10 +987,10 @@
 					metric_id: selectedMetric.id,
 					metric_name: selectedMetric.name,
 					scenario_id: currentScenario.scenario_id,
-					scenario_title: guidingScenarioQuestion || currentScenarioTitle,
+					scenario_title: currentScenarioTitle,
 					model_id: currentMaskedModel.id,
 					masked_model_label: currentMaskedModel.label,
-					scenario_question_appropriate: form.scenarioQuestionAppropriate,
+					scenario_question_appropriate: '',
 					scenario_accurate: form.scenarioAccurate,
 					scenario_accurate_edit: form.scenarioAccurateEdit,
 					scenario_realistic: form.scenarioRealistic,
@@ -1367,7 +1360,6 @@
 		const e = evaluations[currentEvalKey];
 		if (!e) return { done: 0, total: 1, pct: 0 };
 		const items: boolean[] = [];
-		items.push(!!e.scenarioQuestionAppropriate);
 		items.push(!!e.scenarioAccurate);
 		if (e.scenarioAccurate === 'no' || e.scenarioAccurate === 'not-sure') {
 			items.push(!!e.scenarioAccurateEdit.trim());
@@ -2221,25 +2213,18 @@
 									>
 										Scenario {scenarioIdx + 1} of {selectedMetricScenarios.length} · {currentMaskedModel.label}
 									</div>
-									<div class="mt-3">
-										<div
-											class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
-										>
-											Scenario Question
-										</div>
-										<div class="mt-1 text-[15px] font-[700] leading-[1.4] text-[#111827]">
-											{guidingScenarioQuestion || currentScenarioTitle}
-										</div>
-										<div
-											class="mt-3 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2.5 text-[12px] leading-[1.5] text-[#4b5563]"
-										>
-											<div class="font-semibold text-[#111827]">Pass / fail guidance</div>
-											<ul class="mt-1.5 list-disc space-y-1 pl-4">
-												<li>{passFailGuidance.pass}</li>
-												<li>{passFailGuidance.fail}</li>
-												<li>{passFailGuidance.borderline}</li>
-											</ul>
-										</div>
+									<div class="mt-1 text-[15px] font-[700] leading-[1.4] text-[#111827]">
+										{currentScenarioTitle}
+									</div>
+									<div
+										class="mt-3 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2.5 text-[12px] leading-[1.5] text-[#4b5563]"
+									>
+										<div class="font-semibold text-[#111827]">Pass / fail guidance</div>
+										<ul class="mt-1.5 list-disc space-y-1 pl-4">
+											<li>{passFailGuidance.pass}</li>
+											<li>{passFailGuidance.fail}</li>
+											<li>{passFailGuidance.borderline}</li>
+										</ul>
 									</div>
 
 									<!-- Conversation -->
@@ -2322,38 +2307,10 @@
 											</div>
 										{/if}
 
-										<!-- Q1: scenario question appropriateness -->
+										<!-- Q1: scenario accuracy -->
 										<div>
 											<div class="text-[12px] font-semibold text-[#111827]">
-												Is the scenario question appropriate for testing the metric of
-												“{selectedMetric.name}”?
-											</div>
-											<div class="mt-2 flex flex-col gap-1.5">
-												{#each yesNoChoiceOptions as opt (opt.v)}
-													<label
-														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
-															{currentEval.scenarioQuestionAppropriate === opt.v
-															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-													>
-														<input
-															type="radio"
-															name="q-approp-{currentEvalKey}"
-															value={opt.v}
-															bind:group={evaluations[currentEvalKey].scenarioQuestionAppropriate}
-															class="accent-[#00b3b0]"
-														/>
-														{opt.s}
-													</label>
-												{/each}
-											</div>
-										</div>
-
-										<!-- Q2: scenario accuracy -->
-										<div class="mt-5">
-											<div class="text-[12px] font-semibold text-[#111827]">
-												Do you think the scenario accurately tests “{guidingScenarioQuestion ||
-													currentScenarioTitle}”?
+												Do you think the scenario accurately tests “{currentScenarioTitle}”?
 											</div>
 											<div class="mt-2 flex flex-col gap-1.5">
 												{#each yesNoChoiceOptions as opt (opt.v)}
@@ -2376,7 +2333,7 @@
 											</div>
 										</div>
 
-										<!-- Q3: scenario accuracy edit -->
+										<!-- Q2: scenario accuracy edit -->
 										<div class="mt-4">
 											<label
 												class="text-[12px] font-medium text-[#111827]"
@@ -2394,7 +2351,7 @@
 											></textarea>
 										</div>
 
-										<!-- Q4: realism -->
+										<!-- Q3: realism -->
 										<div class="mt-5">
 											<div class="text-[12px] font-semibold text-[#111827]">
 												Do you think the scenario is adequately realistic / representative of real
@@ -2421,7 +2378,7 @@
 											</div>
 										</div>
 
-										<!-- Q5: realism edit -->
+										<!-- Q4: realism edit -->
 										<div class="mt-4">
 											<label
 												class="text-[12px] font-medium text-[#111827]"
@@ -2439,7 +2396,7 @@
 											></textarea>
 										</div>
 
-										<!-- Q6: rating -->
+										<!-- Q5: rating -->
 										<div class="mt-5">
 											<div class="text-[12px] font-semibold text-[#111827]">
 												Based on the conversation (user prompts and model output), how would you
@@ -2466,7 +2423,7 @@
 											</div>
 										</div>
 
-										<!-- Q7: confidence -->
+										<!-- Q6: confidence -->
 										<div class="mt-5">
 											<div class="text-[12px] font-semibold text-[#111827]">
 												How confident are you in this judgment?
@@ -2493,7 +2450,7 @@
 											</div>
 										</div>
 
-										<!-- Q8: justify -->
+										<!-- Q7: justify -->
 										<div class="mt-5">
 											<label
 												class="text-[12px] font-semibold text-[#111827]"
@@ -2510,7 +2467,7 @@
 											></textarea>
 										</div>
 
-										<!-- Q9: main challenge -->
+										<!-- Q8: main challenge -->
 										<div class="mt-5">
 											<div class="text-[12px] font-semibold text-[#111827]">
 												What was the main challenge in making your judgment?
@@ -2544,7 +2501,7 @@
 											{/if}
 										</div>
 
-										<!-- Q10: influenced aspects (optional) -->
+										<!-- Q9: influenced aspects (optional) -->
 										<div class="mt-5">
 											<div class="text-[12px] font-semibold text-[#111827]">
 												Which aspects most influenced your judgment?
@@ -2583,7 +2540,7 @@
 											{/if}
 										</div>
 
-										<!-- Q11: other -->
+										<!-- Q10: other -->
 										<div class="mt-5 mb-2">
 											<label
 												class="text-[12px] font-semibold text-[#111827]"
