@@ -31,6 +31,8 @@ create table if not exists public.experts (
 	job_title text,
 	website text,
 	cv_filename text,
+	country text,
+	mit_compensation text,
 	expertise_description text,
 	expertise_subarea_ids text[] not null default '{}',
 	subarea_id text not null,
@@ -51,6 +53,10 @@ create table if not exists public.experts (
 	constraint experts_job_title_len check (job_title is null or char_length(job_title) <= 200),
 	constraint experts_website_len check (website is null or char_length(website) <= 500),
 	constraint experts_cv_filename_len check (cv_filename is null or char_length(cv_filename) <= 260),
+	constraint experts_country_len check (country is null or char_length(country) <= 100),
+	constraint experts_mit_compensation_vals check (
+		mit_compensation is null or mit_compensation in ('Yes', 'No')
+	),
 	constraint experts_expertise_desc_len check (
 		expertise_description is null or char_length(expertise_description) <= 10000
 	),
@@ -207,6 +213,11 @@ revoke all on function public._assert_json_object_size(jsonb, text, int) from pu
 
 -- ── Capability RPCs (SECURITY DEFINER; UUID is the capability) ───────────────
 
+-- Drop prior overload before recreating with country / mit_compensation args.
+drop function if exists public.create_expert(
+	text, text, text, text, text, text, text[], text, text
+);
+
 create or replace function public.create_expert(
 	p_name text,
 	p_email text,
@@ -216,7 +227,9 @@ create or replace function public.create_expert(
 	p_expertise_description text default null,
 	p_expertise_subarea_ids text[] default '{}',
 	p_subarea_id text default null,
-	p_subarea_label text default null
+	p_subarea_label text default null,
+	p_country text default null,
+	p_mit_compensation text default null
 )
 returns public.experts
 language plpgsql
@@ -233,6 +246,8 @@ declare
 	v_website text;
 	v_cv text;
 	v_expertise text;
+	v_country text;
+	v_mit_compensation text;
 begin
 	v_name := public._assert_nonempty_text(p_name, 'name', 200);
 	v_email := lower(public._assert_nonempty_text(p_email, 'email', 320));
@@ -262,12 +277,24 @@ begin
 		raise exception 'too many expertise_subarea_ids';
 	end if;
 
+	v_country := public._assert_nonempty_text(p_country, 'country', 100);
+	if lower(v_country) = 'china' then
+		raise exception 'Due to research guidelines, we have restrictions on annotators located in this region';
+	end if;
+
+	v_mit_compensation := public._assert_nonempty_text(p_mit_compensation, 'mit_compensation', 3);
+	if v_mit_compensation not in ('Yes', 'No') then
+		raise exception 'mit_compensation must be Yes or No';
+	end if;
+
 	insert into public.experts (
 		name,
 		email,
 		job_title,
 		website,
 		cv_filename,
+		country,
+		mit_compensation,
 		expertise_description,
 		expertise_subarea_ids,
 		subarea_id,
@@ -280,6 +307,8 @@ begin
 		v_job,
 		v_website,
 		v_cv,
+		v_country,
+		v_mit_compensation,
 		v_expertise,
 		coalesce(p_expertise_subarea_ids, '{}'),
 		v_subarea_id,
@@ -682,7 +711,7 @@ $$;
 revoke all on function public.set_updated_at() from public, anon, authenticated;
 
 revoke all on function public.create_expert(
-	text, text, text, text, text, text, text[], text, text
+	text, text, text, text, text, text, text[], text, text, text, text
 ) from public;
 revoke all on function public.get_expert(uuid) from public;
 revoke all on function public.update_expert_draft(
@@ -696,7 +725,7 @@ revoke all on function public.upsert_expert_evaluation(
 ) from public;
 
 grant execute on function public.create_expert(
-	text, text, text, text, text, text, text[], text, text
+	text, text, text, text, text, text, text[], text, text, text, text
 ) to anon, authenticated;
 
 grant execute on function public.get_expert(uuid) to anon, authenticated;
@@ -737,6 +766,17 @@ alter table public.experts add constraint experts_website_len
 alter table public.experts drop constraint if exists experts_cv_filename_len;
 alter table public.experts add constraint experts_cv_filename_len
 	check (cv_filename is null or char_length(cv_filename) <= 260);
+
+alter table public.experts add column if not exists country text;
+alter table public.experts add column if not exists mit_compensation text;
+
+alter table public.experts drop constraint if exists experts_country_len;
+alter table public.experts add constraint experts_country_len
+	check (country is null or char_length(country) <= 100);
+
+alter table public.experts drop constraint if exists experts_mit_compensation_vals;
+alter table public.experts add constraint experts_mit_compensation_vals
+	check (mit_compensation is null or mit_compensation in ('Yes', 'No'));
 
 alter table public.experts drop constraint if exists experts_expertise_desc_len;
 alter table public.experts add constraint experts_expertise_desc_len

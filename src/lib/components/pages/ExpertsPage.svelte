@@ -176,7 +176,7 @@
 	let unlocked: Set<string> = $state(new Set());
 	let evaluations: Record<string, ScenarioEval> = $state({});
 
-	// End-of-flow exit survey (demographics + payment + wrap-up).
+	// End-of-flow exit survey (demographics + wrap-up).
 	interface ExitSurvey {
 		otherFeedback: string;
 		gender: string;
@@ -192,7 +192,6 @@
 		impactAreas: string[];
 		impactAreasOther: string;
 		biggestConcern: string;
-		paymentMethod: string;
 		submitting: boolean;
 		submitted: boolean;
 	}
@@ -212,7 +211,6 @@
 			impactAreas: [],
 			impactAreasOther: '',
 			biggestConcern: '',
-			paymentMethod: '',
 			submitting: false,
 			submitted: false
 		};
@@ -791,6 +789,8 @@
 					job_title: null,
 					website: null,
 					cv_filename: null,
+					country: null,
+					mit_compensation: null,
 					expertise_description: null,
 					expertise_subarea_ids: [],
 					subarea_id: 'admin-preview',
@@ -1161,8 +1161,7 @@
 			(exitSurvey.context !== 'other' || exitSurvey.contextOther.trim()) &&
 			exitSurvey.impactAreas.length > 0 &&
 			(!exitSurvey.impactAreas.includes('Other') || exitSurvey.impactAreasOther.trim()) &&
-			exitSurvey.biggestConcern.trim() &&
-			exitSurvey.paymentMethod.trim()
+			exitSurvey.biggestConcern.trim()
 		)
 	);
 	async function submitExitSurvey() {
@@ -1202,7 +1201,6 @@
 				.map((a) => (a === 'Other' ? `Other: ${exitSurvey.impactAreasOther.trim()}` : a))
 				.join('; '),
 			biggest_concern: exitSurvey.biggestConcern,
-			payment_method: exitSurvey.paymentMethod,
 			submitted_at: new Date().toISOString()
 		}).toString();
 		try {
@@ -1599,12 +1597,24 @@
 										<div
 											class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
 										>
-											Assigned Metric
+											{#if selectedMetricType === 'negative'}
+												Avoid Behavior
+											{:else if selectedMetricType === 'positive'}
+												Desired Behavior
+											{:else}
+												Assigned Metric
+											{/if}
 										</div>
 										<h1
 											class="mt-[2px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]"
 										>
-											{selectedMetric.name}
+											{#if selectedMetricType === 'negative'}
+												Avoid behavior: {selectedMetric.name}
+											{:else if selectedMetricType === 'positive'}
+												Desired behavior: {selectedMetric.name}
+											{:else}
+												{selectedMetric.name}
+											{/if}
 										</h1>
 									</div>
 									{#if metricCriteriaText}
@@ -1707,8 +1717,7 @@
 										<p
 											class="mx-auto mt-2 max-w-[420px] text-[13px] leading-[1.55] text-[#4b5563]"
 										>
-											Your evaluations and wrap-up survey have been submitted. We'll be in
-											touch about compensation via the payment method you provided.
+											Your evaluations and wrap-up survey have been submitted.
 										</p>
 									</div>
 								{:else}
@@ -1971,23 +1980,6 @@
 													bind:value={exitSurvey.biggestConcern}
 													class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
 												></textarea>
-											</div>
-
-											<!-- Payment -->
-											<div class="mt-6">
-												<label
-													class="text-[13px] font-semibold text-[#111827]"
-													for="exit-payment"
-												>
-													To receive your payment, please enter the best way to pay you (for
-													example, your Venmo or Zelle handle):
-												</label>
-												<input
-													id="exit-payment"
-													type="text"
-													bind:value={exitSurvey.paymentMethod}
-													class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-												/>
 											</div>
 										</div>
 
@@ -2316,6 +2308,19 @@
 									<h3 class="text-[15px] font-[700] text-[#111827]">
 										Evaluate {currentMaskedModel.label}
 									</h3>
+									<p class="mt-1.5 text-[11px] leading-[1.45] text-[#6b7280] italic">
+										Please evaluate ONLY the presence or absence of the
+										{#if selectedMetricType === 'negative'}
+											avoid behavior
+										{:else if selectedMetricType === 'positive'}
+											desired behavior
+										{:else}
+											behavior
+										{/if}
+										listed at the top-left of this page; any more detailed suggestions for how
+										this model's responses could be improved are likely beyond the scope of
+										this particular evaluation.
+									</p>
 								</div>
 
 								{#if evaluations[currentEvalKey]}
@@ -2522,6 +2527,10 @@
 												Please justify your rating, referring to the specific part of the
 												conversation that influenced it.
 											</label>
+											<p class="mt-1 text-[11px] leading-[1.45] text-[#6b7280]">
+												Focus on whether the model did or avoided the specific behavior listed
+												above — not overall tone, helpfulness, or style.
+											</p>
 											<textarea
 												id="just-{currentEvalKey}"
 												bind:value={evaluations[currentEvalKey].justification}
@@ -2695,7 +2704,6 @@
 	<!-- No overlays while loading, on error, or once the form is locked. -->
 {:else if !previewMode && !orientationAcknowledged && metricId}
 	<OrientationModal
-		expertName={expert?.name ?? expertNameDisplay}
 		metricName={selectedMetric?.name ?? ''}
 		definition={metricCriteriaText}
 		examples={displayExamples}

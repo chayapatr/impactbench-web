@@ -46,6 +46,8 @@ export interface ExpertRow {
 	job_title: string | null;
 	website: string | null;
 	cv_filename: string | null;
+	country: string | null;
+	mit_compensation: 'Yes' | 'No' | null;
 	expertise_description: string | null;
 	expertise_subarea_ids: string[];
 	subarea_id: string;
@@ -66,6 +68,8 @@ export interface CreateExpertInput {
 	job_title?: string;
 	website?: string;
 	cv_filename?: string;
+	country: string;
+	mit_compensation: 'Yes' | 'No';
 	expertise_description?: string;
 	expertise_subarea_ids: string[];
 	subarea_id: string;
@@ -133,6 +137,8 @@ export type Database = {
 					p_expertise_subarea_ids: string[];
 					p_subarea_id: string;
 					p_subarea_label: string;
+					p_country: string | null;
+					p_mit_compensation: string | null;
 				},
 				ExpertRow
 			>;

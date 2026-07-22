@@ -7,14 +7,13 @@
 	 */
 
 	interface Props {
-		expertName: string;
 		metricName: string;
 		definition: string;
 		examples: readonly string[];
 		onProceed: () => void;
 	}
 
-	let { expertName, metricName, definition, examples, onProceed }: Props = $props();
+	let { metricName, definition, examples, onProceed }: Props = $props();
 </script>
 
 <div
@@ -31,7 +30,7 @@
 				id="orientationTitle"
 				class="text-[19px] font-[700] tracking-[-0.01em] text-[#111827]"
 			>
-				Welcome, {expertName}!
+				Welcome
 			</h2>
 			<p class="mt-1 text-[12px] text-[#6b7280]">
 				A quick orientation before you begin the reviewer protocol.
