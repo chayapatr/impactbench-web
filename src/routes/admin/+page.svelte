@@ -10,7 +10,7 @@
 		ADMIN_PREVIEW_PATH_ID
 	} from '$lib/store/admin.svelte';
 	import { appState } from '$lib/store.svelte';
-	import { EXPERT_MODEL_POOL, EXPERT_SLUG_METRICS } from '$lib/expert-config';
+	import { EXPERT_MODEL_POOL, EXPERT_SLUG_METRICS, reviewSubareaLabelForMetric } from '$lib/expert-config';
 	import { loadScenarioDetail } from '$lib/data';
 	import AdminEvaluationFormPreview from '$lib/components/admin/AdminEvaluationFormPreview.svelte';
 	import {
@@ -209,6 +209,7 @@
 		evaluations = [];
 		metricFeedback = [];
 		phase = 'need-key';
+		goto('/');
 	}
 
 	async function openMetric(metricId: string) {
@@ -272,6 +273,10 @@
 		selectedMetricId ? dashboardMetrics.find((m) => m.metric_id === selectedMetricId) : null
 	);
 
+	const selectedMetricSubareaLabel = $derived(
+		selectedMetricId ? reviewSubareaLabelForMetric(selectedMetricId) : null
+	);
+
 	const selectedExpertSlug = $derived(
 		selectedMetricId
 			? (Object.entries(EXPERT_SLUG_METRICS).find(
@@ -318,10 +323,10 @@
 		</div>
 		{#if phase === 'ready'}
 			<button
-				class="flex items-center gap-2 rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[6px] text-[12px] font-semibold text-[#6b7280] transition-colors hover:border-[#dc2626] hover:text-[#dc2626]"
+				class="flex items-center gap-2 rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[6px] text-[12px] font-semibold text-[#6b7280] transition-colors hover:border-[#00b3b0] hover:text-[#00b3b0]"
 				onclick={logout}
 			>
-				<i class="fa-solid fa-arrow-right-from-bracket text-[11px]"></i> Lock
+				<i class="fa-solid fa-house text-[11px]"></i> Return home
 			</button>
 		{/if}
 	</header>
@@ -517,7 +522,7 @@
 					<div class="flex-1 overflow-y-auto px-6 py-4">
 						{#if showFormPreview}
 							<div
-								class="mx-auto mb-4 grid max-w-[760px] grid-cols-1 gap-3 rounded-[12px] border border-[#e5e7eb] bg-[#fafaf9] p-4 sm:grid-cols-2"
+								class="mx-auto mb-4 grid max-w-[1200px] grid-cols-1 gap-3 rounded-[12px] border border-[#e5e7eb] bg-[#fafaf9] p-4 sm:grid-cols-2"
 							>
 								<label class="text-[11px] font-semibold text-[#374151]">
 									Scenario
@@ -552,6 +557,7 @@
 							</div>
 							<AdminEvaluationFormPreview
 								metricName={selectedMetric?.metric_name || selectedMetricId}
+								subareaLabel={selectedMetricSubareaLabel ?? undefined}
 								scenarioTitle={previewScenarios.find(
 									(scenario) => scenario.scenario_id === previewScenarioId
 								)?.title ?? ''}
@@ -579,7 +585,9 @@
 										<span class="text-[10px] text-[#9ca3af]"
 											>{metricFeedback.length} response{metricFeedback.length === 1
 												? ''
-												: 's'}</span
+												: 's'}{selectedMetricSubareaLabel
+												? ` · ${selectedMetricSubareaLabel}`
+												: ''}</span
 										>
 									</div>
 									{#if feedbackError}
@@ -609,8 +617,7 @@
 																{fb.expert_name || 'Unknown expert'}
 															</div>
 															<div class="mt-[1px] truncate text-[10px] text-[#9ca3af]">
-																{fb.expert_subarea ? `${fb.expert_subarea} · ` : ''}Relevance:
-																{fb.relevance || '—'} · Updated {fmtDate(fb.updated_at)}
+																Relevance: {fb.relevance || '—'} · Updated {fmtDate(fb.updated_at)}
 															</div>
 														</div>
 														<i
@@ -704,7 +711,6 @@
 																				{ev.expert_name || 'Unknown expert'}
 																			</div>
 																			<div class="mt-[1px] truncate text-[10px] text-[#9ca3af]">
-																				{ev.expert_subarea ? `${ev.expert_subarea} · ` : ''}
 																				{ev.masked_model_label
 																					? `${ev.masked_model_label} · `
 																					: ''}{modelName(ev.model_id)} ({ev.model_id})
