@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { appState } from '$lib/store.svelte';
-	import { marked } from 'marked';
+	import { safeMarkdownHtml } from '$lib/safe-markdown';
 	import { modelsForSurface } from '$lib/utils';
 	import type { ScenarioDetail } from '$lib/types';
 
@@ -129,8 +129,8 @@
 			</div>
 			{#if scenarioDetail.justification}
 				<div class="prose prose-sm mt-2 max-w-none text-[12px] leading-loose text-[#6b7280]">
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown from our own bundled scenario data -->
-					{@html marked.parse(scenarioDetail.justification)}
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized markdown -->
+					{@html safeMarkdownHtml(scenarioDetail.justification)}
 				</div>
 			{/if}
 		</div>
@@ -156,8 +156,8 @@
 					? 'bg-[#e0f7f7] text-[#1a1a1a] prose-invert'
 					: 'bg-[#f3f4f6] text-[#374151]'}"
 			>
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown from our own bundled scenario data -->
-				{@html marked.parse(turn.content)}
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized markdown -->
+				{@html safeMarkdownHtml(turn.content)}
 			</div>
 		</div>
 	{/each}

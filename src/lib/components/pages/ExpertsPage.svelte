@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import { marked } from 'marked';
+	import { safeMarkdownHtml } from '$lib/safe-markdown';
 	import {
 		loadTaxonomy,
 		loadModels,
@@ -2159,7 +2159,8 @@
 																	class="prose prose-sm inline-block max-w-[88%] rounded-xl px-3 py-2 text-left text-[12px]
 															{turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}"
 																>
-																	{@html marked.parse(turn.content)}
+																	<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized markdown -->
+																	{@html safeMarkdownHtml(turn.content)}
 																</div>
 															</div>
 														{/each}

@@ -4,8 +4,8 @@
 //
 // It is deliberately NOT persisted: never written to sessionStorage or
 // localStorage. It lives only in memory for the lifetime of the page, so
-// access ends on reload / tab-close and must be re-supplied (via the ?key=
-// URL param or by pasting it into the admin screen).
+// access ends on reload / tab-close and must be re-supplied by pasting it
+// into the admin screen. Never accept the key from the URL (query or fragment).
 //
 // Preview handoff: Test form must not put the capability UUID in the URL
 // (history / logs / Referer). Instead the admin page parks the key in

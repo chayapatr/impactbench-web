@@ -288,16 +288,9 @@
 
 	onMount(() => {
 		if (!browser) return;
-		// Capability key can arrive via ?key=<uuid>. Pull it into memory, then
-		// strip it from the visible URL so it doesn't linger in the address bar
-		// or browser history. It is never written to storage.
-		const url = new URL(window.location.href);
-		const urlKey = url.searchParams.get('key');
-		if (urlKey) {
-			url.searchParams.delete('key');
-			history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
-			setAdminKey(urlKey);
-		}
+		// Paste-in only: never accept the capability from the URL (query or
+		// fragment). If the in-memory key is already set (SPA navigation),
+		// re-validate and load.
 		if (adminState.key) {
 			validateAndLoad(adminState.key);
 		}
