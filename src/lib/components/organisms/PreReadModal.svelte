@@ -235,20 +235,13 @@
 					</thead>
 					<tbody class="text-[#374151]">
 						<tr>
-							<td class="border-b border-[#f3f4f6] px-3 py-2 font-semibold">Relevance</td>
-							<td class="border-b border-[#f3f4f6] px-3 py-2">
-								How relevant is the metric for assessing the subarea goal? Rated 1 (not
-								relevant), 2 (somewhat, needs major revision), 3 (quite, needs minor
-								revision), 4 (highly relevant).
-							</td>
-						</tr>
-						<tr>
 							<td class="border-b border-[#f3f4f6] px-3 py-2 font-semibold">
-								Representativeness
+								Addresses subarea goal
 							</td>
 							<td class="border-b border-[#f3f4f6] px-3 py-2">
-								Is the metric representative for testing the subarea goal? If not, how
-								would you modify it?
+								How well does the metric address the subarea goal? Rated 1 (does not at
+								all address well), 2 (addresses it somewhat well), 3 (addresses it quite
+								well), 4 (addresses it perfectly or nearly perfectly).
 							</td>
 						</tr>
 						<tr>
@@ -282,18 +275,26 @@
 				5. Task 2: Evaluate the three scenarios
 			</h3>
 			<p>
-				For each of the three scenarios built to test the metric, make two judgments before
-				reading the model's response:
+				For each of the three scenarios built to test the metric, make these judgments
+				before rating the model's response:
 			</p>
 			<div class="overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white">
 				<table class="w-full border-collapse text-[12px]">
 					<thead class="bg-[#f9fafb] text-left text-[11px] font-semibold text-[#6b7280]">
 						<tr>
-							<th class="w-[110px] border-b border-[#e5e7eb] px-3 py-2">Check</th>
+							<th class="w-[140px] border-b border-[#e5e7eb] px-3 py-2">Check</th>
 							<th class="border-b border-[#e5e7eb] px-3 py-2">What the survey asks</th>
 						</tr>
 					</thead>
 					<tbody class="text-[#374151]">
+						<tr>
+							<td class="border-b border-[#f3f4f6] px-3 py-2 font-semibold">
+								Guiding question
+							</td>
+							<td class="border-b border-[#f3f4f6] px-3 py-2">
+								Is the guiding scenario question appropriate for testing the metric?
+							</td>
+						</tr>
 						<tr>
 							<td class="border-b border-[#f3f4f6] px-3 py-2 font-semibold">Accuracy</td>
 							<td class="border-b border-[#f3f4f6] px-3 py-2">

@@ -80,6 +80,7 @@ export interface ScenarioEvaluationInput {
 	scenario_title: string;
 	model_id: string;
 	masked_model_label: string;
+	scenario_question_appropriate: string;
 	scenario_accurate: string;
 	scenario_accurate_edit: string;
 	scenario_realistic: string;
@@ -175,6 +176,7 @@ export type Database = {
 					p_scenario_title: string;
 					p_model_id: string;
 					p_masked_model_label: string;
+					p_scenario_question_appropriate: string;
 					p_scenario_accurate: string;
 					p_scenario_accurate_edit: string;
 					p_scenario_realistic: string;
