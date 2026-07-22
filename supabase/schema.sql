@@ -784,3 +784,256 @@ alter table public.expert_evaluations add constraint eval_other_feedback_len
 -- Additive column for existing databases (CREATE TABLE IF NOT EXISTS won't add it).
 alter table public.expert_evaluations
 	add column if not exists scenario_question_appropriate text;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Admin read dashboard (capability UUID, same security model as above)
+--   • admin_keys holds the set of valid admin capability UUIDs. Knowing a
+--     non-revoked UUID is the permission to read aggregated evaluation data.
+--   • The table is locked down exactly like experts/expert_evaluations: RLS
+--     forced, deny-all policy, all API-role grants revoked.
+--   • Read-only SECURITY DEFINER RPCs below validate the key via _assert_admin
+--     before returning anything. _assert_admin is NOT granted to API roles, so
+--     it can only run from inside these definer functions.
+--
+-- Mint a key once (run in the SQL editor, keep the returned UUID secret):
+--   insert into public.admin_keys (label) values ('primary') returning id;
+-- Revoke a key later:
+--   update public.admin_keys set revoked = true where id = '<uuid>';
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create table if not exists public.admin_keys (
+	id uuid primary key default gen_random_uuid(),
+	label text not null default 'admin',
+	revoked boolean not null default false,
+	created_at timestamptz not null default now(),
+	last_used_at timestamptz,
+	constraint admin_keys_label_len check (char_length(label) between 1 and 120)
+);
+
+alter table public.admin_keys enable row level security;
+alter table public.admin_keys force row level security;
+
+drop policy if exists admin_keys_no_direct_access on public.admin_keys;
+create policy admin_keys_no_direct_access on public.admin_keys
+	for all
+	to anon, authenticated
+	using (false)
+	with check (false);
+
+revoke all on table public.admin_keys from public, anon, authenticated;
+
+-- Validator: raises unless a live (non-revoked) key is supplied. SECURITY
+-- DEFINER so it can read admin_keys; never granted to API roles directly.
+create or replace function public._assert_admin(p_admin_key uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+	if p_admin_key is null then
+		raise exception 'admin key required' using errcode = '28000';
+	end if;
+
+	update public.admin_keys
+	set last_used_at = now()
+	where id = p_admin_key and revoked = false;
+
+	if not found then
+		raise exception 'invalid admin key' using errcode = '28000';
+	end if;
+end;
+$$;
+
+create or replace function public.admin_overview(p_admin_key uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+	result jsonb;
+begin
+	perform public._assert_admin(p_admin_key);
+
+	select jsonb_build_object(
+		'experts_total', (select count(*) from public.experts),
+		'experts_completed',
+			(select count(*) from public.experts where status = 'completed'),
+		'experts_in_progress',
+			(select count(*) from public.experts where status = 'in_progress'),
+		'evaluations_total',
+			(select count(*) from public.expert_evaluations where submitted),
+		'metrics_covered',
+			(select count(distinct metric_id) from public.expert_evaluations where submitted),
+		'scenarios_covered',
+			(select count(distinct scenario_id) from public.expert_evaluations where submitted),
+		'last_submission_at',
+			(select max(submitted_at) from public.expert_evaluations where submitted)
+	) into result;
+
+	return result;
+end;
+$$;
+
+-- One row per metric: coverage counts + a rating distribution, ordered by
+-- how much evaluation data exists. This drives the clickable dashboard list.
+create or replace function public.admin_metrics_summary(p_admin_key uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+	result jsonb;
+begin
+	perform public._assert_admin(p_admin_key);
+
+	select coalesce(jsonb_agg(row_to_json(t)), '[]'::jsonb)
+	into result
+	from (
+		select
+			e.metric_id,
+			max(e.metric_name) as metric_name,
+			count(*) as evaluation_count,
+			count(distinct e.expert_id) as expert_count,
+			count(distinct e.scenario_id) as scenario_count,
+			max(e.submitted_at) as last_submitted_at,
+			(
+				select jsonb_object_agg(rb.rating_key, rb.n)
+				from (
+					select
+						coalesce(nullif(trim(e2.rating), ''), '(unrated)') as rating_key,
+						count(*) as n
+					from public.expert_evaluations e2
+					where e2.submitted and e2.metric_id = e.metric_id
+					group by 1
+				) rb
+			) as rating_breakdown
+		from public.expert_evaluations e
+		where e.submitted
+		group by e.metric_id
+		order by count(*) desc, max(e.metric_name)
+	) t;
+
+	return result;
+end;
+$$;
+
+-- Full evaluation detail for a single metric (joined with the submitting
+-- expert's name + subarea) so the admin can drill into individual reviews.
+create or replace function public.admin_metric_evaluations(
+	p_admin_key uuid,
+	p_metric_id text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+	result jsonb;
+begin
+	perform public._assert_admin(p_admin_key);
+
+	if p_metric_id is null or char_length(trim(p_metric_id)) = 0 then
+		raise exception 'metric_id required';
+	end if;
+
+	select coalesce(jsonb_agg(row_to_json(t) order by t.submitted_at desc), '[]'::jsonb)
+	into result
+	from (
+		select
+			e.expert_id,
+			x.name as expert_name,
+			x.subarea_label as expert_subarea,
+			e.metric_id,
+			e.metric_name,
+			e.scenario_id,
+			e.scenario_title,
+			e.model_id,
+			e.masked_model_label,
+			e.scenario_accurate,
+			e.scenario_accurate_edit,
+			e.scenario_realistic,
+			e.scenario_realistic_edit,
+			e.rating,
+			e.influenced_aspects,
+			e.influenced_aspects_other,
+			e.confidence,
+			e.main_challenge,
+			e.main_challenge_other,
+			e.justification,
+			e.other_feedback,
+			e.submitted_at
+		from public.expert_evaluations e
+		left join public.experts x on x.id = e.expert_id
+		where e.submitted and e.metric_id = p_metric_id
+	) t;
+
+	return result;
+end;
+$$;
+
+-- Per-metric feedback (the form experts fill once before scenarios), pulled
+-- from experts.form_state.progress[<metric_id>].feedback where submitted.
+create or replace function public.admin_metric_feedback(
+	p_admin_key uuid,
+	p_metric_id text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+	result jsonb;
+begin
+	perform public._assert_admin(p_admin_key);
+
+	if p_metric_id is null or char_length(trim(p_metric_id)) = 0 then
+		raise exception 'metric_id required';
+	end if;
+
+	select coalesce(jsonb_agg(row_to_json(t) order by t.updated_at desc), '[]'::jsonb)
+	into result
+	from (
+		select
+			x.id as expert_id,
+			x.name as expert_name,
+			x.subarea_label as expert_subarea,
+			p_metric_id as metric_id,
+			x.form_state #>> array['progress', p_metric_id, 'feedback', 'relevance'] as relevance,
+			x.form_state #>> array['progress', p_metric_id, 'feedback', 'relevanceEdit'] as relevance_edit,
+			x.form_state #>> array['progress', p_metric_id, 'feedback', 'labelDifferent'] as label_different,
+			x.form_state #>> array['progress', p_metric_id, 'feedback', 'labelEdit'] as label_edit,
+			x.form_state #>> array['progress', p_metric_id, 'feedback', 'examplesAdequate'] as examples_adequate,
+			x.form_state #>> array['progress', p_metric_id, 'feedback', 'examplesEdit'] as examples_edit,
+			x.form_state #>> array['progress', p_metric_id, 'feedback', 'other'] as other_feedback,
+			x.updated_at
+		from public.experts x
+		where coalesce(
+			(x.form_state #>> array['progress', p_metric_id, 'feedback', 'submitted'])::boolean,
+			false
+		)
+	) t;
+
+	return result;
+end;
+$$;
+
+-- Lock down + expose only the read RPCs. _assert_admin stays private.
+revoke all on function public._assert_admin(uuid) from public, anon, authenticated;
+revoke all on function public.admin_overview(uuid) from public;
+revoke all on function public.admin_metrics_summary(uuid) from public;
+revoke all on function public.admin_metric_evaluations(uuid, text) from public;
+revoke all on function public.admin_metric_feedback(uuid, text) from public;
+
+grant execute on function public.admin_overview(uuid) to anon, authenticated;
+grant execute on function public.admin_metrics_summary(uuid) to anon, authenticated;
+grant execute on function public.admin_metric_evaluations(uuid, text) to anon, authenticated;
+grant execute on function public.admin_metric_feedback(uuid, text) to anon, authenticated;
+
+-- Ask PostgREST to pick up newly created/replaced RPCs immediately.
+notify pgrst, 'reload schema';
+

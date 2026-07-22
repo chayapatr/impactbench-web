@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import { marked } from 'marked';
+	import { safeMarkdownHtml } from '$lib/safe-markdown';
 	import {
 		loadTaxonomy,
 		loadModels,
@@ -20,6 +20,7 @@
 	import {
 		EXPERT_BENCHMARK_SLUG,
 		formatGuidingScenarioQuestion,
+		EXPERT_SLUG_METRICS,
 		passFailOptions,
 		resolveChoiceOrder,
 		resolveExpertMaskedModels,
@@ -38,6 +39,11 @@
 		submitScenarioEvaluation
 	} from '$lib/experts/db';
 	import type { ExpertFormState, ExpertRow } from '$lib/experts/types';
+	import { validateAdminKey } from '$lib/admin/db';
+	import {
+		ADMIN_PREVIEW_PATH_ID,
+		takeAdminPreviewHandoff
+	} from '$lib/store/admin.svelte';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
 	import OrientationModal from '$lib/components/organisms/OrientationModal.svelte';
 
@@ -140,6 +146,8 @@
 	let loadError = $state<string | null>(null);
 	let expert = $state<ExpertRow | null>(null);
 	let formCompleted = $state(false);
+	/** Admin-key dry run: full form UX, but nothing is written to Supabase. */
+	let previewMode = $state(false);
 	let saveStatus = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
 	let saveError = $state<string | null>(null);
 	let draftReady = $state(false);
@@ -628,6 +636,26 @@
 		if (!expert || formCompleted) return false;
 		if (extra) pendingDraftExtra = { ...pendingDraftExtra, ...extra };
 
+		// Dry-run admin links: keep local state in sync, never hit Supabase.
+		if (previewMode) {
+			const form_state = serializeFormState();
+			const snapshot = JSON.stringify(form_state);
+			const hasExtra = Object.keys(pendingDraftExtra).length > 0;
+			if (!hasExtra && snapshot === lastPersistedSnapshot) return true;
+			const patch = { form_state, ...pendingDraftExtra };
+			pendingDraftExtra = {};
+			expert = {
+				...expert,
+				form_state: patch.form_state ?? expert.form_state,
+				pre_read_acknowledged: patch.pre_read_acknowledged ?? expert.pre_read_acknowledged,
+				pre_read_signer_name: patch.pre_read_signer_name ?? expert.pre_read_signer_name,
+				updated_at: new Date().toISOString()
+			};
+			lastPersistedSnapshot = snapshot;
+			markSaveStatus('saved');
+			return true;
+		}
+
 		if (persistInFlight) {
 			persistQueued = true;
 			return persistTail;
@@ -720,11 +748,49 @@
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
 		try {
-			const row = await getExpert(expertId);
-			if (!row) {
-				loadError = 'Expert form not found. Check your personal link.';
-				loading = false;
-				return;
+			// Admin dry-run uses path id "preview" + an in-memory handoff of the
+			// capability key (never put the admin UUID in the URL).
+			let row: ExpertRow | null = null;
+			if (expertId === ADMIN_PREVIEW_PATH_ID) {
+				const handoffKey = takeAdminPreviewHandoff();
+				if (!handoffKey || !(await validateAdminKey(handoffKey))) {
+					loadError =
+						'Admin preview session missing or expired. Open Test form from the admin dashboard again.';
+					loading = false;
+					return;
+				}
+				previewMode = true;
+				const now = new Date().toISOString();
+				const slugConfig = metricId
+					? Object.values(EXPERT_SLUG_METRICS).find((m) => m.metricId === metricId)
+					: null;
+				row = {
+					id: ADMIN_PREVIEW_PATH_ID,
+					name: expertNameProp ?? slugConfig?.expertName ?? 'Admin preview',
+					email: null,
+					job_title: null,
+					website: null,
+					cv_filename: null,
+					expertise_description: null,
+					expertise_subarea_ids: [],
+					subarea_id: 'admin-preview',
+					subarea_label: subareaLabelProp ?? slugConfig?.subareaLabel ?? 'Admin preview',
+					model_mapping: null,
+					form_state: {},
+					pre_read_acknowledged: false,
+					pre_read_signer_name: null,
+					status: 'in_progress',
+					completed_at: null,
+					created_at: now,
+					updated_at: now
+				};
+			} else {
+				row = await getExpert(expertId);
+				if (!row || !row.id || !row.updated_at) {
+					loadError = 'Expert form not found. Check your personal link.';
+					loading = false;
+					return;
+				}
 			}
 			expert = row;
 			formCompleted = row.status === 'completed';
@@ -765,6 +831,11 @@
 					.flatMap((s) => s.metrics)
 					.find((m) => m.id === metricId);
 				list = found ? [{ id: found.id, name: found.name, type: found.type }] : [];
+			} else if (previewMode) {
+				list = Object.values(EXPERT_SLUG_METRICS).map((m) => ({
+					id: m.metricId,
+					name: m.metricName
+				}));
 			} else {
 				const subarea = taxonomy.areas
 					.flatMap((a) => a.subareas)
@@ -897,29 +968,31 @@
 		if (evalProgress.pct < 100) return;
 		form.submitting = true;
 		try {
-			await submitScenarioEvaluation({
-				expert_id: expert.id,
-				metric_id: selectedMetric.id,
-				metric_name: selectedMetric.name,
-				scenario_id: currentScenario.scenario_id,
-				scenario_title: guidingScenarioQuestion || currentScenarioTitle,
-				model_id: currentMaskedModel.id,
-				masked_model_label: currentMaskedModel.label,
-				scenario_question_appropriate: form.scenarioQuestionAppropriate,
-				scenario_accurate: form.scenarioAccurate,
-				scenario_accurate_edit: form.scenarioAccurateEdit,
-				scenario_realistic: form.scenarioRealistic,
-				scenario_realistic_edit: form.scenarioRealisticEdit,
-				rating: form.rating,
-				influenced_aspects: form.influencedAspects.join('; '),
-				influenced_aspects_other: form.influencedAspectsOther,
-				confidence: form.confidence,
-				main_challenge: form.mainChallenge,
-				main_challenge_other: form.mainChallengeOther,
-				justification: form.justification,
-				other_feedback: form.otherFeedback,
-				submitted_at: new Date().toISOString()
-			});
+			if (!previewMode) {
+				await submitScenarioEvaluation({
+					expert_id: expert.id,
+					metric_id: selectedMetric.id,
+					metric_name: selectedMetric.name,
+					scenario_id: currentScenario.scenario_id,
+					scenario_title: guidingScenarioQuestion || currentScenarioTitle,
+					model_id: currentMaskedModel.id,
+					masked_model_label: currentMaskedModel.label,
+					scenario_question_appropriate: form.scenarioQuestionAppropriate,
+					scenario_accurate: form.scenarioAccurate,
+					scenario_accurate_edit: form.scenarioAccurateEdit,
+					scenario_realistic: form.scenarioRealistic,
+					scenario_realistic_edit: form.scenarioRealisticEdit,
+					rating: form.rating,
+					influenced_aspects: form.influencedAspects.join('; '),
+					influenced_aspects_other: form.influencedAspectsOther,
+					confidence: form.confidence,
+					main_challenge: form.mainChallenge,
+					main_challenge_other: form.mainChallengeOther,
+					justification: form.justification,
+					other_feedback: form.otherFeedback,
+					submitted_at: new Date().toISOString()
+				});
+			}
 			form.submitted = true;
 			markCurrentEvaluated();
 			await persistDraft();
@@ -958,6 +1031,16 @@
 		if (!allDone) return;
 		const required = buildRequiredEvaluations();
 		if (required.length === 0) return;
+		if (previewMode) {
+			formCompleted = true;
+			expert = {
+				...expert,
+				status: 'completed',
+				completed_at: new Date().toISOString(),
+				updated_at: new Date().toISOString()
+			};
+			return;
+		}
 		const updated = await markExpertCompleted(expert.id, required);
 		formCompleted = true;
 		expert = { ...expert, ...updated };
@@ -981,8 +1064,24 @@
 		userMenuOpen = !userMenuOpen;
 	}
 	async function acknowledgePreRead(signedName: string) {
-		if (!expert?.id) throw new Error('Expert not loaded');
+		if (!expert) throw new Error('Expert not loaded');
 		try {
+			if (previewMode) {
+				expert = {
+					...expert,
+					pre_read_acknowledged: true,
+					pre_read_signer_name: signedName,
+					updated_at: new Date().toISOString()
+				};
+				await persistDraft({
+					pre_read_acknowledged: true,
+					pre_read_signer_name: signedName
+				});
+				preReadSignerName = signedName;
+				preReadAcknowledged = true;
+				return;
+			}
+
 			// Wait out any in-flight autosave so we don't sign with a stale
 			// updated_at (or worse, undefined after a failed concurrent write).
 			if (persistInFlight) await persistTail;
@@ -1087,7 +1186,9 @@
 			submitted_at: new Date().toISOString()
 		}).toString();
 		try {
-			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			if (!previewMode) {
+				await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+			}
 			exitSurvey.submitted = true;
 			await maybeMarkCompleted();
 		} finally {
@@ -1316,7 +1417,14 @@
 			Home
 		</a>
 
-		{#if saveStatus === 'saving'}
+		{#if previewMode}
+			<span
+				class="mr-3 rounded-full bg-[#fff7ed] px-2.5 py-[3px] text-[11px] font-semibold text-[#c2410c]"
+				title="This admin-key link lets you try the form. Nothing is written to the database."
+			>
+				Preview — not saved
+			</span>
+		{:else if saveStatus === 'saving'}
 			<span class="mr-3 text-[11px] text-[#9ca3af]">Saving…</span>
 		{:else if saveStatus === 'saved'}
 			<span class="mr-3 text-[11px] text-[#059669]">Saved</span>
@@ -1406,10 +1514,16 @@
 					>
 						<i class="fa-solid fa-check text-[18px]"></i>
 					</div>
-					<h2 class="m-0 mb-2 text-[1.35rem] font-bold text-[#111827]">Review complete</h2>
+					<h2 class="m-0 mb-2 text-[1.35rem] font-bold text-[#111827]">
+						{previewMode ? 'Preview complete' : 'Review complete'}
+					</h2>
 					<p class="m-0 text-[14px] leading-[1.6] text-[#6b7280]">
-						Thanks, {expertNameDisplay}. Your evaluations for {subareaLabelDisplay} have been
-						submitted and this form is locked.
+						{#if previewMode}
+							This was an admin dry-run — nothing was saved. Reload to try the form again.
+						{:else}
+							Thanks, {expertNameDisplay}. Your evaluations for {subareaLabelDisplay} have been
+							submitted and this form is locked.
+						{/if}
 					</p>
 				</div>
 			</div>
@@ -2135,7 +2249,7 @@
 														class="prose prose-sm inline-block max-w-[88%] rounded-xl px-3 py-2 text-left text-[12px]
 															{turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}"
 													>
-														{@html marked.parse(turn.content)}
+														{@html safeMarkdownHtml(turn.content)}
 													</div>
 												</div>
 											{/each}
