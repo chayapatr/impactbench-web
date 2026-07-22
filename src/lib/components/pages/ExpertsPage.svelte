@@ -294,6 +294,10 @@
 	// flow skips it. Persisted in form_state.orientationAcknowledged.
 	let orientationAcknowledged = $state(false);
 
+	// Collapsible examples in the metric header. Closed by default so the
+	// header stays compact; toggled via the "See examples" caret.
+	let examplesExpanded = $state(false);
+
 	// Content-note banner: dismissible per session, then collapses to a
 	// small pill that re-reveals the note on hover.
 	let contentNoteDismissed = $state(false);
@@ -1454,18 +1458,28 @@
 									{/if}
 									{#if displayExamples.length > 0}
 										<div>
-											<div
-												class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+											<button
+												type="button"
+												class="inline-flex cursor-pointer items-baseline gap-1.5 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase transition-colors duration-150 hover:text-[#6b7280]"
+												aria-expanded={examplesExpanded}
+												onclick={() => (examplesExpanded = !examplesExpanded)}
 											>
 												Metric Examples
-											</div>
-											<ul
-												class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]"
-											>
-												{#each displayExamples as ex (ex)}
-													<li>{ex}</li>
-												{/each}
-											</ul>
+												<i
+													class="fa-solid fa-chevron-down text-[9px] normal-case tracking-normal transition-transform duration-150 {examplesExpanded
+														? 'rotate-180'
+														: ''}"
+												></i>
+											</button>
+											{#if examplesExpanded}
+												<ul
+													class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]"
+												>
+													{#each displayExamples as ex (ex)}
+														<li>{ex}</li>
+													{/each}
+												</ul>
+											{/if}
 										</div>
 									{/if}
 								</div>
