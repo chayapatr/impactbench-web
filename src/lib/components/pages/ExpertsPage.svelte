@@ -176,7 +176,7 @@
 	let unlocked: Set<string> = $state(new Set());
 	let evaluations: Record<string, ScenarioEval> = $state({});
 
-	// End-of-flow exit survey (demographics + payment + wrap-up).
+	// End-of-flow exit survey (demographics + wrap-up).
 	interface ExitSurvey {
 		otherFeedback: string;
 		gender: string;
@@ -192,7 +192,6 @@
 		impactAreas: string[];
 		impactAreasOther: string;
 		biggestConcern: string;
-		paymentMethod: string;
 		submitting: boolean;
 		submitted: boolean;
 	}
@@ -212,7 +211,6 @@
 			impactAreas: [],
 			impactAreasOther: '',
 			biggestConcern: '',
-			paymentMethod: '',
 			submitting: false,
 			submitted: false
 		};
@@ -1163,8 +1161,7 @@
 			(exitSurvey.context !== 'other' || exitSurvey.contextOther.trim()) &&
 			exitSurvey.impactAreas.length > 0 &&
 			(!exitSurvey.impactAreas.includes('Other') || exitSurvey.impactAreasOther.trim()) &&
-			exitSurvey.biggestConcern.trim() &&
-			exitSurvey.paymentMethod.trim()
+			exitSurvey.biggestConcern.trim()
 		)
 	);
 	async function submitExitSurvey() {
@@ -1204,7 +1201,6 @@
 				.map((a) => (a === 'Other' ? `Other: ${exitSurvey.impactAreasOther.trim()}` : a))
 				.join('; '),
 			biggest_concern: exitSurvey.biggestConcern,
-			payment_method: exitSurvey.paymentMethod,
 			submitted_at: new Date().toISOString()
 		}).toString();
 		try {
@@ -1709,8 +1705,7 @@
 										<p
 											class="mx-auto mt-2 max-w-[420px] text-[13px] leading-[1.55] text-[#4b5563]"
 										>
-											Your evaluations and wrap-up survey have been submitted. We'll be in
-											touch about compensation via the payment method you provided.
+											Your evaluations and wrap-up survey have been submitted.
 										</p>
 									</div>
 								{:else}
@@ -1973,23 +1968,6 @@
 													bind:value={exitSurvey.biggestConcern}
 													class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
 												></textarea>
-											</div>
-
-											<!-- Payment -->
-											<div class="mt-6">
-												<label
-													class="text-[13px] font-semibold text-[#111827]"
-													for="exit-payment"
-												>
-													To receive your payment, please enter the best way to pay you (for
-													example, your Venmo or Zelle handle):
-												</label>
-												<input
-													id="exit-payment"
-													type="text"
-													bind:value={exitSurvey.paymentMethod}
-													class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-												/>
 											</div>
 										</div>
 
