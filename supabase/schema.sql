@@ -70,6 +70,7 @@ create table if not exists public.expert_evaluations (
 	scenario_title text,
 	model_id text not null,
 	masked_model_label text,
+	scenario_question_appropriate text,
 	scenario_accurate text,
 	scenario_accurate_edit text,
 	scenario_realistic text,
@@ -539,6 +540,12 @@ begin
 end;
 $$;
 
+-- Drop prior signature so create-or-replace doesn't leave an overload behind
+-- when we add scenario_question_appropriate.
+drop function if exists public.upsert_expert_evaluation(
+	uuid, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, timestamptz
+);
+
 create or replace function public.upsert_expert_evaluation(
 	p_expert_id uuid,
 	p_metric_id text,
@@ -547,6 +554,7 @@ create or replace function public.upsert_expert_evaluation(
 	p_scenario_title text,
 	p_model_id text,
 	p_masked_model_label text,
+	p_scenario_question_appropriate text,
 	p_scenario_accurate text,
 	p_scenario_accurate_edit text,
 	p_scenario_realistic text,
@@ -608,6 +616,7 @@ begin
 		scenario_title,
 		model_id,
 		masked_model_label,
+		scenario_question_appropriate,
 		scenario_accurate,
 		scenario_accurate_edit,
 		scenario_realistic,
@@ -630,6 +639,7 @@ begin
 		left(p_scenario_title, 500),
 		v_model_id,
 		left(p_masked_model_label, 64),
+		left(p_scenario_question_appropriate, 64),
 		left(p_scenario_accurate, 64),
 		left(p_scenario_accurate_edit, 5000),
 		left(p_scenario_realistic, 64),
@@ -649,6 +659,7 @@ begin
 		metric_name = excluded.metric_name,
 		scenario_title = excluded.scenario_title,
 		masked_model_label = excluded.masked_model_label,
+		scenario_question_appropriate = excluded.scenario_question_appropriate,
 		scenario_accurate = excluded.scenario_accurate,
 		scenario_accurate_edit = excluded.scenario_accurate_edit,
 		scenario_realistic = excluded.scenario_realistic,
@@ -681,7 +692,7 @@ revoke all on function public.claim_expert_model_mapping(uuid, jsonb) from publi
 revoke all on function public.acknowledge_expert_pre_read(uuid, text, timestamptz) from public;
 revoke all on function public.mark_expert_completed(uuid, jsonb) from public;
 revoke all on function public.upsert_expert_evaluation(
-	uuid, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, timestamptz
+	uuid, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, timestamptz
 ) from public;
 
 grant execute on function public.create_expert(
@@ -697,7 +708,7 @@ grant execute on function public.acknowledge_expert_pre_read(uuid, text, timesta
 	to anon, authenticated;
 grant execute on function public.mark_expert_completed(uuid, jsonb) to anon, authenticated;
 grant execute on function public.upsert_expert_evaluation(
-	uuid, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, timestamptz
+	uuid, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, timestamptz
 ) to anon, authenticated;
 
 -- ── Ensure constraints on already-created tables (CREATE TABLE IF NOT EXISTS
@@ -769,6 +780,10 @@ alter table public.expert_evaluations add constraint eval_justification_len
 alter table public.expert_evaluations drop constraint if exists eval_other_feedback_len;
 alter table public.expert_evaluations add constraint eval_other_feedback_len
 	check (other_feedback is null or char_length(other_feedback) <= 20000);
+
+-- Additive column for existing databases (CREATE TABLE IF NOT EXISTS won't add it).
+alter table public.expert_evaluations
+	add column if not exists scenario_question_appropriate text;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Admin read dashboard (capability UUID, same security model as above)

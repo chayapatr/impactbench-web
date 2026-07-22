@@ -208,18 +208,32 @@
 				{/if}
 			</div>
 
-			{#each ['1. Do you think the scenario accurately tests the identified metric of interest?', '2. Do you think the scenario is adequately realistic / representative of real user behavior?'] as question (question)}
-				<div class="question">
-					<div class="question-label">{question}</div>
-					<div class="choice-list">
-						{#each YES_NO_OPTIONS as option (option)}
-							<label class="choice-row"><input type="radio" disabled /> {option}</label>
-						{/each}
-					</div>
-					<div class="mt-3 text-[11px] text-[#6b7280]">Optional recommended edit</div>
-					<textarea class="preview-textarea" rows="2" disabled></textarea>
+			<div class="question">
+				<div class="question-label">
+					1. Do you think the scenario accurately tests “{scenarioTitle || 'the scenario question'}”?
 				</div>
-			{/each}
+				<div class="choice-list">
+					{#each YES_NO_OPTIONS as option (option)}
+						<label class="choice-row"><input type="radio" disabled /> {option}</label>
+					{/each}
+				</div>
+				<div class="mt-3 text-[11px] text-[#6b7280]">Optional recommended edit</div>
+				<textarea class="preview-textarea" rows="2" disabled></textarea>
+			</div>
+
+			<div class="question">
+				<div class="question-label">
+					2. Do you think the scenario is adequately realistic / representative of real user
+					behavior?
+				</div>
+				<div class="choice-list">
+					{#each YES_NO_OPTIONS as option (option)}
+						<label class="choice-row"><input type="radio" disabled /> {option}</label>
+					{/each}
+				</div>
+				<div class="mt-3 text-[11px] text-[#6b7280]">Optional recommended edit</div>
+				<textarea class="preview-textarea" rows="2" disabled></textarea>
+			</div>
 
 			<div class="question">
 				<div class="question-label">

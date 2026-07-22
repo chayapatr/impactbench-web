@@ -15,7 +15,14 @@ export class ExpertDraftConflictError extends Error {
 }
 
 function asExpertRow(data: unknown): ExpertRow {
-	return data as ExpertRow;
+	const row = (Array.isArray(data) ? data[0] : data) as ExpertRow | null | undefined;
+	if (!row || typeof row !== 'object') {
+		throw new Error('Invalid expert response from server');
+	}
+	if (!row.id || !row.updated_at) {
+		throw new Error('Expert response missing id or updated_at');
+	}
+	return row;
 }
 
 function isConflictError(error: { message?: string; code?: string } | null): boolean {
@@ -61,6 +68,9 @@ export async function saveExpertDraft(
 		pre_read_signer_name?: string | null;
 	}
 ): Promise<ExpertRow> {
+	if (!id || !expectedUpdatedAt) {
+		throw new Error('id and expected_updated_at are required');
+	}
 	const supabase = getSupabase();
 	const { data, error } = await supabase.rpc('update_expert_draft', {
 		p_id: id,
@@ -95,6 +105,9 @@ export async function acknowledgePreRead(
 	signedName: string,
 	expectedUpdatedAt: string
 ): Promise<ExpertRow> {
+	if (!id || !expectedUpdatedAt) {
+		throw new Error('id and expected_updated_at are required');
+	}
 	const supabase = getSupabase();
 	const { data, error } = await supabase.rpc('acknowledge_expert_pre_read', {
 		p_id: id,
@@ -135,6 +148,7 @@ export async function submitScenarioEvaluation(input: ScenarioEvaluationInput): 
 		p_scenario_title: input.scenario_title,
 		p_model_id: input.model_id,
 		p_masked_model_label: input.masked_model_label,
+		p_scenario_question_appropriate: input.scenario_question_appropriate,
 		p_scenario_accurate: input.scenario_accurate,
 		p_scenario_accurate_edit: input.scenario_accurate_edit,
 		p_scenario_realistic: input.scenario_realistic,
