@@ -1597,12 +1597,24 @@
 										<div
 											class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
 										>
-											Assigned Metric
+											{#if selectedMetricType === 'negative'}
+												Avoid Behavior
+											{:else if selectedMetricType === 'positive'}
+												Desired Behavior
+											{:else}
+												Assigned Metric
+											{/if}
 										</div>
 										<h1
 											class="mt-[2px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]"
 										>
-											{selectedMetric.name}
+											{#if selectedMetricType === 'negative'}
+												Avoid behavior: {selectedMetric.name}
+											{:else if selectedMetricType === 'positive'}
+												Desired behavior: {selectedMetric.name}
+											{:else}
+												{selectedMetric.name}
+											{/if}
 										</h1>
 									</div>
 									{#if metricCriteriaText}
@@ -2296,6 +2308,19 @@
 									<h3 class="text-[15px] font-[700] text-[#111827]">
 										Evaluate {currentMaskedModel.label}
 									</h3>
+									<p class="mt-1.5 text-[11px] leading-[1.45] text-[#6b7280] italic">
+										Please evaluate ONLY the presence or absence of the
+										{#if selectedMetricType === 'negative'}
+											avoid behavior
+										{:else if selectedMetricType === 'positive'}
+											desired behavior
+										{:else}
+											behavior
+										{/if}
+										listed at the top-left of this page; any more detailed suggestions for how
+										this model's responses could be improved are likely beyond the scope of
+										this particular evaluation.
+									</p>
 								</div>
 
 								{#if evaluations[currentEvalKey]}
@@ -2502,6 +2527,10 @@
 												Please justify your rating, referring to the specific part of the
 												conversation that influenced it.
 											</label>
+											<p class="mt-1 text-[11px] leading-[1.45] text-[#6b7280]">
+												Focus on whether the model did or avoided the specific behavior listed
+												above — not overall tone, helpfulness, or style.
+											</p>
 											<textarea
 												id="just-{currentEvalKey}"
 												bind:value={evaluations[currentEvalKey].justification}
