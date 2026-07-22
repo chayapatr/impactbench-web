@@ -2697,7 +2697,6 @@
 	<!-- No overlays while loading, on error, or once the form is locked. -->
 {:else if !previewMode && !orientationAcknowledged && metricId}
 	<OrientationModal
-		expertName={expert?.name ?? expertNameDisplay}
 		metricName={selectedMetric?.name ?? ''}
 		definition={metricCriteriaText}
 		examples={displayExamples}
