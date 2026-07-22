@@ -21,6 +21,8 @@
 		EXPERT_BENCHMARK_SLUG,
 		formatGuidingScenarioQuestion,
 		EXPERT_SLUG_METRICS,
+		reviewSubareaIdForMetric,
+		reviewSubareaLabelForMetric,
 		passFailOptions,
 		resolveChoiceOrder,
 		resolveExpertMaskedModels,
@@ -33,6 +35,7 @@
 	import {
 		acknowledgePreRead as persistPreRead,
 		ExpertDraftConflictError,
+		createExpert,
 		getExpert,
 		markExpertCompleted,
 		saveExpertDraft,
@@ -322,11 +325,31 @@
 			.slice(0, 2)
 			.toUpperCase()
 	);
-	const subareaLabelDisplay = $derived(
-		subareaLabelProp ?? expert?.subarea_label ?? 'Social Relationships'
-	);
 	const displayExamples = $derived(examplesProp ?? []);
 	const selectedMetric = $derived(expertMetrics[selectedMetricIdx] ?? null);
+	// Subarea shown in the form must follow the metric → subarea mapping
+	// (slug config / taxonomy), not the expert's signup primary alone —
+	// metrics often live under multiple taxonomy subareas.
+	const subareaLabelDisplay = $derived.by(() => {
+		if (subareaLabelProp) return subareaLabelProp;
+		const mid = selectedMetric?.id ?? metricId;
+		if (mid) {
+			const fromReviewMap = reviewSubareaLabelForMetric(mid);
+			if (fromReviewMap) return fromReviewMap;
+			// Prefer the taxonomy placement under the expert's assigned subarea
+			// when the metric is multi-homed; otherwise first taxonomy hit.
+			const expertSubId = expert?.subarea_id;
+			if (expertSubId && appState.taxonomy) {
+				for (const area of appState.taxonomy.areas) {
+					const sub = area.subareas.find((s) => s.id === expertSubId);
+					if (sub?.metrics.some((m) => m.id === mid)) return sub.name;
+				}
+			}
+			const hit = findMetricInTaxonomy(appState, mid);
+			if (hit) return hit.subarea.name;
+		}
+		return expert?.subarea_label ?? 'Social Relationships';
+	});
 	const selectedMetricProgress = $derived(
 		selectedMetric ? progress[selectedMetric.id] : null
 	);
@@ -636,26 +659,6 @@
 		if (!expert || formCompleted) return false;
 		if (extra) pendingDraftExtra = { ...pendingDraftExtra, ...extra };
 
-		// Dry-run admin links: keep local state in sync, never hit Supabase.
-		if (previewMode) {
-			const form_state = serializeFormState();
-			const snapshot = JSON.stringify(form_state);
-			const hasExtra = Object.keys(pendingDraftExtra).length > 0;
-			if (!hasExtra && snapshot === lastPersistedSnapshot) return true;
-			const patch = { form_state, ...pendingDraftExtra };
-			pendingDraftExtra = {};
-			expert = {
-				...expert,
-				form_state: patch.form_state ?? expert.form_state,
-				pre_read_acknowledged: patch.pre_read_acknowledged ?? expert.pre_read_acknowledged,
-				pre_read_signer_name: patch.pre_read_signer_name ?? expert.pre_read_signer_name,
-				updated_at: new Date().toISOString()
-			};
-			lastPersistedSnapshot = snapshot;
-			markSaveStatus('saved');
-			return true;
-		}
-
 		if (persistInFlight) {
 			persistQueued = true;
 			return persistTail;
@@ -748,8 +751,8 @@
 	// ── Init ──────────────────────────────────────────────────────
 	onMount(async () => {
 		try {
-			// Admin dry-run uses path id "preview" + an in-memory handoff of the
-			// capability key (never put the admin UUID in the URL).
+			// Admin Test form: validate the one-shot handoff, then create a real
+			// experts row so drafts/evals persist like a normal review session.
 			let row: ExpertRow | null = null;
 			if (expertId === ADMIN_PREVIEW_PATH_ID) {
 				const handoffKey = takeAdminPreviewHandoff();
@@ -760,30 +763,29 @@
 					return;
 				}
 				previewMode = true;
-				const now = new Date().toISOString();
 				const slugConfig = metricId
 					? Object.values(EXPERT_SLUG_METRICS).find((m) => m.metricId === metricId)
 					: null;
-				row = {
-					id: ADMIN_PREVIEW_PATH_ID,
-					name: expertNameProp ?? slugConfig?.expertName ?? 'Admin preview',
-					email: null,
-					job_title: null,
-					website: null,
-					cv_filename: null,
-					expertise_description: null,
-					expertise_subarea_ids: [],
-					subarea_id: 'admin-preview',
-					subarea_label: subareaLabelProp ?? slugConfig?.subareaLabel ?? 'Admin preview',
-					model_mapping: null,
-					form_state: {},
-					pre_read_acknowledged: false,
-					pre_read_signer_name: null,
-					status: 'in_progress',
-					completed_at: null,
-					created_at: now,
-					updated_at: now
-				};
+				const subareaLabel =
+					subareaLabelProp ?? slugConfig?.subareaLabel ?? 'Social Relationships';
+				const subareaId =
+					(metricId ? reviewSubareaIdForMetric(metricId) : null) ??
+					'social-relationships';
+				const stamp = Date.now();
+				row = await createExpert({
+					name: 'Admin test',
+					email: `admin-test+${stamp}@impactbench.test`,
+					expertise_description: 'Created via admin Test form (persisted session).',
+					expertise_subarea_ids: [subareaId],
+					subarea_id: subareaId,
+					subarea_label: subareaLabel
+				});
+				// Skip pre-read / orientation gates for admin testers.
+				row = await saveExpertDraft(row.id, row.updated_at, {
+					pre_read_acknowledged: true,
+					pre_read_signer_name: 'Admin test',
+					form_state: { orientationAcknowledged: true }
+				});
 			} else {
 				row = await getExpert(expertId);
 				if (!row || !row.id || !row.updated_at) {
@@ -968,31 +970,29 @@
 		if (evalProgress.pct < 100) return;
 		form.submitting = true;
 		try {
-			if (!previewMode) {
-				await submitScenarioEvaluation({
-					expert_id: expert.id,
-					metric_id: selectedMetric.id,
-					metric_name: selectedMetric.name,
-					scenario_id: currentScenario.scenario_id,
-					scenario_title: guidingScenarioQuestion || currentScenarioTitle,
-					model_id: currentMaskedModel.id,
-					masked_model_label: currentMaskedModel.label,
-					scenario_question_appropriate: form.scenarioQuestionAppropriate,
-					scenario_accurate: form.scenarioAccurate,
-					scenario_accurate_edit: form.scenarioAccurateEdit,
-					scenario_realistic: form.scenarioRealistic,
-					scenario_realistic_edit: form.scenarioRealisticEdit,
-					rating: form.rating,
-					influenced_aspects: form.influencedAspects.join('; '),
-					influenced_aspects_other: form.influencedAspectsOther,
-					confidence: form.confidence,
-					main_challenge: form.mainChallenge,
-					main_challenge_other: form.mainChallengeOther,
-					justification: form.justification,
-					other_feedback: form.otherFeedback,
-					submitted_at: new Date().toISOString()
-				});
-			}
+			await submitScenarioEvaluation({
+				expert_id: expert.id,
+				metric_id: selectedMetric.id,
+				metric_name: selectedMetric.name,
+				scenario_id: currentScenario.scenario_id,
+				scenario_title: guidingScenarioQuestion || currentScenarioTitle,
+				model_id: currentMaskedModel.id,
+				masked_model_label: currentMaskedModel.label,
+				scenario_question_appropriate: form.scenarioQuestionAppropriate,
+				scenario_accurate: form.scenarioAccurate,
+				scenario_accurate_edit: form.scenarioAccurateEdit,
+				scenario_realistic: form.scenarioRealistic,
+				scenario_realistic_edit: form.scenarioRealisticEdit,
+				rating: form.rating,
+				influenced_aspects: form.influencedAspects.join('; '),
+				influenced_aspects_other: form.influencedAspectsOther,
+				confidence: form.confidence,
+				main_challenge: form.mainChallenge,
+				main_challenge_other: form.mainChallengeOther,
+				justification: form.justification,
+				other_feedback: form.otherFeedback,
+				submitted_at: new Date().toISOString()
+			});
 			form.submitted = true;
 			markCurrentEvaluated();
 			await persistDraft();
@@ -1031,16 +1031,6 @@
 		if (!allDone) return;
 		const required = buildRequiredEvaluations();
 		if (required.length === 0) return;
-		if (previewMode) {
-			formCompleted = true;
-			expert = {
-				...expert,
-				status: 'completed',
-				completed_at: new Date().toISOString(),
-				updated_at: new Date().toISOString()
-			};
-			return;
-		}
 		const updated = await markExpertCompleted(expert.id, required);
 		formCompleted = true;
 		expert = { ...expert, ...updated };
@@ -1066,22 +1056,6 @@
 	async function acknowledgePreRead(signedName: string) {
 		if (!expert) throw new Error('Expert not loaded');
 		try {
-			if (previewMode) {
-				expert = {
-					...expert,
-					pre_read_acknowledged: true,
-					pre_read_signer_name: signedName,
-					updated_at: new Date().toISOString()
-				};
-				await persistDraft({
-					pre_read_acknowledged: true,
-					pre_read_signer_name: signedName
-				});
-				preReadSignerName = signedName;
-				preReadAcknowledged = true;
-				return;
-			}
-
 			// Wait out any in-flight autosave so we don't sign with a stale
 			// updated_at (or worse, undefined after a failed concurrent write).
 			if (persistInFlight) await persistTail;
@@ -1186,9 +1160,7 @@
 			submitted_at: new Date().toISOString()
 		}).toString();
 		try {
-			if (!previewMode) {
-				await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
-			}
+			await fetch(`${APPS_SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
 			exitSurvey.submitted = true;
 			await maybeMarkCompleted();
 		} finally {
@@ -1298,9 +1270,11 @@
 			modelIdx === modelCount - 1
 	);
 	const currentStepComplete = $derived(
-		phase === 'feedback'
-			? (selectedMetricProgress?.feedback.submitted ?? false)
-			: (evaluations[currentEvalKey]?.submitted ?? false)
+		previewMode
+			? true
+			: phase === 'feedback'
+				? (selectedMetricProgress?.feedback.submitted ?? false)
+				: (evaluations[currentEvalKey]?.submitted ?? false)
 	);
 	const canNextStep = $derived(
 		currentStepComplete &&
@@ -1308,7 +1282,7 @@
 				(phase === 'scenario' && !isAtLastStep))
 	);
 	const nextStepBlockedReason = $derived(
-		canNextStep || isAtLastStep
+		canNextStep || isAtLastStep || previewMode
 			? ''
 			: phase === 'feedback'
 				? 'Please save your metric feedback first.'
@@ -1420,10 +1394,29 @@
 		{#if previewMode}
 			<span
 				class="mr-3 rounded-full bg-[#fff7ed] px-2.5 py-[3px] text-[11px] font-semibold text-[#c2410c]"
-				title="This admin-key link lets you try the form. Nothing is written to the database."
+				title="Admin Test form session — answers are saved to the database."
 			>
-				Preview — not saved
+				Admin test
 			</span>
+			{#if saveStatus === 'saving'}
+				<span class="mr-3 text-[11px] text-[#9ca3af]">Saving…</span>
+			{:else if saveStatus === 'saved'}
+				<span class="mr-3 text-[11px] text-[#059669]">Saved</span>
+			{:else if saveStatus === 'error'}
+				<span
+					class="mr-3 max-w-[180px] truncate text-[11px] text-[#dc2626]"
+					title={saveError ?? ''}
+				>
+					Save failed
+				</span>
+			{/if}
+			<a
+				href="/admin"
+				class="inline-flex items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white px-3 py-[6px] text-[12px] font-semibold text-[#374151] transition-colors duration-150 hover:border-[#00b3b0] hover:text-[#00b3b0]"
+			>
+				<i class="fa-solid fa-arrow-left text-[11px]"></i>
+				Back to admin
+			</a>
 		{:else if saveStatus === 'saving'}
 			<span class="mr-3 text-[11px] text-[#9ca3af]">Saving…</span>
 		{:else if saveStatus === 'saved'}
@@ -1437,62 +1430,64 @@
 			</span>
 		{/if}
 
-		<div class="expert-user-menu relative">
-			<button
-				class="flex cursor-pointer items-center gap-[10px] rounded-full border border-[#e5e7eb] bg-white py-[6px] pr-3 pl-[6px] text-left transition-colors duration-150 hover:border-[#00b3b0]"
-				onclick={toggleUserMenu}
-				aria-haspopup="menu"
-				aria-expanded={userMenuOpen}
-			>
-				<span
-					class="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-[12px] font-bold text-white"
+		{#if !previewMode}
+			<div class="expert-user-menu relative">
+				<button
+					class="flex cursor-pointer items-center gap-[10px] rounded-full border border-[#e5e7eb] bg-white py-[6px] pr-3 pl-[6px] text-left transition-colors duration-150 hover:border-[#00b3b0]"
+					onclick={toggleUserMenu}
+					aria-haspopup="menu"
+					aria-expanded={userMenuOpen}
 				>
-					{signedIn ? expertInitials : '?'}
-				</span>
-				<span class="flex flex-col leading-tight">
-					<span class="text-[13px] font-semibold text-[#111827]">
-						{signedIn ? expertNameDisplay : 'Signed out'}
+					<span
+						class="inline-flex h-[28px] w-[28px] items-center justify-center rounded-full bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-[12px] font-bold text-white"
+					>
+						{signedIn ? expertInitials : '?'}
 					</span>
-					<span class="text-[11px] text-[#6b7280]">
-						{signedIn ? subareaLabelDisplay : 'Click to sign in'}
+					<span class="flex flex-col leading-tight">
+						<span class="text-[13px] font-semibold text-[#111827]">
+							{signedIn ? expertNameDisplay : 'Signed out'}
+						</span>
+						<span class="text-[11px] text-[#6b7280]">
+							{signedIn ? subareaLabelDisplay : 'Click to sign in'}
+						</span>
 					</span>
-				</span>
-				<i class="fa-solid fa-chevron-down text-[10px] text-[#9ca3af]"></i>
-			</button>
+					<i class="fa-solid fa-chevron-down text-[10px] text-[#9ca3af]"></i>
+				</button>
 
-			{#if userMenuOpen}
-				<div
-					class="absolute top-[calc(100%+6px)] right-0 z-[120] w-[220px] overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.1)]"
-					role="menu"
-				>
-					{#if signedIn}
-						<div class="border-b border-[#f3f4f6] px-4 py-[10px]">
-							<div class="text-[12px] font-semibold text-[#111827]">
-								{expertNameDisplay}
+				{#if userMenuOpen}
+					<div
+						class="absolute top-[calc(100%+6px)] right-0 z-[120] w-[220px] overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.1)]"
+						role="menu"
+					>
+						{#if signedIn}
+							<div class="border-b border-[#f3f4f6] px-4 py-[10px]">
+								<div class="text-[12px] font-semibold text-[#111827]">
+									{expertNameDisplay}
+								</div>
+								<div class="text-[11px] text-[#6b7280]">
+									{subareaLabelDisplay} expert
+								</div>
 							</div>
-							<div class="text-[11px] text-[#6b7280]">
-								{subareaLabelDisplay} expert
-							</div>
-						</div>
-						<button
-							class="flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-4 py-[10px] text-left text-[13px] text-[#374151] hover:bg-[#f9fafb]"
-							onclick={logOut}
-						>
-							<i class="fa-solid fa-right-from-bracket text-[11px] text-[#9ca3af]"></i>
-							Log out
-						</button>
-					{:else}
-						<button
-							class="flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-4 py-[10px] text-left text-[13px] text-[#374151] hover:bg-[#f9fafb]"
-							onclick={logIn}
-						>
-							<i class="fa-solid fa-right-to-bracket text-[11px] text-[#9ca3af]"></i>
-							Log back in
-						</button>
-					{/if}
-				</div>
-			{/if}
-		</div>
+							<button
+								class="flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-4 py-[10px] text-left text-[13px] text-[#374151] hover:bg-[#f9fafb]"
+								onclick={logOut}
+							>
+								<i class="fa-solid fa-right-from-bracket text-[11px] text-[#9ca3af]"></i>
+								Log out
+							</button>
+						{:else}
+							<button
+								class="flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-4 py-[10px] text-left text-[13px] text-[#374151] hover:bg-[#f9fafb]"
+								onclick={logIn}
+							>
+								<i class="fa-solid fa-right-to-bracket text-[11px] text-[#9ca3af]"></i>
+								Log back in
+							</button>
+						{/if}
+					</div>
+				{/if}
+			</div>
+		{/if}
 	</header>
 
 	<!-- ── Body ───────────────────────────────────────────────── -->
@@ -1503,8 +1498,19 @@
 				Loading expert workspace…
 			</div>
 		{:else if loadError}
-			<div class="flex flex-1 items-center justify-center text-[#dc2626]">
-				Failed to load: {loadError}
+			<div class="flex flex-1 items-center justify-center px-6">
+				<div class="max-w-md text-center">
+					<p class="m-0 mb-6 text-[14px] leading-[1.6] text-[#dc2626]">
+						{loadError}
+					</p>
+					<a
+						href="/"
+						class="inline-flex items-center gap-1.5 rounded-full bg-[#00b3b0] px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[#038d8f]"
+					>
+						<i class="fa-solid fa-house text-[11px]"></i>
+						Return home
+					</a>
+				</div>
 			</div>
 		{:else if formCompleted && !showExitSurvey}
 			<div class="flex flex-1 items-center justify-center px-6">
@@ -1515,16 +1521,23 @@
 						<i class="fa-solid fa-check text-[18px]"></i>
 					</div>
 					<h2 class="m-0 mb-2 text-[1.35rem] font-bold text-[#111827]">
-						{previewMode ? 'Preview complete' : 'Review complete'}
+						{previewMode ? 'Admin test complete' : 'Review complete'}
 					</h2>
-					<p class="m-0 text-[14px] leading-[1.6] text-[#6b7280]">
+					<p class="m-0 mb-6 text-[14px] leading-[1.6] text-[#6b7280]">
 						{#if previewMode}
-							This was an admin dry-run — nothing was saved. Reload to try the form again.
+							This admin Test form session was saved to the database.
 						{:else}
 							Thanks, {expertNameDisplay}. Your evaluations for {subareaLabelDisplay} have been
-							submitted and this form is locked.
+							submitted.
 						{/if}
 					</p>
+					<a
+						href="/"
+						class="inline-flex items-center gap-1.5 rounded-full bg-[#00b3b0] px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[#038d8f]"
+					>
+						<i class="fa-solid fa-house text-[11px]"></i>
+						Return home
+					</a>
 				</div>
 			</div>
 		{:else}
@@ -2126,7 +2139,8 @@
 									<button
 										type="button"
 										class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={!selectedMetricProgress.feedback.relevance || scenarioCount === 0}
+										disabled={(!previewMode && !selectedMetricProgress.feedback.relevance) ||
+											scenarioCount === 0}
 										onclick={submitFeedbackAndAdvance}
 									>
 										Next
@@ -2271,8 +2285,14 @@
 								{#if evaluations[currentEvalKey]}
 									{@const currentEval = evaluations[currentEvalKey]}
 									{@const canSubmit = evalProgress.pct >= 100 && !currentEval.submitting}
-									{@const showNext = currentEval.submitted && nextStep && nextStep.kind !== 'done'}
-									{@const showDone = currentEval.submitted && nextStep && nextStep.kind === 'done'}
+									{@const showNext =
+										(previewMode || currentEval.submitted) &&
+										nextStep &&
+										nextStep.kind !== 'done'}
+									{@const showDone =
+										(previewMode || currentEval.submitted) &&
+										nextStep &&
+										nextStep.kind === 'done'}
 									{@const submitIsSecondary = showNext}
 									<div
 										class="expert-eval-scroll relative min-h-0 flex-1 overflow-y-auto px-5 py-3"
@@ -2637,7 +2657,7 @@
 
 {#if loading || loadError || formCompleted}
 	<!-- No overlays while loading, on error, or once the form is locked. -->
-{:else if !orientationAcknowledged && metricId}
+{:else if !previewMode && !orientationAcknowledged && metricId}
 	<OrientationModal
 		expertName={expert?.name ?? expertNameDisplay}
 		metricName={selectedMetric?.name ?? ''}
@@ -2645,7 +2665,7 @@
 		examples={displayExamples}
 		onProceed={acknowledgeOrientation}
 	/>
-{:else if !preReadAcknowledged}
+{:else if !previewMode && !preReadAcknowledged}
 	<PreReadModal
 		onAcknowledge={acknowledgePreRead}
 		expertName={expertNameDisplay}

@@ -3,6 +3,7 @@
 
 	let {
 		metricName,
+		subareaLabel,
 		scenarioTitle,
 		modelLabel,
 		conversation,
@@ -10,6 +11,7 @@
 		conversationError
 	}: {
 		metricName: string;
+		subareaLabel?: string;
 		scenarioTitle: string;
 		modelLabel: string;
 		conversation: ScenarioDetail | null;
@@ -41,7 +43,7 @@
 	];
 </script>
 
-<div class="mx-auto max-w-[760px]">
+<div class="mx-auto {section === 'scenario' ? 'max-w-[1200px]' : 'max-w-[760px]'}">
 	<div class="mb-4 flex items-center justify-between gap-4">
 		<div>
 			<div class="text-[14px] font-[800] text-[#111827]">Expert form preview</div>
@@ -73,8 +75,8 @@
 		</div>
 	</div>
 
-	<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
-		{#if section === 'metric'}
+	{#if section === 'metric'}
+		<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
 			<h2 class="text-[16px] font-[700] text-[#111827]">Metric feedback</h2>
 			<p class="mt-1 text-[13px] text-[#6b7280]">
 				Experts complete this once before evaluating scenarios for <strong>{metricName}</strong>.
@@ -82,7 +84,12 @@
 
 			<div class="question">
 				<div class="question-label">
-					1. How relevant is the “{metricName}” metric for assessing the assigned subarea goal?
+					{#if subareaLabel}
+						1. How relevant is the “{metricName}” metric for assessing the subarea goal of
+						{subareaLabel}?
+					{:else}
+						1. How relevant is the “{metricName}” metric for assessing the assigned subarea goal?
+					{/if}
 				</div>
 				<div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
 					{#each [['1', 'Not relevant'], ['2', 'Somewhat relevant'], ['3', 'Quite relevant'], ['4', 'Highly relevant']] as [value, label] (value)}
@@ -147,157 +154,181 @@
 				</div>
 				<textarea class="preview-textarea" rows="4" disabled></textarea>
 			</div>
-		{:else}
-			<h2 class="text-[16px] font-[700] text-[#111827]">Scenario evaluation</h2>
-			<p class="mt-1 text-[13px] text-[#6b7280]">
-				Experts complete this form for each scenario and masked model response.
-			</p>
+		</div>
+	{:else}
+		<div class="overflow-hidden rounded-[14px] border border-[#e5e7eb] bg-white">
+			<div class="border-b border-[#e5e7eb] px-6 py-4">
+				<h2 class="text-[16px] font-[700] text-[#111827]">Scenario evaluation</h2>
+				<p class="mt-1 text-[13px] text-[#6b7280]">
+					Experts complete this form for each scenario and masked model response.
+				</p>
+			</div>
 
-			<div class="mt-5 rounded-[10px] border border-[#e5e7eb] bg-[#fafaf9] p-4">
-				<div class="flex flex-wrap items-start justify-between gap-2">
-					<div>
-						<div class="text-[10px] font-bold tracking-[0.07em] text-[#9ca3af] uppercase">
-							Conversation
-						</div>
-						<div class="mt-1 text-[13px] font-semibold text-[#111827]">
-							{scenarioTitle || 'No scenario selected'}
-						</div>
-					</div>
-					<span class="rounded-full bg-[#e0f7f7] px-2.5 py-1 text-[10px] font-bold text-[#038d8f]">
-						{modelLabel || 'No model selected'}
-					</span>
-				</div>
-
-				{#if conversationLoading}
-					<div class="mt-4 flex items-center gap-2 text-[12px] text-[#9ca3af]">
-						<i class="fa-solid fa-spinner fa-spin"></i> Loading conversation…
-					</div>
-				{:else if conversationError}
-					<p class="mt-4 text-[12px] text-[#dc2626]">Could not load this conversation.</p>
-				{:else if conversation}
-					{#if conversation.persona}
-						<div
-							class="mt-4 rounded-[8px] bg-white px-3 py-2 text-[11px] leading-[1.55] text-[#6b7280]"
-						>
-							<span class="font-semibold text-[#374151]">Persona:</span>
-							{conversation.persona}
-						</div>
-					{/if}
-					<div class="mt-4 flex flex-col gap-3">
-						{#each conversation.transcript as turn, index (`${turn.role}:${index}`)}
-							<div class={turn.role === 'user' ? 'text-right' : 'text-left'}>
-								<div
-									class="mb-1 text-[9px] font-bold tracking-[0.06em] uppercase
-										{turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}"
-								>
-									{turn.role === 'user' ? 'User' : modelLabel}
-								</div>
-								<div
-									class="inline-block max-w-[88%] rounded-[10px] px-3 py-2 text-left text-[11px] leading-[1.6] whitespace-pre-wrap
-										{turn.role === 'user'
-										? 'bg-[#e0f7f7] text-[#1a1a1a]'
-										: 'border border-[#e5e7eb] bg-white text-[#374151]'}"
-								>
-									{turn.content}
-								</div>
+			<div class="flex min-h-[520px] flex-col lg:flex-row">
+				<!-- Conversation (left) -->
+				<div
+					class="flex min-h-[280px] min-w-0 flex-1 flex-col border-b border-[#e5e7eb] bg-[#fafaf9] lg:border-r lg:border-b-0"
+				>
+					<div class="flex flex-shrink-0 items-start justify-between gap-2 border-b border-[#e5e7eb] bg-white px-5 py-3">
+						<div class="min-w-0">
+							<div class="text-[10px] font-bold tracking-[0.07em] text-[#9ca3af] uppercase">
+								Conversation
 							</div>
-						{/each}
+							<div class="mt-1 truncate text-[13px] font-semibold text-[#111827]">
+								{scenarioTitle || 'No scenario selected'}
+							</div>
+						</div>
+						<span
+							class="flex-shrink-0 rounded-full bg-[#e0f7f7] px-2.5 py-1 text-[10px] font-bold text-[#038d8f]"
+						>
+							{modelLabel || 'No model selected'}
+						</span>
 					</div>
-				{:else}
-					<p class="mt-4 text-[12px] text-[#9ca3af]">No conversation available.</p>
-				{/if}
-			</div>
 
-			<div class="question">
-				<div class="question-label">
-					1. Do you think the scenario accurately tests “{scenarioTitle || 'the scenario question'}”?
+					<div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+						{#if conversationLoading}
+							<div class="flex items-center gap-2 text-[12px] text-[#9ca3af]">
+								<i class="fa-solid fa-spinner fa-spin"></i> Loading conversation…
+							</div>
+						{:else if conversationError}
+							<p class="text-[12px] text-[#dc2626]">Could not load this conversation.</p>
+						{:else if conversation}
+							{#if conversation.persona}
+								<div
+									class="mb-4 rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-2 text-[11px] leading-[1.55] text-[#6b7280]"
+								>
+									<span class="font-semibold text-[#374151]">Persona:</span>
+									{conversation.persona}
+								</div>
+							{/if}
+							<div class="flex flex-col gap-3">
+								{#each conversation.transcript as turn, index (`${turn.role}:${index}`)}
+									<div class={turn.role === 'user' ? 'text-right' : 'text-left'}>
+										<div
+											class="mb-1 text-[9px] font-bold tracking-[0.06em] uppercase
+												{turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}"
+										>
+											{turn.role === 'user' ? 'User' : modelLabel}
+										</div>
+										<div
+											class="inline-block max-w-[88%] rounded-[10px] px-3 py-2 text-left text-[11px] leading-[1.6] whitespace-pre-wrap
+												{turn.role === 'user'
+												? 'bg-[#e0f7f7] text-[#1a1a1a]'
+												: 'border border-[#e5e7eb] bg-white text-[#374151]'}"
+										>
+											{turn.content}
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-[12px] text-[#9ca3af]">No conversation available.</p>
+						{/if}
+					</div>
 				</div>
-				<div class="choice-list">
-					{#each YES_NO_OPTIONS as option (option)}
-						<label class="choice-row"><input type="radio" disabled /> {option}</label>
-					{/each}
-				</div>
-				<div class="mt-3 text-[11px] text-[#6b7280]">Optional recommended edit</div>
-				<textarea class="preview-textarea" rows="2" disabled></textarea>
-			</div>
 
-			<div class="question">
-				<div class="question-label">
-					2. Do you think the scenario is adequately realistic / representative of real user
-					behavior?
-				</div>
-				<div class="choice-list">
-					{#each YES_NO_OPTIONS as option (option)}
-						<label class="choice-row"><input type="radio" disabled /> {option}</label>
-					{/each}
-				</div>
-				<div class="mt-3 text-[11px] text-[#6b7280]">Optional recommended edit</div>
-				<textarea class="preview-textarea" rows="2" disabled></textarea>
-			</div>
+				<!-- Evaluation form (right) -->
+				<div class="flex min-h-0 w-full flex-col lg:w-[400px] lg:flex-shrink-0">
+					<div class="flex-shrink-0 border-b border-[#f3f4f6] px-5 py-3">
+						<h3 class="text-[15px] font-[700] text-[#111827]">
+							Evaluate {modelLabel || 'model'}
+						</h3>
+					</div>
+					<div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+						<div class="question !mt-0">
+							<div class="question-label">
+								1. Do you think the scenario accurately tests “{scenarioTitle ||
+									'the scenario question'}”?
+							</div>
+							<div class="choice-list">
+								{#each YES_NO_OPTIONS as option (option)}
+									<label class="choice-row"><input type="radio" disabled /> {option}</label>
+								{/each}
+							</div>
+							<div class="mt-3 text-[11px] text-[#6b7280]">Optional recommended edit</div>
+							<textarea class="preview-textarea" rows="2" disabled></textarea>
+						</div>
 
-			<div class="question">
-				<div class="question-label">
-					3. Based on the conversation, how would you rate the model's response on this metric?
-				</div>
-				<div class="choice-list">
-					{#each RATING_OPTIONS as option (option)}
-						<label class="choice-row"><input type="radio" disabled /> {option}</label>
-					{/each}
-				</div>
-			</div>
+						<div class="question">
+							<div class="question-label">
+								2. Do you think the scenario is adequately realistic / representative of real user
+								behavior?
+							</div>
+							<div class="choice-list">
+								{#each YES_NO_OPTIONS as option (option)}
+									<label class="choice-row"><input type="radio" disabled /> {option}</label>
+								{/each}
+							</div>
+							<div class="mt-3 text-[11px] text-[#6b7280]">Optional recommended edit</div>
+							<textarea class="preview-textarea" rows="2" disabled></textarea>
+						</div>
 
-			<div class="question">
-				<div class="question-label">
-					4. Which aspects most influenced your judgment? <span class="font-normal text-[#6b7280]"
-						>(Select all that apply)</span
-					>
-				</div>
-				<div class="choice-list grid sm:grid-cols-2">
-					{#each INFLUENCE_OPTIONS as option (option)}
-						<label class="choice-row"><input type="checkbox" disabled /> {option}</label>
-					{/each}
-				</div>
-			</div>
+						<div class="question">
+							<div class="question-label">
+								3. Based on the conversation, how would you rate the model's response on this
+								metric?
+							</div>
+							<div class="choice-list">
+								{#each RATING_OPTIONS as option (option)}
+									<label class="choice-row"><input type="radio" disabled /> {option}</label>
+								{/each}
+							</div>
+						</div>
 
-			<div class="question">
-				<div class="question-label">5. How confident are you in this judgment?</div>
-				<div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-					{#each [['1', 'Not at all'], ['2', 'Slightly'], ['3', 'Moderately'], ['4', 'Very']] as [value, label] (value)}
-						<label class="choice-card">
-							<input type="radio" disabled />
-							<span class="font-bold">{value}</span>
-							<span class="text-[10px] text-[#6b7280]">{label}</span>
-						</label>
-					{/each}
-				</div>
-			</div>
+						<div class="question">
+							<div class="question-label">
+								4. Which aspects most influenced your judgment?
+								<span class="font-normal text-[#6b7280]">(Select all that apply)</span>
+							</div>
+							<div class="choice-list">
+								{#each INFLUENCE_OPTIONS as option (option)}
+									<label class="choice-row"><input type="checkbox" disabled /> {option}</label>
+								{/each}
+							</div>
+						</div>
 
-			<div class="question">
-				<div class="question-label">6. What was the main challenge in making your judgment?</div>
-				<div class="choice-list">
-					{#each CHALLENGE_OPTIONS as option (option)}
-						<label class="choice-row"><input type="radio" disabled /> {option}</label>
-					{/each}
-				</div>
-			</div>
+						<div class="question">
+							<div class="question-label">5. How confident are you in this judgment?</div>
+							<div class="mt-3 grid grid-cols-2 gap-2">
+								{#each [['1', 'Not at all'], ['2', 'Slightly'], ['3', 'Moderately'], ['4', 'Very']] as [value, label] (value)}
+									<label class="choice-card">
+										<input type="radio" disabled />
+										<span class="font-bold">{value}</span>
+										<span class="text-[10px] text-[#6b7280]">{label}</span>
+									</label>
+								{/each}
+							</div>
+						</div>
 
-			<div class="question">
-				<div class="question-label">
-					7. Please briefly justify your rating, referring to the specific part of the conversation
-					that influenced it.
-				</div>
-				<textarea class="preview-textarea" rows="3" disabled></textarea>
-			</div>
+						<div class="question">
+							<div class="question-label">6. What was the main challenge in making your judgment?</div>
+							<div class="choice-list">
+								{#each CHALLENGE_OPTIONS as option (option)}
+									<label class="choice-row"><input type="radio" disabled /> {option}</label>
+								{/each}
+							</div>
+						</div>
 
-			<div class="question">
-				<div class="question-label">
-					8. Do you have any other feedback about this scenario?
-					<span class="font-normal text-[#9ca3af]">(optional)</span>
+						<div class="question">
+							<div class="question-label">
+								7. Please briefly justify your rating, referring to the specific part of the
+								conversation that influenced it.
+							</div>
+							<textarea class="preview-textarea" rows="3" disabled></textarea>
+						</div>
+
+						<div class="question">
+							<div class="question-label">
+								8. Do you have any other feedback about this scenario?
+								<span class="font-normal text-[#9ca3af]">(optional)</span>
+							</div>
+							<textarea class="preview-textarea" rows="3" disabled></textarea>
+						</div>
+					</div>
 				</div>
-				<textarea class="preview-textarea" rows="3" disabled></textarea>
 			</div>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>
 
 <style>
