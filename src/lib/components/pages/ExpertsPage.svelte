@@ -1664,7 +1664,7 @@
 												class="inline-flex cursor-help items-center gap-1 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
 												aria-describedby="scenario-name-tooltip"
 											>
-												Scenario to test metric (user goal)
+												Scenario (example of user goal)
 												<i class="fa-solid fa-circle-info text-[9px] normal-case tracking-normal"></i>
 											</div>
 											<div
