@@ -1670,7 +1670,7 @@
 													class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]"
 												>
 													{#each displayExamples as ex (ex)}
-														<li>{ex}</li>
+														<li>“{ex}”</li>
 													{/each}
 												</ul>
 											</div>
