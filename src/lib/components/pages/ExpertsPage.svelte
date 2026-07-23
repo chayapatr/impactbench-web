@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
+	import { browser } from '$app/environment';
 	import { safeMarkdownHtml } from '$lib/safe-markdown';
 	import {
 		loadTaxonomy,
@@ -298,13 +299,30 @@
 	// flow skips it. Persisted in form_state.orientationAcknowledged.
 	let orientationAcknowledged = $state(false);
 
-	// Collapsible examples in the metric header. Closed by default so the
-	// header stays compact; toggled via the "See examples" caret.
-	let examplesExpanded = $state(false);
+	// Content-note banner: dismissible; once closed it stays gone (localStorage).
+	const contentNoteStorageKey = `experts-content-note-dismissed:${expertId}`;
+	let contentNoteDismissed = $state(
+		browser && localStorage.getItem(contentNoteStorageKey) === '1'
+	);
 
-	// Content-note banner: dismissible per session, then collapses to a
-	// small pill that re-reveals the note on hover.
-	let contentNoteDismissed = $state(false);
+	function dismissContentNote() {
+		contentNoteDismissed = true;
+		if (browser) localStorage.setItem(contentNoteStorageKey, '1');
+	}
+
+	// Metric header details below the scenario (examples + pass/fail): open by
+	// default; when collapsed, remember via localStorage.
+	const headerDetailsStorageKey = `experts-metric-header-collapsed:${expertId}`;
+	let headerDetailsCollapsed = $state(
+		browser && localStorage.getItem(headerDetailsStorageKey) === '1'
+	);
+
+	function setHeaderDetailsCollapsed(collapsed: boolean) {
+		headerDetailsCollapsed = collapsed;
+		if (!browser) return;
+		if (collapsed) localStorage.setItem(headerDetailsStorageKey, '1');
+		else localStorage.removeItem(headerDetailsStorageKey);
+	}
 
 	// ── Derived helpers ───────────────────────────────────────────
 	// Resolved copy: prop overrides win; otherwise fall back to the loaded
@@ -1516,6 +1534,32 @@
 		{/if}
 	</header>
 
+	<!-- Content warning: full-width top banner (dismissible; stays closed via localStorage) -->
+	{#if !loading && !loadError && !formCompleted && selectedMetric && !contentNoteDismissed}
+		<div
+			class="flex flex-shrink-0 items-start gap-2.5 border-b border-[#fdba74] bg-[#fff7ed] px-6 py-3 text-[12px] leading-[1.55] text-[#9a3412]"
+			role="status"
+		>
+			<i class="fa-solid fa-triangle-exclamation mt-[2px] text-[13px] text-[#ea580c]"></i>
+			<span class="flex-1">
+				<span class="font-semibold text-[#c2410c]">Content note.</span>
+				These scenarios cover sensitive topics — including eating disorders, self-harm, and
+				violence — because accurate evaluation on the heaviest subjects is exactly what this
+				review depends on. The material is intentionally realistic and can be difficult to
+				read. Your progress is saved locally, so you can stop at any time and pick up where you
+				left off.
+			</span>
+			<button
+				type="button"
+				class="-mr-1 -mt-0.5 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#c2410c] transition-colors duration-150 hover:bg-[#ffedd5] hover:text-[#9a3412]"
+				aria-label="Dismiss content note"
+				onclick={dismissContentNote}
+			>
+				<i class="fa-solid fa-xmark text-[11px]"></i>
+			</button>
+		</div>
+	{/if}
+
 	<!-- ── Body ───────────────────────────────────────────────── -->
 	<main class="flex flex-1 overflow-hidden">
 		{#if loading}
@@ -1589,12 +1633,12 @@
 										<div
 											class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
 										>
-											Assigned Metric
+											Assigned Metric (Desired Model Behavior)
 										</div>
 										<h1
 											class="mt-[2px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]"
 										>
-											{selectedMetric.name}
+											Model {selectedMetric.name.charAt(0).toLowerCase()}{selectedMetric.name.slice(1)}
 										</h1>
 									</div>
 									{#if metricCriteriaText}
@@ -1609,22 +1653,46 @@
 											</p>
 										</div>
 									{/if}
-									{#if displayExamples.length > 0}
-										<div>
-											<button
-												type="button"
-												class="inline-flex cursor-pointer items-baseline gap-1.5 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase transition-colors duration-150 hover:text-[#6b7280]"
-												aria-expanded={examplesExpanded}
-												onclick={() => (examplesExpanded = !examplesExpanded)}
+									{#if phase === 'scenario' && currentScenarioTitle}
+										<div class="group relative">
+											<div
+												class="inline-flex cursor-help items-center gap-1 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+												aria-describedby="scenario-name-tooltip"
 											>
-												Metric Examples
-												<i
-													class="fa-solid fa-chevron-down text-[9px] normal-case tracking-normal transition-transform duration-150 {examplesExpanded
-														? 'rotate-180'
-														: ''}"
-												></i>
-											</button>
-											{#if examplesExpanded}
+												Scenario (example of user goal)
+												<i class="fa-solid fa-circle-info text-[9px] normal-case tracking-normal"></i>
+											</div>
+											<div
+												id="scenario-name-tooltip"
+												role="tooltip"
+												class="pointer-events-none absolute left-0 top-full z-20 mt-1.5 w-[320px] rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-2 text-[12px] leading-[1.5] font-normal tracking-normal text-[#374151] normal-case opacity-0 shadow-[0_8px_24px_rgba(15,23,42,0.1)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+											>
+												The scenario is the goal of the user during the conversation.
+											</div>
+											<div class="mt-[2px] text-[13px] font-semibold text-[#374151]">
+												{currentScenarioTitle}
+											</div>
+										</div>
+									{/if}
+									{#if phase === 'scenario' && headerDetailsCollapsed}
+										<button
+											type="button"
+											class="inline-flex cursor-pointer items-center gap-1.5 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase transition-colors duration-150 hover:text-[#6b7280]"
+											aria-expanded={false}
+											onclick={() => setHeaderDetailsCollapsed(false)}
+										>
+											Show
+											<i class="fa-solid fa-chevron-down text-[9px] normal-case tracking-normal"></i>
+										</button>
+									{/if}
+									{#if phase !== 'scenario' || !headerDetailsCollapsed}
+										{#if displayExamples.length > 0}
+											<div>
+												<div
+													class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+												>
+													Metric Examples
+												</div>
 												<ul
 													class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]"
 												>
@@ -1632,8 +1700,33 @@
 														<li>{ex}</li>
 													{/each}
 												</ul>
-											{/if}
+											</div>
+										{/if}
+										<div>
+											<div
+												class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+											>
+												Pass / Fail Guidance
+											</div>
+											<ul
+												class="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-[1.55] text-[#4b5563]"
+											>
+												<li>{passFailGuidance.pass}</li>
+												<li>{passFailGuidance.fail}</li>
+												<li>{passFailGuidance.borderline}</li>
+											</ul>
 										</div>
+										{#if phase === 'scenario'}
+											<button
+												type="button"
+												class="inline-flex cursor-pointer items-center gap-1.5 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase transition-colors duration-150 hover:text-[#6b7280]"
+												aria-expanded={true}
+												onclick={() => setHeaderDetailsCollapsed(true)}
+											>
+												Hide
+												<i class="fa-solid fa-chevron-up text-[9px] normal-case tracking-normal"></i>
+											</button>
+										{/if}
 									{/if}
 								</div>
 							</div>
@@ -2158,54 +2251,6 @@
 							</div>
 						{:else if currentScenario && currentMaskedModel}
 							<div class="mx-auto max-w-[900px]">
-								<!-- Content warning banner (dismissible; collapses to a hover pill) -->
-								{#if !contentNoteDismissed}
-									<div
-										class="mb-4 flex items-start gap-2.5 rounded-[8px] border border-[#e5e7eb] bg-[#f3f4f6] px-4 py-3 text-[12px] leading-[1.55] text-[#374151]"
-									>
-										<i class="fa-solid fa-circle-info mt-[3px] text-[11px] text-[#6b7280]"></i>
-										<span class="flex-1">
-											<span class="font-semibold text-[#1f2937]">Content note.</span>
-											These scenarios cover sensitive topics — including eating disorders,
-											self-harm, and violence — because accurate evaluation on the heaviest
-											subjects is exactly what this review depends on. The material is
-											intentionally realistic and can be difficult to read. Your progress is
-											saved locally, so you can stop at any time and pick up where you left off.
-										</span>
-										<button
-											type="button"
-											class="-mr-1 -mt-1 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#9ca3af] transition-colors duration-150 hover:bg-[#e5e7eb] hover:text-[#374151]"
-											aria-label="Dismiss content note"
-											onclick={() => (contentNoteDismissed = true)}
-										>
-											<i class="fa-solid fa-xmark text-[11px]"></i>
-										</button>
-									</div>
-								{:else}
-									<div class="group relative mb-4 inline-block">
-										<button
-											type="button"
-											class="inline-flex cursor-help items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white px-3 py-1 text-[11px] font-semibold text-[#6b7280] transition-colors duration-150 hover:border-[#d1d5db] hover:bg-[#f9fafb] hover:text-[#374151]"
-											aria-describedby="content-note-hover"
-										>
-											<i class="fa-solid fa-circle-info text-[10px]"></i>
-											Content note
-										</button>
-										<div
-											id="content-note-hover"
-											role="tooltip"
-											class="pointer-events-none absolute left-0 top-full z-20 mt-1.5 w-[420px] rounded-[8px] border border-[#e5e7eb] bg-white px-4 py-3 text-[12px] leading-[1.55] text-[#374151] opacity-0 shadow-[0_8px_24px_rgba(15,23,42,0.1)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
-										>
-											<span class="font-semibold text-[#1f2937]">Content note.</span>
-											These scenarios cover sensitive topics — including eating disorders,
-											self-harm, and violence — because accurate evaluation on the heaviest
-											subjects is exactly what this review depends on. The material is
-											intentionally realistic and can be difficult to read. Your progress is
-											saved locally, so you can stop at any time and pick up where you left off.
-										</div>
-									</div>
-								{/if}
-
 								<div>
 									<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
 									<div
@@ -2213,22 +2258,9 @@
 									>
 										Scenario {scenarioIdx + 1} of {selectedMetricScenarios.length} · {currentMaskedModel.label}
 									</div>
-									<div class="mt-1 text-[15px] font-[700] leading-[1.4] text-[#111827]">
-										{currentScenarioTitle}
-									</div>
-									<div
-										class="mt-3 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2.5 text-[12px] leading-[1.5] text-[#4b5563]"
-									>
-										<div class="font-semibold text-[#111827]">Pass / fail guidance</div>
-										<ul class="mt-1.5 list-disc space-y-1 pl-4">
-											<li>{passFailGuidance.pass}</li>
-											<li>{passFailGuidance.fail}</li>
-											<li>{passFailGuidance.borderline}</li>
-										</ul>
-									</div>
 
 									<!-- Conversation -->
-									<div class="mt-6 border-t border-[#f3f4f6] pt-5">
+									<div class="mt-4">
 										{#if conversationLoading}
 											<div class="flex items-center gap-2 text-[#9ca3af]">
 												<i class="fa-solid fa-spinner fa-spin"></i>
