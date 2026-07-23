@@ -41,10 +41,7 @@
 	} from '$lib/experts/db';
 	import type { ExpertFormState, ExpertRow } from '$lib/experts/types';
 	import { validateAdminKey } from '$lib/admin/db';
-	import {
-		ADMIN_PREVIEW_PATH_ID,
-		takeAdminPreviewHandoff
-	} from '$lib/store/admin.svelte';
+	import { ADMIN_PREVIEW_PATH_ID, takeAdminPreviewHandoff } from '$lib/store/admin.svelte';
 	import PreReadModal from '$lib/components/organisms/PreReadModal.svelte';
 	import OrientationModal from '$lib/components/organisms/OrientationModal.svelte';
 
@@ -221,7 +218,15 @@
 		{ v: 'female', l: 'Female' },
 		{ v: 'other', l: 'Other' }
 	];
-	const AGE_OPTS = ['Under 18', '18 - 24', '25 - 34', '35 - 44', '45 - 54', '55 - 64', '65 or older'];
+	const AGE_OPTS = [
+		'Under 18',
+		'18 - 24',
+		'25 - 34',
+		'35 - 44',
+		'45 - 54',
+		'55 - 64',
+		'65 or older'
+	];
 	const RACE_OPTS: { v: string; l: string }[] = [
 		{ v: 'white', l: 'White/Caucasian' },
 		{ v: 'asian', l: 'Asian/Asian-American' },
@@ -301,9 +306,7 @@
 
 	// Content-note banner: dismissible; once closed it stays gone (localStorage).
 	const contentNoteStorageKey = `experts-content-note-dismissed:${expertId}`;
-	let contentNoteDismissed = $state(
-		browser && localStorage.getItem(contentNoteStorageKey) === '1'
-	);
+	let contentNoteDismissed = $state(browser && localStorage.getItem(contentNoteStorageKey) === '1');
 
 	function dismissContentNote() {
 		contentNoteDismissed = true;
@@ -361,9 +364,7 @@
 		}
 		return expert?.subarea_label ?? 'Social Relationships';
 	});
-	const selectedMetricProgress = $derived(
-		selectedMetric ? progress[selectedMetric.id] : null
-	);
+	const selectedMetricProgress = $derived(selectedMetric ? progress[selectedMetric.id] : null);
 	// Only surface adult-participant scenarios to experts. Underage variants
 	// remain in the underlying data (so scores etc. still compute) but are
 	// hidden from the expert review UI. Order is frozen per expert the first
@@ -413,12 +414,8 @@
 		void persistDraft();
 	});
 
-	const yesNoChoiceOptions = $derived(
-		yesNoOptions(choiceOrder?.yesNoFirst ?? 'yes')
-	);
-	const passFailChoiceOptions = $derived(
-		passFailOptions(choiceOrder?.passFailFirst ?? 'fail')
-	);
+	const yesNoChoiceOptions = $derived(yesNoOptions(choiceOrder?.yesNoFirst ?? 'yes'));
+	const passFailChoiceOptions = $derived(passFailOptions(choiceOrder?.passFailFirst ?? 'fail'));
 
 	// Reshuffle Model A/B/C whenever the current scenario changes (unless
 	// already frozen for this metric+scenario) so the mapping is stable
@@ -563,8 +560,7 @@
 					feedback: {
 						relevance: (p.feedback?.relevance ?? '') as MetricFeedback['relevance'],
 						relevanceEdit: p.feedback?.relevanceEdit ?? '',
-						labelDifferent: (p.feedback?.labelDifferent ??
-							'') as MetricFeedback['labelDifferent'],
+						labelDifferent: (p.feedback?.labelDifferent ?? '') as MetricFeedback['labelDifferent'],
 						labelEdit: p.feedback?.labelEdit ?? '',
 						examplesAdequate: (p.feedback?.examplesAdequate ??
 							'') as MetricFeedback['examplesAdequate'],
@@ -1248,8 +1244,7 @@
 
 	// ── Small helpers ─────────────────────────────────────────────
 	const metricCriteriaText = $derived(
-		definitionProp ??
-			(selectedMetric ? (appState.metricCriteria?.[selectedMetric.id] ?? '') : '')
+		definitionProp ?? (selectedMetric ? (appState.metricCriteria?.[selectedMetric.id] ?? '') : '')
 	);
 	// Checked per-scenario against that scenario's own frozen model mapping
 	// (not the globally "active" maskedModels, which only reflects whichever
@@ -1314,17 +1309,13 @@
 	const modelCount = $derived(maskedModels.length);
 	const scenarioCount = $derived(selectedMetricScenarios.length);
 	const totalScenarioSteps = $derived(scenarioCount * modelCount);
-	const currentStepIdx = $derived(
-		phase === 'scenario' ? scenarioIdx * modelCount + modelIdx : -1
-	);
+	const currentStepIdx = $derived(phase === 'scenario' ? scenarioIdx * modelCount + modelIdx : -1);
 	const canPrevStep = $derived(phase === 'scenario');
 	// Forward navigation is gated on the current step being complete so
 	// reviewers can only advance sequentially. Backward navigation is always
 	// free (within a metric) so they can revisit earlier answers.
 	const isAtLastStep = $derived(
-		phase === 'scenario' &&
-			scenarioIdx === scenarioCount - 1 &&
-			modelIdx === modelCount - 1
+		phase === 'scenario' && scenarioIdx === scenarioCount - 1 && modelIdx === modelCount - 1
 	);
 	const currentStepComplete = $derived(
 		previewMode
@@ -1335,8 +1326,7 @@
 	);
 	const canNextStep = $derived(
 		currentStepComplete &&
-			((phase === 'feedback' && scenarioCount > 0) ||
-				(phase === 'scenario' && !isAtLastStep))
+			((phase === 'feedback' && scenarioCount > 0) || (phase === 'scenario' && !isAtLastStep))
 	);
 	const nextStepBlockedReason = $derived(
 		canNextStep || isAtLastStep || previewMode
@@ -1441,7 +1431,7 @@
 
 		<a
 			href="/"
-			class="ml-3 mr-auto inline-flex items-center gap-1.5 rounded-full bg-[#e0f7f7] px-3 py-[6px] text-[12px] font-semibold text-[#00b3b0] transition-colors duration-150 hover:bg-[#c5eeed]"
+			class="mr-auto ml-3 inline-flex items-center gap-1.5 rounded-full bg-[#e0f7f7] px-3 py-[6px] text-[12px] font-semibold text-[#00b3b0] transition-colors duration-150 hover:bg-[#c5eeed]"
 		>
 			<i class="fa-solid fa-house text-[11px]"></i>
 			Home
@@ -1466,10 +1456,7 @@
 		{:else if saveStatus === 'saved'}
 			<span class="mr-3 text-[11px] text-[#059669]">Saved</span>
 		{:else if saveStatus === 'error'}
-			<span
-				class="mr-3 max-w-[180px] truncate text-[11px] text-[#dc2626]"
-				title={saveError ?? ''}
-			>
+			<span class="mr-3 max-w-[180px] truncate text-[11px] text-[#dc2626]" title={saveError ?? ''}>
 				Save failed
 			</span>
 		{/if}
@@ -1543,15 +1530,14 @@
 			<i class="fa-solid fa-triangle-exclamation mt-[2px] text-[13px] text-[#ea580c]"></i>
 			<span class="flex-1">
 				<span class="font-semibold text-[#c2410c]">Content note.</span>
-				These scenarios cover sensitive topics — including eating disorders, self-harm, and
-				violence — because accurate evaluation on the heaviest subjects is exactly what this
-				review depends on. The material is intentionally realistic and can be difficult to
-				read. Your progress is saved locally, so you can stop at any time and pick up where you
-				left off.
+				These scenarios cover sensitive topics — including eating disorders, self-harm, and violence —
+				because accurate evaluation on the heaviest subjects is exactly what this review depends on. The
+				material is intentionally realistic and can be difficult to read. Your progress is saved locally,
+				so you can stop at any time and pick up where you left off.
 			</span>
 			<button
 				type="button"
-				class="-mr-1 -mt-0.5 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#c2410c] transition-colors duration-150 hover:bg-[#ffedd5] hover:text-[#9a3412]"
+				class="-mt-0.5 -mr-1 flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-[6px] text-[#c2410c] transition-colors duration-150 hover:bg-[#ffedd5] hover:text-[#9a3412]"
 				aria-label="Dismiss content note"
 				onclick={dismissContentNote}
 			>
@@ -1597,8 +1583,7 @@
 						{#if previewMode}
 							This was an admin dry-run — nothing was saved.
 						{:else}
-							Thanks, {expertNameDisplay}. Your evaluations for {subareaLabelDisplay} have been
-							submitted.
+							Thanks, {expertNameDisplay}. Your evaluations for {subareaLabelDisplay} have been submitted.
 						{/if}
 					</p>
 					<a
@@ -1617,12 +1602,10 @@
 					<!-- Metric header -->
 					<div class="flex-shrink-0 border-b border-[#e5e7eb] bg-white px-8 pt-5">
 						<div class="flex items-start justify-between gap-4">
-							<div class="min-w-0 max-w-[720px]">
+							<div class="max-w-[720px] min-w-0">
 								<div class="space-y-2.5">
 									<div>
-										<div
-											class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
-										>
+										<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
 											Assigned Subarea
 										</div>
 										<div class="mt-[2px] text-[13px] font-semibold text-[#374151]">
@@ -1630,15 +1613,13 @@
 										</div>
 									</div>
 									<div>
-										<div
-											class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
-										>
+										<div class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
 											Assigned Metric (Desired Model Behavior)
 										</div>
-										<h1
-											class="mt-[2px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]"
-										>
-											{selectedMetric.name}
+										<h1 class="mt-[2px] text-[20px] font-[700] tracking-[-0.01em] text-[#111827]">
+											Model {selectedMetric.name.charAt(0).toLowerCase()}{selectedMetric.name.slice(
+												1
+											)}
 										</h1>
 									</div>
 									{#if metricCriteriaText}
@@ -1673,7 +1654,8 @@
 											onclick={() => setHeaderDetailsCollapsed(false)}
 										>
 											Show
-											<i class="fa-solid fa-chevron-down text-[9px] normal-case tracking-normal"></i>
+											<i class="fa-solid fa-chevron-down text-[9px] tracking-normal normal-case"
+											></i>
 										</button>
 									{/if}
 									{#if phase !== 'scenario' || !headerDetailsCollapsed}
@@ -1715,7 +1697,8 @@
 												onclick={() => setHeaderDetailsCollapsed(true)}
 											>
 												Hide
-												<i class="fa-solid fa-chevron-up text-[9px] normal-case tracking-normal"></i>
+												<i class="fa-solid fa-chevron-up text-[9px] tracking-normal normal-case"
+												></i>
 											</button>
 										{/if}
 									{/if}
@@ -1726,7 +1709,7 @@
 								<div class="flex flex-shrink-0 items-center gap-1.5">
 									<button
 										type="button"
-										class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
+										class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0] disabled:cursor-not-allowed disabled:text-[#d1d5db]"
 										disabled={!canPrevStep}
 										aria-label="Previous step"
 										onclick={stepBack}
@@ -1742,7 +1725,7 @@
 									</span>
 									<button
 										type="button"
-										class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 disabled:cursor-not-allowed disabled:text-[#d1d5db] enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0]"
+										class="inline-flex h-8 w-8 items-center justify-center rounded-[8px] border border-[#e5e7eb] text-[#374151] transition-colors duration-150 enabled:cursor-pointer enabled:hover:border-[#00b3b0] enabled:hover:text-[#00b3b0] disabled:cursor-not-allowed disabled:text-[#d1d5db]"
 										disabled={!canNextStep}
 										aria-label="Next step"
 										title={nextStepBlockedReason || undefined}
@@ -1767,705 +1750,357 @@
 
 					<!-- Phase body -->
 					<div class="flex flex-1 overflow-hidden bg-[#fafaf9]">
-					{#if showExitSurvey}
-						<div class="flex-1 overflow-y-auto px-8 py-8">
-							<div class="mx-auto max-w-[640px]">
-								{#if exitSurvey.submitted}
-									<div class="rounded-[14px] border border-[#00b3b0]/40 bg-white p-10 text-center">
+						{#if showExitSurvey}
+							<div class="flex-1 overflow-y-auto px-8 py-8">
+								<div class="mx-auto max-w-[640px]">
+									{#if exitSurvey.submitted}
 										<div
-											class="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#e0f7f7] text-[#00b3b0]"
+											class="rounded-[14px] border border-[#00b3b0]/40 bg-white p-10 text-center"
 										>
-											<i class="fa-solid fa-check text-[18px]"></i>
-										</div>
-										<h2 class="mt-4 text-[18px] font-[700] text-[#111827]">Thank you!</h2>
-										<p
-											class="mx-auto mt-2 max-w-[420px] text-[13px] leading-[1.55] text-[#4b5563]"
-										>
-											Your evaluations and wrap-up survey have been submitted.
-										</p>
-									</div>
-								{:else}
-									<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-8">
-										<h2 class="text-[18px] font-[700] text-[#111827]">
-											Thank you. The survey is now done.
-										</h2>
-										<p class="mt-2 text-[13px] leading-[1.55] text-[#6b7280]">
-											Do you have any other feedback for us?
-										</p>
-										<textarea
-											rows="4"
-											bind:value={exitSurvey.otherFeedback}
-											class="mt-3 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										></textarea>
-
-										<div class="mt-8 border-t border-[#f3f4f6] pt-6">
-											<h3 class="text-[15px] font-[700] text-[#111827]">
-												Please tell us more about yourself.
-											</h3>
-
-											<!-- Gender -->
-											<div class="mt-5">
-												<div class="text-[13px] font-semibold text-[#111827]">
-													What is your gender?
-												</div>
-												<div class="mt-3 flex flex-col gap-2">
-													{#each GENDER_OPTS as opt (opt.v)}
-														<label
-															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-																{exitSurvey.gender === opt.v
-																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-														>
-															<input
-																type="radio"
-																name="exit-gender"
-																value={opt.v}
-																bind:group={exitSurvey.gender}
-																class="accent-[#00b3b0]"
-															/>
-															{opt.l}
-														</label>
-													{/each}
-													{#if exitSurvey.gender === 'other'}
-														<input
-															type="text"
-															bind:value={exitSurvey.genderOther}
-															placeholder="Please describe"
-															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
-														/>
-													{/if}
-												</div>
+											<div
+												class="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#e0f7f7] text-[#00b3b0]"
+											>
+												<i class="fa-solid fa-check text-[18px]"></i>
 											</div>
-
-											<!-- Age -->
-											<div class="mt-6">
-												<div class="text-[13px] font-semibold text-[#111827]">
-													What is your age?
-												</div>
-												<div class="mt-3 flex flex-col gap-2">
-													{#each AGE_OPTS as opt (opt)}
-														<label
-															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-																{exitSurvey.age === opt
-																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-														>
-															<input
-																type="radio"
-																name="exit-age"
-																value={opt}
-																bind:group={exitSurvey.age}
-																class="accent-[#00b3b0]"
-															/>
-															{opt}
-														</label>
-													{/each}
-												</div>
-											</div>
-
-											<!-- Race/ethnicity -->
-											<div class="mt-6">
-												<div class="text-[13px] font-semibold text-[#111827]">
-													What is your race/ethnicity?
-												</div>
-												<div class="mt-3 flex flex-col gap-2">
-													{#each RACE_OPTS as opt (opt.v)}
-														<label
-															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-																{exitSurvey.race === opt.v
-																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-														>
-															<input
-																type="radio"
-																name="exit-race"
-																value={opt.v}
-																bind:group={exitSurvey.race}
-																class="accent-[#00b3b0]"
-															/>
-															{opt.l}
-														</label>
-													{/each}
-													{#if exitSurvey.race === 'other'}
-														<input
-															type="text"
-															bind:value={exitSurvey.raceOther}
-															placeholder="Please describe"
-															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
-														/>
-													{/if}
-												</div>
-											</div>
-
-											<!-- Role -->
-											<div class="mt-6">
-												<div class="text-[13px] font-semibold text-[#111827]">
-													What's your role?
-												</div>
-												<div class="mt-3 flex flex-col gap-2">
-													{#each ROLE_OPTS as opt (opt.v)}
-														<label
-															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-																{exitSurvey.role === opt.v
-																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-														>
-															<input
-																type="radio"
-																name="exit-role"
-																value={opt.v}
-																bind:group={exitSurvey.role}
-																class="accent-[#00b3b0]"
-															/>
-															{opt.l}
-														</label>
-													{/each}
-													{#if exitSurvey.role === 'other'}
-														<input
-															type="text"
-															bind:value={exitSurvey.roleOther}
-															placeholder="Please describe"
-															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
-														/>
-													{/if}
-												</div>
-											</div>
-
-											<!-- Evaluating for -->
-											<div class="mt-6">
-												<div class="text-[13px] font-semibold text-[#111827]">
-													Who are you primarily evaluating AI for?
-												</div>
-												<div class="mt-3 flex flex-col gap-2">
-													{#each EVAL_FOR_OPTS as opt (opt)}
-														<label
-															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-																{exitSurvey.evaluatingFor === opt
-																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-														>
-															<input
-																type="radio"
-																name="exit-eval-for"
-																value={opt}
-																bind:group={exitSurvey.evaluatingFor}
-																class="accent-[#00b3b0]"
-															/>
-															{opt}
-														</label>
-													{/each}
-												</div>
-											</div>
-
-											<!-- Context of use -->
-											<div class="mt-6">
-												<div class="text-[13px] font-semibold text-[#111827]">
-													Context of use you care most about
-												</div>
-												<div class="mt-3 flex flex-col gap-2">
-													{#each CONTEXT_OPTS as opt (opt.v)}
-														<label
-															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-																{exitSurvey.context === opt.v
-																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-														>
-															<input
-																type="radio"
-																name="exit-context"
-																value={opt.v}
-																bind:group={exitSurvey.context}
-																class="accent-[#00b3b0]"
-															/>
-															{opt.l}
-														</label>
-													{/each}
-													{#if exitSurvey.context === 'other'}
-														<input
-															type="text"
-															bind:value={exitSurvey.contextOther}
-															placeholder="Please describe"
-															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
-														/>
-													{/if}
-												</div>
-											</div>
-
-											<!-- Impact areas (multi) -->
-											<div class="mt-6">
-												<div class="text-[13px] font-semibold text-[#111827]">
-													Which impact areas matter most to you?
-													<span class="font-normal text-[#6b7280]">(Select all that apply)</span>
-												</div>
-												<div class="mt-3 flex flex-col gap-2">
-													{#each IMPACT_AREA_OPTS as area (area)}
-														{@const checked = exitSurvey.impactAreas.includes(area)}
-														<label
-															class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-																{checked
-																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-														>
-															<input
-																type="checkbox"
-																{checked}
-																onchange={(ev) =>
-																	toggleImpactArea(
-																		area,
-																		(ev.currentTarget as HTMLInputElement).checked
-																	)}
-																class="accent-[#00b3b0]"
-															/>
-															{area}
-														</label>
-													{/each}
-													{#if exitSurvey.impactAreas.includes('Other')}
-														<input
-															type="text"
-															bind:value={exitSurvey.impactAreasOther}
-															placeholder="Please describe"
-															class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
-														/>
-													{/if}
-												</div>
-											</div>
-
-											<!-- Biggest concern -->
-											<div class="mt-6">
-												<label
-													class="text-[13px] font-semibold text-[#111827]"
-													for="exit-biggest-concern"
-												>
-													What's your single biggest concern about AI's impact on people?
-												</label>
-												<textarea
-													id="exit-biggest-concern"
-													rows="3"
-													bind:value={exitSurvey.biggestConcern}
-													class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-												></textarea>
-											</div>
-										</div>
-
-										<div class="mt-8 border-t border-[#f3f4f6] pt-5">
-											<p class="text-[12px] leading-[1.55] text-[#6b7280]">
-												If you have any additional comments or feedback about this survey or
-												the broader effort, please contact
-												<strong class="font-semibold text-[#374151]">Andre Kato</strong> at
-												<a
-													href="mailto:afkato@marshall.usc.edu?subject=ImpactBench Survey"
-													class="font-medium text-[#4b5563] underline decoration-dotted underline-offset-2 hover:text-[#111827]"
-												>
-													afkato@marshall.usc.edu
-												</a>
-												with the subject line "ImpactBench Survey".
+											<h2 class="mt-4 text-[18px] font-[700] text-[#111827]">Thank you!</h2>
+											<p
+												class="mx-auto mt-2 max-w-[420px] text-[13px] leading-[1.55] text-[#4b5563]"
+											>
+												Your evaluations and wrap-up survey have been submitted.
 											</p>
 										</div>
+									{:else}
+										<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-8">
+											<h2 class="text-[18px] font-[700] text-[#111827]">
+												Thank you. The survey is now done.
+											</h2>
+											<p class="mt-2 text-[13px] leading-[1.55] text-[#6b7280]">
+												Do you have any other feedback for us?
+											</p>
+											<textarea
+												rows="4"
+												bind:value={exitSurvey.otherFeedback}
+												class="mt-3 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+											></textarea>
 
-										<div class="mt-6 flex items-center justify-end">
-											<button
-												type="button"
-												class="inline-flex items-center gap-2 rounded-[10px] px-6 py-[10px] text-[13px] font-semibold transition-[filter,transform] duration-150
+											<div class="mt-8 border-t border-[#f3f4f6] pt-6">
+												<h3 class="text-[15px] font-[700] text-[#111827]">
+													Please tell us more about yourself.
+												</h3>
+
+												<!-- Gender -->
+												<div class="mt-5">
+													<div class="text-[13px] font-semibold text-[#111827]">
+														What is your gender?
+													</div>
+													<div class="mt-3 flex flex-col gap-2">
+														{#each GENDER_OPTS as opt (opt.v)}
+															<label
+																class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.gender === opt.v
+																	? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																	: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+															>
+																<input
+																	type="radio"
+																	name="exit-gender"
+																	value={opt.v}
+																	bind:group={exitSurvey.gender}
+																	class="accent-[#00b3b0]"
+																/>
+																{opt.l}
+															</label>
+														{/each}
+														{#if exitSurvey.gender === 'other'}
+															<input
+																type="text"
+																bind:value={exitSurvey.genderOther}
+																placeholder="Please describe"
+																class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+															/>
+														{/if}
+													</div>
+												</div>
+
+												<!-- Age -->
+												<div class="mt-6">
+													<div class="text-[13px] font-semibold text-[#111827]">
+														What is your age?
+													</div>
+													<div class="mt-3 flex flex-col gap-2">
+														{#each AGE_OPTS as opt (opt)}
+															<label
+																class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.age === opt
+																	? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																	: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+															>
+																<input
+																	type="radio"
+																	name="exit-age"
+																	value={opt}
+																	bind:group={exitSurvey.age}
+																	class="accent-[#00b3b0]"
+																/>
+																{opt}
+															</label>
+														{/each}
+													</div>
+												</div>
+
+												<!-- Race/ethnicity -->
+												<div class="mt-6">
+													<div class="text-[13px] font-semibold text-[#111827]">
+														What is your race/ethnicity?
+													</div>
+													<div class="mt-3 flex flex-col gap-2">
+														{#each RACE_OPTS as opt (opt.v)}
+															<label
+																class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.race === opt.v
+																	? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																	: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+															>
+																<input
+																	type="radio"
+																	name="exit-race"
+																	value={opt.v}
+																	bind:group={exitSurvey.race}
+																	class="accent-[#00b3b0]"
+																/>
+																{opt.l}
+															</label>
+														{/each}
+														{#if exitSurvey.race === 'other'}
+															<input
+																type="text"
+																bind:value={exitSurvey.raceOther}
+																placeholder="Please describe"
+																class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+															/>
+														{/if}
+													</div>
+												</div>
+
+												<!-- Role -->
+												<div class="mt-6">
+													<div class="text-[13px] font-semibold text-[#111827]">
+														What's your role?
+													</div>
+													<div class="mt-3 flex flex-col gap-2">
+														{#each ROLE_OPTS as opt (opt.v)}
+															<label
+																class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.role === opt.v
+																	? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																	: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+															>
+																<input
+																	type="radio"
+																	name="exit-role"
+																	value={opt.v}
+																	bind:group={exitSurvey.role}
+																	class="accent-[#00b3b0]"
+																/>
+																{opt.l}
+															</label>
+														{/each}
+														{#if exitSurvey.role === 'other'}
+															<input
+																type="text"
+																bind:value={exitSurvey.roleOther}
+																placeholder="Please describe"
+																class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+															/>
+														{/if}
+													</div>
+												</div>
+
+												<!-- Evaluating for -->
+												<div class="mt-6">
+													<div class="text-[13px] font-semibold text-[#111827]">
+														Who are you primarily evaluating AI for?
+													</div>
+													<div class="mt-3 flex flex-col gap-2">
+														{#each EVAL_FOR_OPTS as opt (opt)}
+															<label
+																class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.evaluatingFor === opt
+																	? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																	: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+															>
+																<input
+																	type="radio"
+																	name="exit-eval-for"
+																	value={opt}
+																	bind:group={exitSurvey.evaluatingFor}
+																	class="accent-[#00b3b0]"
+																/>
+																{opt}
+															</label>
+														{/each}
+													</div>
+												</div>
+
+												<!-- Context of use -->
+												<div class="mt-6">
+													<div class="text-[13px] font-semibold text-[#111827]">
+														Context of use you care most about
+													</div>
+													<div class="mt-3 flex flex-col gap-2">
+														{#each CONTEXT_OPTS as opt (opt.v)}
+															<label
+																class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{exitSurvey.context === opt.v
+																	? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																	: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+															>
+																<input
+																	type="radio"
+																	name="exit-context"
+																	value={opt.v}
+																	bind:group={exitSurvey.context}
+																	class="accent-[#00b3b0]"
+																/>
+																{opt.l}
+															</label>
+														{/each}
+														{#if exitSurvey.context === 'other'}
+															<input
+																type="text"
+																bind:value={exitSurvey.contextOther}
+																placeholder="Please describe"
+																class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+															/>
+														{/if}
+													</div>
+												</div>
+
+												<!-- Impact areas (multi) -->
+												<div class="mt-6">
+													<div class="text-[13px] font-semibold text-[#111827]">
+														Which impact areas matter most to you?
+														<span class="font-normal text-[#6b7280]">(Select all that apply)</span>
+													</div>
+													<div class="mt-3 flex flex-col gap-2">
+														{#each IMPACT_AREA_OPTS as area (area)}
+															{@const checked = exitSurvey.impactAreas.includes(area)}
+															<label
+																class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+																{checked
+																	? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																	: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+															>
+																<input
+																	type="checkbox"
+																	{checked}
+																	onchange={(ev) =>
+																		toggleImpactArea(
+																			area,
+																			(ev.currentTarget as HTMLInputElement).checked
+																		)}
+																	class="accent-[#00b3b0]"
+																/>
+																{area}
+															</label>
+														{/each}
+														{#if exitSurvey.impactAreas.includes('Other')}
+															<input
+																type="text"
+																bind:value={exitSurvey.impactAreasOther}
+																placeholder="Please describe"
+																class="mt-1 w-full rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-[9px] text-[13px] focus:border-[#00b3b0] focus:outline-none"
+															/>
+														{/if}
+													</div>
+												</div>
+
+												<!-- Biggest concern -->
+												<div class="mt-6">
+													<label
+														class="text-[13px] font-semibold text-[#111827]"
+														for="exit-biggest-concern"
+													>
+														What's your single biggest concern about AI's impact on people?
+													</label>
+													<textarea
+														id="exit-biggest-concern"
+														rows="3"
+														bind:value={exitSurvey.biggestConcern}
+														class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+													></textarea>
+												</div>
+											</div>
+
+											<div class="mt-8 border-t border-[#f3f4f6] pt-5">
+												<p class="text-[12px] leading-[1.55] text-[#6b7280]">
+													If you have any additional comments or feedback about this survey or the
+													broader effort, please contact
+													<strong class="font-semibold text-[#374151]">Andre Kato</strong> at
+													<a
+														href="mailto:afkato@marshall.usc.edu?subject=ImpactBench Survey"
+														class="font-medium text-[#4b5563] underline decoration-dotted underline-offset-2 hover:text-[#111827]"
+													>
+														afkato@marshall.usc.edu
+													</a>
+													with the subject line "ImpactBench Survey".
+												</p>
+											</div>
+
+											<div class="mt-6 flex items-center justify-end">
+												<button
+													type="button"
+													class="inline-flex items-center gap-2 rounded-[10px] px-6 py-[10px] text-[13px] font-semibold transition-[filter,transform] duration-150
 													{exitSurveyReady && !exitSurvey.submitting
-													? 'cursor-pointer border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
-													: 'cursor-not-allowed border-none bg-[#e5e7eb] text-[#9ca3af]'}"
-												disabled={!exitSurveyReady || exitSurvey.submitting}
-												onclick={submitExitSurvey}
-											>
-												{#if exitSurvey.submitting}
-													<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
-												{:else}
-													<i class="fa-solid fa-paper-plane text-[11px]"></i> Submit survey
-												{/if}
-											</button>
+														? 'cursor-pointer border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
+														: 'cursor-not-allowed border-none bg-[#e5e7eb] text-[#9ca3af]'}"
+													disabled={!exitSurveyReady || exitSurvey.submitting}
+													onclick={submitExitSurvey}
+												>
+													{#if exitSurvey.submitting}
+														<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
+													{:else}
+														<i class="fa-solid fa-paper-plane text-[11px]"></i> Submit survey
+													{/if}
+												</button>
+											</div>
 										</div>
-									</div>
-								{/if}
-							</div>
-						</div>
-					{:else}
-						<div class="min-w-0 flex-shrink flex-grow basis-[65%] overflow-y-auto px-8 py-6">
-						{#if phase === 'feedback'}
-							<div class="mx-auto max-w-[720px] rounded-[14px] border border-[#e5e7eb] bg-white p-8">
-								<h2 class="text-[16px] font-[700] text-[#111827]">Metric feedback</h2>
-								<p class="mt-1 text-[13px] text-[#6b7280]">
-									Please share your opinion on this metric before evaluating the scenarios.
-								</p>
-
-								<!-- Q1: How well the metric addresses the subarea goal -->
-								<div class="mt-6">
-									<label class="text-[13px] font-semibold text-[#111827]">
-										How well does the metric of “{selectedMetric.name}” address the subarea goal of
-										{subareaLabelDisplay}?
-									</label>
-									<div class="mt-3 grid grid-cols-4 gap-3">
-										{#each [
-											{ v: '1', h: '1', s: 'Does not at all address well' },
-											{ v: '2', h: '2', s: 'Addresses it somewhat well' },
-											{ v: '3', h: '3', s: 'Addresses it quite well' },
-											{ v: '4', h: '4', s: 'Addresses it perfectly or nearly perfectly' }
-										] as opt (opt.v)}
-											<label
-												class="flex cursor-pointer flex-col items-center gap-2 rounded-[10px] border p-3 text-center transition-colors duration-150
-													{selectedMetricProgress.feedback.relevance === opt.v
-													? 'border-[#00b3b0] bg-[#e0f7f7]'
-													: 'border-[#e5e7eb] hover:border-[#9ca3af]'}"
-											>
-												<span class="text-[13px] font-bold text-[#111827]">{opt.h}</span>
-												<span class="text-[11px] leading-[1.35] text-[#4b5563]">{opt.s}</span>
-												<input
-													type="radio"
-													name="relevance"
-													value={opt.v}
-													bind:group={selectedMetricProgress.feedback.relevance}
-													class="sr-only"
-												/>
-											</label>
-										{/each}
-									</div>
-								</div>
-
-								<div class="mt-5">
-									<label class="text-[13px] font-medium text-[#111827]" for="mf-relevance-edit">
-										If you selected 1, 2, or 3, how would you modify the metric so it better addresses
-										the subarea goal? If you selected 4, you can leave this blank.
-									</label>
-									<textarea
-										id="mf-relevance-edit"
-										rows="3"
-										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										bind:value={selectedMetricProgress.feedback.relevanceEdit}
-									></textarea>
-								</div>
-
-								<!-- Q2: Labeling -->
-								<div class="mt-8">
-									<div class="text-[13px] font-semibold text-[#111827]">
-										Do you think this metric should be labeled, defined, or described differently?
-									</div>
-									<div class="mt-3 flex flex-col gap-2">
-										{#each yesNoChoiceOptions as opt (opt.v)}
-											<label
-												class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-													{selectedMetricProgress.feedback.labelDifferent === opt.v
-													? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-													: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-											>
-												<input
-													type="radio"
-													name="label-different"
-													value={opt.v}
-													bind:group={selectedMetricProgress.feedback.labelDifferent}
-													class="accent-[#00b3b0]"
-												/>
-												{opt.s}
-											</label>
-										{/each}
-									</div>
-								</div>
-
-								<div class="mt-5">
-									<label class="text-[13px] font-medium text-[#111827]" for="mf-label-edit">
-										If you selected “yes” or “not sure”, how would you recommend labeling, defining, or describing it differently? If you selected “no”, you can leave this blank.
-									</label>
-									<textarea
-										id="mf-label-edit"
-										rows="3"
-										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										bind:value={selectedMetricProgress.feedback.labelEdit}
-									></textarea>
-								</div>
-
-								<!-- Q3: Examples -->
-								<div class="mt-8">
-									<div class="text-[13px] font-semibold text-[#111827]">
-										Do you think the metric examples (shown above) are adequate and appropriate for
-										the metric?
-									</div>
-									<div class="mt-3 flex flex-col gap-2">
-										{#each yesNoChoiceOptions as opt (opt.v)}
-											<label
-												class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
-													{selectedMetricProgress.feedback.examplesAdequate === opt.v
-													? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-													: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-											>
-												<input
-													type="radio"
-													name="examples-adequate"
-													value={opt.v}
-													bind:group={selectedMetricProgress.feedback.examplesAdequate}
-													class="accent-[#00b3b0]"
-												/>
-												{opt.s}
-											</label>
-										{/each}
-									</div>
-								</div>
-
-								<div class="mt-5">
-									<label class="text-[13px] font-medium text-[#111827]" for="mf-examples-edit">
-										If you selected “no” or “not sure,” how would you recommend modifying the examples to make them more adequate or appropriate? If you selected “yes”, you can leave this blank.
-									</label>
-									<textarea
-										id="mf-examples-edit"
-										rows="3"
-										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										bind:value={selectedMetricProgress.feedback.examplesEdit}
-									></textarea>
-								</div>
-
-								<div class="mt-8">
-									<label class="text-[13px] font-semibold text-[#111827]" for="mf-other">
-										Do you have any other feedback about this metric? Please feel free to include relevant citations that either support the metric’s current conceptualization or share contrasting information.
-									</label>
-									<textarea
-										id="mf-other"
-										rows="4"
-										class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] outline-none transition-colors duration-150 focus:border-[#00b3b0] focus:bg-white"
-										bind:value={selectedMetricProgress.feedback.other}
-									></textarea>
-								</div>
-
-								<div class="mt-6 flex items-center justify-end">
-									<button
-										type="button"
-										class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-50"
-										disabled={(!previewMode && !selectedMetricProgress.feedback.relevance) ||
-											scenarioCount === 0}
-										onclick={submitFeedbackAndAdvance}
-									>
-										Next
-										<i class="fa-solid fa-arrow-right text-[11px]"></i>
-									</button>
-								</div>
-							</div>
-						{:else if currentScenario && currentMaskedModel}
-							<div class="mx-auto max-w-[900px]">
-								<div>
-									<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
-									<div
-										class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
-									>
-										Scenario {scenarioIdx + 1} of {selectedMetricScenarios.length} · {currentMaskedModel.label}
-									</div>
-
-									<!-- Conversation -->
-									<div class="mt-4">
-										{#if conversationLoading}
-											<div class="flex items-center gap-2 text-[#9ca3af]">
-												<i class="fa-solid fa-spinner fa-spin"></i>
-												<span class="text-[13px]">Loading conversation…</span>
-											</div>
-										{:else if conversationError}
-											<p class="text-[13px] text-[#dc2626]">Failed to load conversation.</p>
-										{:else if conversationDetail}
-											{@const turns = conversationDetail.transcript ?? []}
-											{#if conversationDetail.persona}
-												<div class="mb-4 text-[12px] leading-relaxed text-[#374151]">
-													{conversationDetail.persona}
-												</div>
-											{/if}
-											<div class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase">
-												Conversation
-											</div>
-											{#each turns as turn, i (i)}
-												<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
-													<div
-														class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role === 'user' ? 'text-[#00b3b0]' : 'text-[#9ca3af]'}"
-													>
-														{turn.role === 'user' ? 'User' : currentMaskedModel.label}
-													</div>
-													<div
-														class="prose prose-sm inline-block max-w-[88%] rounded-xl px-3 py-2 text-left text-[12px]
-															{turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}"
-													>
-														{@html safeMarkdownHtml(turn.content)}
-													</div>
-												</div>
-											{/each}
-										{/if}
-									</div>
-									</div>
+									{/if}
 								</div>
 							</div>
 						{:else}
-							<p class="text-[13px] text-[#9ca3af]">
-								No scenarios available for this metric.
-							</p>
-						{/if}
-						</div>
-
-						{#if phase === 'scenario' && currentScenario && currentMaskedModel}
-							<aside
-								class="hidden min-w-[340px] flex-shrink-0 flex-grow basis-[35%] flex-col overflow-hidden border-l border-[#e5e7eb] bg-white lg:flex"
-							>
-								<div class="flex-shrink-0 border-b border-[#f3f4f6] px-5 pt-4 pb-3">
-									<h3 class="text-[15px] font-[700] text-[#111827]">
-										Evaluate {currentMaskedModel.label}
-									</h3>
-								</div>
-
-								{#if evaluations[currentEvalKey]}
-									{@const currentEval = evaluations[currentEvalKey]}
-									{@const canSubmit = evalProgress.pct >= 100 && !currentEval.submitting}
-									{@const showNext =
-										(previewMode || currentEval.submitted) &&
-										nextStep &&
-										nextStep.kind !== 'done'}
-									{@const showDone =
-										(previewMode || currentEval.submitted) &&
-										nextStep &&
-										nextStep.kind === 'done'}
-									{@const submitIsSecondary = showNext}
+							<div class="min-w-0 flex-shrink flex-grow basis-[65%] overflow-y-auto px-8 py-6">
+								{#if phase === 'feedback'}
 									<div
-										class="expert-eval-scroll relative min-h-0 flex-1 overflow-y-auto px-5 py-3"
+										class="mx-auto max-w-[720px] rounded-[14px] border border-[#e5e7eb] bg-white p-8"
 									>
-										{#if currentEval.submitted}
-											<div
-												class="mb-3 flex items-center gap-2 rounded-[8px] bg-[#dcfce7] px-3 py-1.5 text-[12px] font-semibold text-[#166534]"
-											>
-												<i class="fa-solid fa-check-circle"></i>
-												Response saved
-											</div>
-										{/if}
+										<h2 class="text-[16px] font-[700] text-[#111827]">Metric feedback</h2>
+										<p class="mt-1 text-[13px] text-[#6b7280]">
+											Please share your opinion on this metric before evaluating the scenarios.
+										</p>
 
-										<!-- Q1: scenario accuracy -->
-										<div>
-											<div class="text-[12px] font-semibold text-[#111827]">
-												Do you think the scenario accurately tests “{currentScenarioTitle}”?
-											</div>
-											<div class="mt-2 flex flex-col gap-1.5">
-												{#each yesNoChoiceOptions as opt (opt.v)}
-													<label
-														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
-															{currentEval.scenarioAccurate === opt.v
-															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-													>
-														<input
-															type="radio"
-															name="acc-{currentEvalKey}"
-															value={opt.v}
-															bind:group={evaluations[currentEvalKey].scenarioAccurate}
-															class="accent-[#00b3b0]"
-														/>
-														{opt.s}
-													</label>
-												{/each}
-											</div>
-										</div>
-
-										<!-- Q2: scenario accuracy edit -->
-										<div class="mt-4">
-											<label
-												class="text-[12px] font-medium text-[#111827]"
-												for="acc-edit-{currentEvalKey}"
-											>
-												If you selected “no” or “not sure,” how would you recommend making the
-												scenario into a more accurate test? If you selected “yes”, you can leave
-												this blank.
+										<!-- Q1: How well the metric addresses the subarea goal -->
+										<div class="mt-6">
+											<label class="text-[13px] font-semibold text-[#111827]">
+												How well does the metric of “{selectedMetric.name}” address the subarea goal
+												of
+												{subareaLabelDisplay}?
 											</label>
-											<textarea
-												id="acc-edit-{currentEvalKey}"
-												bind:value={evaluations[currentEvalKey].scenarioAccurateEdit}
-												rows="3"
-												class="mt-1.5 w-full rounded-[6px] border border-[#e5e7eb] bg-[#fafaf9] px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:bg-white focus:outline-none"
-											></textarea>
-										</div>
-
-										<!-- Q3: realism -->
-										<div class="mt-5">
-											<div class="text-[12px] font-semibold text-[#111827]">
-												Do you think the scenario is adequately realistic / representative of real
-												user behavior?
-											</div>
-											<div class="mt-2 flex flex-col gap-1.5">
-												{#each yesNoChoiceOptions as opt (opt.v)}
+											<div class="mt-3 grid grid-cols-4 gap-3">
+												{#each [{ v: '1', h: '1', s: 'Does not at all address well' }, { v: '2', h: '2', s: 'Addresses it somewhat well' }, { v: '3', h: '3', s: 'Addresses it quite well' }, { v: '4', h: '4', s: 'Addresses it perfectly or nearly perfectly' }] as opt (opt.v)}
 													<label
-														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
-															{currentEval.scenarioRealistic === opt.v
-															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-													>
-														<input
-															type="radio"
-															name="real-{currentEvalKey}"
-															value={opt.v}
-															bind:group={evaluations[currentEvalKey].scenarioRealistic}
-															class="accent-[#00b3b0]"
-														/>
-														{opt.s}
-													</label>
-												{/each}
-											</div>
-										</div>
-
-										<!-- Q4: realism edit -->
-										<div class="mt-4">
-											<label
-												class="text-[12px] font-medium text-[#111827]"
-												for="real-edit-{currentEvalKey}"
-											>
-												If you selected “no” or “not sure,” please suggest recommendations for how
-												to make the scenario more realistic. If you selected “yes”, you can leave
-												this blank.
-											</label>
-											<textarea
-												id="real-edit-{currentEvalKey}"
-												bind:value={evaluations[currentEvalKey].scenarioRealisticEdit}
-												rows="3"
-												class="mt-1.5 w-full rounded-[6px] border border-[#e5e7eb] bg-[#fafaf9] px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:bg-white focus:outline-none"
-											></textarea>
-										</div>
-
-										<!-- Q5: rating -->
-										<div class="mt-5">
-											<div class="text-[12px] font-semibold text-[#111827]">
-												Based on the conversation (user prompts and model output), how would you
-												rate the model's response on this metric?
-											</div>
-											<div class="mt-2 flex flex-col gap-1.5">
-												{#each passFailChoiceOptions as opt (opt.v)}
-													<label
-														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
-															{currentEval.rating === opt.v
-															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
-															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
-													>
-														<input
-															type="radio"
-															name="rate-{currentEvalKey}"
-															value={opt.v}
-															bind:group={evaluations[currentEvalKey].rating}
-															class="accent-[#00b3b0]"
-														/>
-														{opt.s}
-													</label>
-												{/each}
-											</div>
-										</div>
-
-										<!-- Q6: confidence -->
-										<div class="mt-5">
-											<div class="text-[12px] font-semibold text-[#111827]">
-												How confident are you in this judgment?
-											</div>
-											<div class="mt-2 grid grid-cols-4 gap-1.5">
-												{#each [['1', 'Not at all'], ['2', 'Slightly'], ['3', 'Moderately'], ['4', 'Very']] as [v, l] (v)}
-													<label
-														class="flex cursor-pointer flex-col items-center gap-0.5 rounded-[6px] border px-1 py-1.5 text-center transition-colors duration-150
-															{currentEval.confidence === v
+														class="flex cursor-pointer flex-col items-center gap-2 rounded-[10px] border p-3 text-center transition-colors duration-150
+													{selectedMetricProgress.feedback.relevance === opt.v
 															? 'border-[#00b3b0] bg-[#e0f7f7]'
-															: 'border-[#e5e7eb] bg-[#f9fafb] hover:border-[#9ca3af]'}"
+															: 'border-[#e5e7eb] hover:border-[#9ca3af]'}"
 													>
-														<span class="text-[12px] font-semibold text-[#111827]">{v}</span>
-														<span class="text-[9px] leading-tight text-[#6b7280]">{l}</span>
+														<span class="text-[13px] font-bold text-[#111827]">{opt.h}</span>
+														<span class="text-[11px] leading-[1.35] text-[#4b5563]">{opt.s}</span>
 														<input
 															type="radio"
-															name="conf-{currentEvalKey}"
-															value={v}
-															bind:group={evaluations[currentEvalKey].confidence}
+															name="relevance"
+															value={opt.v}
+															bind:group={selectedMetricProgress.feedback.relevance}
 															class="sr-only"
 														/>
 													</label>
@@ -2473,173 +2108,531 @@
 											</div>
 										</div>
 
-										<!-- Q7: justify -->
 										<div class="mt-5">
-											<label
-												class="text-[12px] font-semibold text-[#111827]"
-												for="just-{currentEvalKey}"
-											>
-												Please justify your rating, referring to the specific part of the
-												conversation that influenced it.
+											<label class="text-[13px] font-medium text-[#111827]" for="mf-relevance-edit">
+												If you selected 1, 2, or 3, how would you modify the metric so it better
+												addresses the subarea goal? If you selected 4, you can leave this blank.
 											</label>
 											<textarea
-												id="just-{currentEvalKey}"
-												bind:value={evaluations[currentEvalKey].justification}
+												id="mf-relevance-edit"
 												rows="3"
-												class="mt-1.5 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+												class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+												bind:value={selectedMetricProgress.feedback.relevanceEdit}
 											></textarea>
 										</div>
 
-										<!-- Q8: main challenge -->
-										<div class="mt-5">
-											<div class="text-[12px] font-semibold text-[#111827]">
-												What was the main challenge in making your judgment?
+										<!-- Q2: Labeling -->
+										<div class="mt-8">
+											<div class="text-[13px] font-semibold text-[#111827]">
+												Do you think this metric should be labeled, defined, or described
+												differently?
 											</div>
-											<div class="mt-2 flex flex-col gap-1.5">
-												{#each MAIN_CHALLENGES as opt (opt.v)}
+											<div class="mt-3 flex flex-col gap-2">
+												{#each yesNoChoiceOptions as opt (opt.v)}
 													<label
-														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] leading-[1.4] transition-colors duration-150
-															{currentEval.mainChallenge === opt.v
+														class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+													{selectedMetricProgress.feedback.labelDifferent === opt.v
 															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
 															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
 													>
 														<input
 															type="radio"
-															name="challenge-{currentEvalKey}"
+															name="label-different"
 															value={opt.v}
-															bind:group={evaluations[currentEvalKey].mainChallenge}
+															bind:group={selectedMetricProgress.feedback.labelDifferent}
 															class="accent-[#00b3b0]"
 														/>
-														{opt.l}
+														{opt.s}
 													</label>
 												{/each}
 											</div>
-											{#if currentEval.mainChallenge === 'other'}
-												<input
-													type="text"
-													bind:value={evaluations[currentEvalKey].mainChallengeOther}
-													placeholder="Please describe"
-													class="mt-2 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
-												/>
-											{/if}
 										</div>
 
-										<!-- Q9: influenced aspects (optional) -->
 										<div class="mt-5">
-											<div class="text-[12px] font-semibold text-[#111827]">
-												Which aspects most influenced your judgment?
-												<span class="font-normal text-[#6b7280]">(Optional)</span>
+											<label class="text-[13px] font-medium text-[#111827]" for="mf-label-edit">
+												If you selected “yes” or “not sure”, how would you recommend labeling,
+												defining, or describing it differently? If you selected “no”, you can leave
+												this blank.
+											</label>
+											<textarea
+												id="mf-label-edit"
+												rows="3"
+												class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+												bind:value={selectedMetricProgress.feedback.labelEdit}
+											></textarea>
+										</div>
+
+										<!-- Q3: Examples -->
+										<div class="mt-8">
+											<div class="text-[13px] font-semibold text-[#111827]">
+												Do you think the metric examples (shown above) are adequate and appropriate
+												for the metric?
 											</div>
-											<div class="mt-2 flex flex-col gap-1.5">
-												{#each INFLUENCE_ASPECTS as aspect (aspect)}
-													{@const checked = currentEval.influencedAspects.includes(aspect)}
+											<div class="mt-3 flex flex-col gap-2">
+												{#each yesNoChoiceOptions as opt (opt.v)}
 													<label
-														class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
-															{checked
+														class="flex cursor-pointer items-center gap-3 rounded-[8px] border px-4 py-[10px] text-[13px] transition-colors duration-150
+													{selectedMetricProgress.feedback.examplesAdequate === opt.v
 															? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
 															: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
 													>
 														<input
-															type="checkbox"
-															{checked}
-															onchange={(ev) =>
-																toggleInfluence(
-																	aspect,
-																	(ev.currentTarget as HTMLInputElement).checked
-																)}
+															type="radio"
+															name="examples-adequate"
+															value={opt.v}
+															bind:group={selectedMetricProgress.feedback.examplesAdequate}
 															class="accent-[#00b3b0]"
 														/>
-														{aspect}
+														{opt.s}
 													</label>
 												{/each}
 											</div>
-											{#if currentEval.influencedAspects.includes('Other')}
-												<input
-													type="text"
-													bind:value={evaluations[currentEvalKey].influencedAspectsOther}
-													placeholder="Please describe"
-													class="mt-2 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
-												/>
-											{/if}
 										</div>
 
-										<!-- Q10: other -->
-										<div class="mt-5 mb-2">
-											<label
-												class="text-[12px] font-semibold text-[#111827]"
-												for="other-{currentEvalKey}"
-											>
-												Do you have any other feedback about this scenario?
-												<span class="font-normal text-[#9ca3af]">(optional)</span>
+										<div class="mt-5">
+											<label class="text-[13px] font-medium text-[#111827]" for="mf-examples-edit">
+												If you selected “no” or “not sure,” how would you recommend modifying the
+												examples to make them more adequate or appropriate? If you selected “yes”,
+												you can leave this blank.
 											</label>
 											<textarea
-												id="other-{currentEvalKey}"
-												bind:value={evaluations[currentEvalKey].otherFeedback}
+												id="mf-examples-edit"
 												rows="3"
-												class="mt-1.5 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+												class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+												bind:value={selectedMetricProgress.feedback.examplesEdit}
 											></textarea>
 										</div>
-									</div>
 
-									<!-- Sticky footer: submit button (shows % until complete) -->
-									<div
-										class="relative flex-shrink-0 border-t border-[#e5e7eb] bg-white px-5 pt-3 pb-4 shadow-[0_-4px_12px_rgba(15,23,42,0.06)]"
-									>
-										<div
-											class="pointer-events-none absolute -top-8 right-0 left-0 h-8 bg-gradient-to-t from-white to-transparent"
-										></div>
+										<div class="mt-8">
+											<label class="text-[13px] font-semibold text-[#111827]" for="mf-other">
+												Do you have any other feedback about this metric? Please feel free to
+												include relevant citations that either support the metric’s current
+												conceptualization or share contrasting information.
+											</label>
+											<textarea
+												id="mf-other"
+												rows="4"
+												class="mt-2 w-full rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] px-3 py-[9px] text-[13px] leading-[1.5] transition-colors duration-150 outline-none focus:border-[#00b3b0] focus:bg-white"
+												bind:value={selectedMetricProgress.feedback.other}
+											></textarea>
+										</div>
 
-										<!-- Once the evaluation is submitted, the Next
-										     button becomes the primary CTA and "Update
-										     evaluation" demotes to a secondary style. -->
-										<button
-											type="button"
-											class="flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] px-4 text-[13px] font-semibold transition-[filter,transform] duration-150
-												{evalProgress.pct >= 100
-												? submitIsSecondary
-													? 'cursor-pointer border border-[#00b3b0] bg-white text-[#00b3b0] hover:bg-[#e0f7f7]'
-													: 'cursor-pointer border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
-												: 'cursor-not-allowed border-none bg-[#e5e7eb] text-[#9ca3af]'}"
-											disabled={!canSubmit}
-											onclick={submitEvaluation}
-										>
-											{#if currentEval.submitting}
-												<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
-											{:else if currentEval.submitted && evalProgress.pct >= 100}
-												<i class="fa-solid fa-rotate"></i> Update evaluation
-											{:else if evalProgress.pct >= 100}
-												<i class="fa-solid fa-paper-plane"></i> Submit evaluation
-											{:else}
-												{evalProgress.pct}% complete
-											{/if}
-										</button>
-
-										<!-- Sequential Next button. Only appears once the current
-										     (scenario, model) evaluation has been submitted. -->
-										{#if showNext}
+										<div class="mt-6 flex items-center justify-end">
 											<button
 												type="button"
-												class="mt-2 flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 text-[13px] font-semibold text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] transition-[filter,transform] duration-150 hover:brightness-105 active:scale-[0.99]"
-												onclick={goToNext}
+												class="inline-flex cursor-pointer items-center gap-2 rounded-[8px] border-none bg-[#00b3b0] px-5 py-[9px] text-[13px] font-semibold text-white shadow-[0_1px_3px_rgba(3,141,143,0.25)] transition-[background,filter] duration-150 hover:bg-[#038d8f] disabled:cursor-not-allowed disabled:opacity-50"
+												disabled={(!previewMode && !selectedMetricProgress.feedback.relevance) ||
+													scenarioCount === 0}
+												onclick={submitFeedbackAndAdvance}
 											>
-												{nextStep.label}
+												Next
 												<i class="fa-solid fa-arrow-right text-[11px]"></i>
 											</button>
-										{:else if showDone}
+										</div>
+									</div>
+								{:else if currentScenario && currentMaskedModel}
+									<div class="mx-auto max-w-[900px]">
+										<div>
+											<div class="rounded-[14px] border border-[#e5e7eb] bg-white p-6">
+												<div
+													class="text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+												>
+													Scenario {scenarioIdx + 1} of {selectedMetricScenarios.length} · {currentMaskedModel.label}
+												</div>
+
+												<!-- Conversation -->
+												<div class="mt-4">
+													{#if conversationLoading}
+														<div class="flex items-center gap-2 text-[#9ca3af]">
+															<i class="fa-solid fa-spinner fa-spin"></i>
+															<span class="text-[13px]">Loading conversation…</span>
+														</div>
+													{:else if conversationError}
+														<p class="text-[13px] text-[#dc2626]">Failed to load conversation.</p>
+													{:else if conversationDetail}
+														{@const turns = conversationDetail.transcript ?? []}
+														{#if conversationDetail.persona}
+															<div class="mb-4 text-[12px] leading-relaxed text-[#374151]">
+																{conversationDetail.persona}
+															</div>
+														{/if}
+														<div
+															class="mb-3 text-[10px] font-[700] tracking-[0.08em] text-[#9ca3af] uppercase"
+														>
+															Conversation
+														</div>
+														{#each turns as turn, i (i)}
+															<div class="mb-3 {turn.role === 'user' ? 'text-right' : 'text-left'}">
+																<div
+																	class="mb-1 text-[9px] font-semibold tracking-wide uppercase {turn.role ===
+																	'user'
+																		? 'text-[#00b3b0]'
+																		: 'text-[#9ca3af]'}"
+																>
+																	{turn.role === 'user' ? 'User' : currentMaskedModel.label}
+																</div>
+																<div
+																	class="prose prose-sm inline-block max-w-[88%] rounded-xl px-3 py-2 text-left text-[12px]
+															{turn.role === 'user' ? 'bg-[#e0f7f7] text-[#1a1a1a]' : 'bg-[#f3f4f6] text-[#374151]'}"
+																>
+																	{@html safeMarkdownHtml(turn.content)}
+																</div>
+															</div>
+														{/each}
+													{/if}
+												</div>
+											</div>
+										</div>
+									</div>
+								{:else}
+									<p class="text-[13px] text-[#9ca3af]">No scenarios available for this metric.</p>
+								{/if}
+							</div>
+
+							{#if phase === 'scenario' && currentScenario && currentMaskedModel}
+								<aside
+									class="hidden min-w-[340px] flex-shrink-0 flex-grow basis-[35%] flex-col overflow-hidden border-l border-[#e5e7eb] bg-white lg:flex"
+								>
+									<div class="flex-shrink-0 border-b border-[#f3f4f6] px-5 pt-4 pb-3">
+										<h3 class="text-[15px] font-[700] text-[#111827]">
+											Evaluate {currentMaskedModel.label}
+										</h3>
+									</div>
+
+									{#if evaluations[currentEvalKey]}
+										{@const currentEval = evaluations[currentEvalKey]}
+										{@const canSubmit = evalProgress.pct >= 100 && !currentEval.submitting}
+										{@const showNext =
+											(previewMode || currentEval.submitted) &&
+											nextStep &&
+											nextStep.kind !== 'done'}
+										{@const showDone =
+											(previewMode || currentEval.submitted) &&
+											nextStep &&
+											nextStep.kind === 'done'}
+										{@const submitIsSecondary = showNext}
+										<div
+											class="expert-eval-scroll relative min-h-0 flex-1 overflow-y-auto px-5 py-3"
+										>
+											{#if currentEval.submitted}
+												<div
+													class="mb-3 flex items-center gap-2 rounded-[8px] bg-[#dcfce7] px-3 py-1.5 text-[12px] font-semibold text-[#166534]"
+												>
+													<i class="fa-solid fa-check-circle"></i>
+													Response saved
+												</div>
+											{/if}
+
+											<!-- Q1: scenario accuracy -->
+											<div>
+												<div class="text-[12px] font-semibold text-[#111827]">
+													Do you think the scenario accurately tests “{currentScenarioTitle}”?
+												</div>
+												<div class="mt-2 flex flex-col gap-1.5">
+													{#each yesNoChoiceOptions as opt (opt.v)}
+														<label
+															class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
+															{currentEval.scenarioAccurate === opt.v
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="acc-{currentEvalKey}"
+																value={opt.v}
+																bind:group={evaluations[currentEvalKey].scenarioAccurate}
+																class="accent-[#00b3b0]"
+															/>
+															{opt.s}
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											<!-- Q2: scenario accuracy edit -->
+											<div class="mt-4">
+												<label
+													class="text-[12px] font-medium text-[#111827]"
+													for="acc-edit-{currentEvalKey}"
+												>
+													If you selected “no” or “not sure,” how would you recommend making the
+													scenario into a more accurate test? If you selected “yes”, you can leave
+													this blank.
+												</label>
+												<textarea
+													id="acc-edit-{currentEvalKey}"
+													bind:value={evaluations[currentEvalKey].scenarioAccurateEdit}
+													rows="3"
+													class="mt-1.5 w-full rounded-[6px] border border-[#e5e7eb] bg-[#fafaf9] px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:bg-white focus:outline-none"
+												></textarea>
+											</div>
+
+											<!-- Q3: realism -->
+											<div class="mt-5">
+												<div class="text-[12px] font-semibold text-[#111827]">
+													Do you think the scenario is adequately realistic / representative of real
+													user behavior?
+												</div>
+												<div class="mt-2 flex flex-col gap-1.5">
+													{#each yesNoChoiceOptions as opt (opt.v)}
+														<label
+															class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
+															{currentEval.scenarioRealistic === opt.v
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="real-{currentEvalKey}"
+																value={opt.v}
+																bind:group={evaluations[currentEvalKey].scenarioRealistic}
+																class="accent-[#00b3b0]"
+															/>
+															{opt.s}
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											<!-- Q4: realism edit -->
+											<div class="mt-4">
+												<label
+													class="text-[12px] font-medium text-[#111827]"
+													for="real-edit-{currentEvalKey}"
+												>
+													If you selected “no” or “not sure,” please suggest recommendations for how
+													to make the scenario more realistic. If you selected “yes”, you can leave
+													this blank.
+												</label>
+												<textarea
+													id="real-edit-{currentEvalKey}"
+													bind:value={evaluations[currentEvalKey].scenarioRealisticEdit}
+													rows="3"
+													class="mt-1.5 w-full rounded-[6px] border border-[#e5e7eb] bg-[#fafaf9] px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:bg-white focus:outline-none"
+												></textarea>
+											</div>
+
+											<!-- Q5: rating -->
+											<div class="mt-5">
+												<div class="text-[12px] font-semibold text-[#111827]">
+													Based on the conversation (user prompts and model output), how would you
+													rate the model's response on this metric?
+												</div>
+												<div class="mt-2 flex flex-col gap-1.5">
+													{#each passFailChoiceOptions as opt (opt.v)}
+														<label
+															class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
+															{currentEval.rating === opt.v
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="rate-{currentEvalKey}"
+																value={opt.v}
+																bind:group={evaluations[currentEvalKey].rating}
+																class="accent-[#00b3b0]"
+															/>
+															{opt.s}
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											<!-- Q6: confidence -->
+											<div class="mt-5">
+												<div class="text-[12px] font-semibold text-[#111827]">
+													How confident are you in this judgment?
+												</div>
+												<div class="mt-2 grid grid-cols-4 gap-1.5">
+													{#each [['1', 'Not at all'], ['2', 'Slightly'], ['3', 'Moderately'], ['4', 'Very']] as [v, l] (v)}
+														<label
+															class="flex cursor-pointer flex-col items-center gap-0.5 rounded-[6px] border px-1 py-1.5 text-center transition-colors duration-150
+															{currentEval.confidence === v
+																? 'border-[#00b3b0] bg-[#e0f7f7]'
+																: 'border-[#e5e7eb] bg-[#f9fafb] hover:border-[#9ca3af]'}"
+														>
+															<span class="text-[12px] font-semibold text-[#111827]">{v}</span>
+															<span class="text-[9px] leading-tight text-[#6b7280]">{l}</span>
+															<input
+																type="radio"
+																name="conf-{currentEvalKey}"
+																value={v}
+																bind:group={evaluations[currentEvalKey].confidence}
+																class="sr-only"
+															/>
+														</label>
+													{/each}
+												</div>
+											</div>
+
+											<!-- Q7: justify -->
+											<div class="mt-5">
+												<label
+													class="text-[12px] font-semibold text-[#111827]"
+													for="just-{currentEvalKey}"
+												>
+													Please justify your rating, referring to the specific part of the
+													conversation that influenced it.
+												</label>
+												<textarea
+													id="just-{currentEvalKey}"
+													bind:value={evaluations[currentEvalKey].justification}
+													rows="3"
+													class="mt-1.5 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+												></textarea>
+											</div>
+
+											<!-- Q8: main challenge -->
+											<div class="mt-5">
+												<div class="text-[12px] font-semibold text-[#111827]">
+													What was the main challenge in making your judgment?
+												</div>
+												<div class="mt-2 flex flex-col gap-1.5">
+													{#each MAIN_CHALLENGES as opt (opt.v)}
+														<label
+															class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] leading-[1.4] transition-colors duration-150
+															{currentEval.mainChallenge === opt.v
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="radio"
+																name="challenge-{currentEvalKey}"
+																value={opt.v}
+																bind:group={evaluations[currentEvalKey].mainChallenge}
+																class="accent-[#00b3b0]"
+															/>
+															{opt.l}
+														</label>
+													{/each}
+												</div>
+												{#if currentEval.mainChallenge === 'other'}
+													<input
+														type="text"
+														bind:value={evaluations[currentEvalKey].mainChallengeOther}
+														placeholder="Please describe"
+														class="mt-2 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+													/>
+												{/if}
+											</div>
+
+											<!-- Q9: influenced aspects (optional) -->
+											<div class="mt-5">
+												<div class="text-[12px] font-semibold text-[#111827]">
+													Which aspects most influenced your judgment?
+													<span class="font-normal text-[#6b7280]">(Optional)</span>
+												</div>
+												<div class="mt-2 flex flex-col gap-1.5">
+													{#each INFLUENCE_ASPECTS as aspect (aspect)}
+														{@const checked = currentEval.influencedAspects.includes(aspect)}
+														<label
+															class="flex cursor-pointer items-center gap-2.5 rounded-[6px] border px-3 py-2 text-[12px] transition-colors duration-150
+															{checked
+																? 'border-[#00b3b0] bg-[#e0f7f7] text-[#0f4f50]'
+																: 'border-[#e5e7eb] text-[#374151] hover:border-[#9ca3af]'}"
+														>
+															<input
+																type="checkbox"
+																{checked}
+																onchange={(ev) =>
+																	toggleInfluence(
+																		aspect,
+																		(ev.currentTarget as HTMLInputElement).checked
+																	)}
+																class="accent-[#00b3b0]"
+															/>
+															{aspect}
+														</label>
+													{/each}
+												</div>
+												{#if currentEval.influencedAspects.includes('Other')}
+													<input
+														type="text"
+														bind:value={evaluations[currentEvalKey].influencedAspectsOther}
+														placeholder="Please describe"
+														class="mt-2 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+													/>
+												{/if}
+											</div>
+
+											<!-- Q10: other -->
+											<div class="mt-5 mb-2">
+												<label
+													class="text-[12px] font-semibold text-[#111827]"
+													for="other-{currentEvalKey}"
+												>
+													Do you have any other feedback about this scenario?
+													<span class="font-normal text-[#9ca3af]">(optional)</span>
+												</label>
+												<textarea
+													id="other-{currentEvalKey}"
+													bind:value={evaluations[currentEvalKey].otherFeedback}
+													rows="3"
+													class="mt-1.5 w-full rounded-[6px] border border-[#e5e7eb] bg-white px-2 py-1.5 text-[12px] focus:border-[#00b3b0] focus:outline-none"
+												></textarea>
+											</div>
+										</div>
+
+										<!-- Sticky footer: submit button (shows % until complete) -->
+										<div
+											class="relative flex-shrink-0 border-t border-[#e5e7eb] bg-white px-5 pt-3 pb-4 shadow-[0_-4px_12px_rgba(15,23,42,0.06)]"
+										>
+											<div
+												class="pointer-events-none absolute -top-8 right-0 left-0 h-8 bg-gradient-to-t from-white to-transparent"
+											></div>
+
+											<!-- Once the evaluation is submitted, the Next
+										     button becomes the primary CTA and "Update
+										     evaluation" demotes to a secondary style. -->
 											<button
 												type="button"
-												class="mt-2 flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 text-[13px] font-semibold text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] transition-[filter,transform] duration-150 hover:brightness-105 active:scale-[0.99]"
-												onclick={openExitSurvey}
+												class="flex h-[46px] w-full items-center justify-center gap-2 rounded-[10px] px-4 text-[13px] font-semibold transition-[filter,transform] duration-150
+												{evalProgress.pct >= 100
+													? submitIsSecondary
+														? 'cursor-pointer border border-[#00b3b0] bg-white text-[#00b3b0] hover:bg-[#e0f7f7]'
+														: 'cursor-pointer border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] hover:brightness-105 active:scale-[0.99]'
+													: 'cursor-not-allowed border-none bg-[#e5e7eb] text-[#9ca3af]'}"
+												disabled={!canSubmit}
+												onclick={submitEvaluation}
 											>
-												<i class="fa-solid fa-flag-checkered text-[12px]"></i>
-												Finish &amp; complete survey
+												{#if currentEval.submitting}
+													<i class="fa-solid fa-spinner fa-spin"></i> Submitting…
+												{:else if currentEval.submitted && evalProgress.pct >= 100}
+													<i class="fa-solid fa-rotate"></i> Update evaluation
+												{:else if evalProgress.pct >= 100}
+													<i class="fa-solid fa-paper-plane"></i> Submit evaluation
+												{:else}
+													{evalProgress.pct}% complete
+												{/if}
 											</button>
-										{/if}
-									</div>
-								{/if}
-							</aside>
+
+											<!-- Sequential Next button. Only appears once the current
+										     (scenario, model) evaluation has been submitted. -->
+											{#if showNext}
+												<button
+													type="button"
+													class="mt-2 flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 text-[13px] font-semibold text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] transition-[filter,transform] duration-150 hover:brightness-105 active:scale-[0.99]"
+													onclick={goToNext}
+												>
+													{nextStep.label}
+													<i class="fa-solid fa-arrow-right text-[11px]"></i>
+												</button>
+											{:else if showDone}
+												<button
+													type="button"
+													class="mt-2 flex h-[46px] w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-none bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-4 text-[13px] font-semibold text-white shadow-[0_2px_10px_rgba(3,141,143,0.3)] transition-[filter,transform] duration-150 hover:brightness-105 active:scale-[0.99]"
+													onclick={openExitSurvey}
+												>
+													<i class="fa-solid fa-flag-checkered text-[12px]"></i>
+													Finish &amp; complete survey
+												</button>
+											{/if}
+										</div>
+									{/if}
+								</aside>
+							{/if}
 						{/if}
-					{/if}
 					</div>
 				{:else}
 					<div class="flex flex-1 items-center justify-center text-[#9ca3af]">
