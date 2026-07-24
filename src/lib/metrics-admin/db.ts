@@ -14,6 +14,7 @@ import type {
 	TaxonomyArea,
 	TaxonomySubarea
 } from './types';
+import type { ImportPayload, MetricExportRow } from './csv-import';
 
 // Unlike src/lib/admin/db.ts, these reads don't go through SECURITY DEFINER
 // RPCs — the underlying tables are public-read by design (see the "Public
@@ -47,6 +48,34 @@ export async function validateAdminKey(key: string): Promise<boolean> {
 	throw new Error(error.message);
 }
 
+export interface ImportSummary {
+	benchmarks_processed: number;
+	metrics_created: number;
+	metrics_updated: number;
+	metrics_unchanged: number;
+	scenarios_added: number;
+}
+
+/** Merges the given payload into the existing benchmarks/metrics — matched
+ * by (benchmark_slug, slug) — via the admin_import_metrics_csv SECURITY
+ * DEFINER RPC — see its comment in supabase/metrics_schema.sql. Never
+ * deletes: unmatched existing metrics are left untouched, matched metrics
+ * whose content changed get a new version, matched metrics with identical
+ * content are left alone. This is the one real (non-demo) write path in
+ * /metrics-admin. */
+export async function importMetricsCsv(
+	adminKey: string,
+	payload: ImportPayload
+): Promise<ImportSummary> {
+	const supabase = getSupabase();
+	const { data, error } = await supabase.rpc('admin_import_metrics_csv', {
+		p_admin_key: adminKey,
+		p_payload: payload
+	});
+	if (error) throw new Error(error.message);
+	return data as ImportSummary;
+}
+
 export async function listBenchmarks(): Promise<Benchmark[]> {
 	const supabase = getSupabase();
 	const { data, error } = await supabase.from('benchmarks').select('*').order('name');
@@ -63,20 +92,14 @@ export async function listModels(): Promise<Model[]> {
 
 export async function listTaxonomyAreas(): Promise<TaxonomyArea[]> {
 	const supabase = getSupabase();
-	const { data, error } = await supabase
-		.from('taxonomy_areas')
-		.select('*')
-		.order('sort_order');
+	const { data, error } = await supabase.from('taxonomy_areas').select('*').order('sort_order');
 	if (error) throw new Error(error.message);
 	return (data ?? []) as TaxonomyArea[];
 }
 
 export async function listTaxonomySubareas(): Promise<TaxonomySubarea[]> {
 	const supabase = getSupabase();
-	const { data, error } = await supabase
-		.from('taxonomy_subareas')
-		.select('*')
-		.order('sort_order');
+	const { data, error } = await supabase.from('taxonomy_subareas').select('*').order('sort_order');
 	if (error) throw new Error(error.message);
 	return (data ?? []) as TaxonomySubarea[];
 }
@@ -91,6 +114,66 @@ export async function listNutritionCategories(): Promise<NutritionCategory[]> {
 	return (data ?? []) as NutritionCategory[];
 }
 
+interface RawMetricExportRow {
+	suggested_placements: string[] | null;
+	benchmark: Pick<Benchmark, 'name'> | null;
+	current_version:
+		| (Pick<MetricVersion, 'name' | 'type' | 'definition' | 'examples' | 'raw'> & {
+				scenarios: { title: string; source: string; generated_at: string }[];
+		  })
+		| null;
+}
+
+/** Every metric's current content, shaped as rows in the exact CSV column
+ * format import_metrics_csv.py / parseImportPlan expect (see
+ * $lib/metrics-admin/csv-import.ts) — so exporting, hand-editing, and
+ * re-importing round-trips. Pass a benchmark id to export just that
+ * benchmark, or omit it to export everything. Draft metrics with no
+ * current_version are skipped (there's nothing to export yet). */
+export async function getMetricsForExport(benchmarkId?: string): Promise<MetricExportRow[]> {
+	const supabase = getSupabase();
+	let query = supabase
+		.from('metrics')
+		.select(
+			`
+			suggested_placements,
+			benchmark:benchmarks(name),
+			current_version:metric_versions!${CURRENT_VERSION_FK}(
+				name, type, definition, examples, raw,
+				scenarios(title, source, generated_at)
+			)
+		`
+		)
+		.order('slug');
+	if (benchmarkId) query = query.eq('benchmark_id', benchmarkId);
+	const { data, error } = await query;
+	if (error) throw new Error(error.message);
+
+	return ((data ?? []) as unknown as RawMetricExportRow[])
+		.filter((row) => row.current_version !== null)
+		.map((row) => {
+			const v = row.current_version!;
+			const scenarios = [...v.scenarios].sort((a, b) => {
+				if (a.source !== b.source) return a.source === 'submitted' ? -1 : 1;
+				return a.generated_at.localeCompare(b.generated_at);
+			});
+			const raw = v.raw as Record<string, unknown>;
+			const internalCategory = raw.internal_category;
+			const submittedDate = raw.submitted_date;
+			return {
+				benchmarkName: row.benchmark?.name ?? '',
+				metricName: v.name,
+				definition: v.definition,
+				type: v.type,
+				examples: v.examples,
+				suggestedPlacements: row.suggested_placements ?? [],
+				internalCategory: typeof internalCategory === 'string' ? internalCategory : null,
+				submittedDate: typeof submittedDate === 'string' ? submittedDate : null,
+				scenarioTitles: scenarios.slice(0, 3).map((s) => s.title)
+			} satisfies MetricExportRow;
+		});
+}
+
 /** Real placements for a metric — genuinely empty until either a curator
  * assigns one (needs a write RPC, not built yet) or a future import seeds
  * taxonomy_placements/nutrition_placements directly. An empty result here
@@ -100,7 +183,9 @@ export async function getMetricPlacements(metricId: string): Promise<MetricPlace
 	const [taxonomyRes, nutritionRes] = await Promise.all([
 		supabase
 			.from('taxonomy_placements')
-			.select('metric_id, subarea_id, group_name, subarea:taxonomy_subareas(name, area:taxonomy_areas(name))')
+			.select(
+				'metric_id, subarea_id, group_name, subarea:taxonomy_subareas(name, area:taxonomy_areas(name))'
+			)
 			.eq('metric_id', metricId),
 		supabase
 			.from('nutrition_placements')

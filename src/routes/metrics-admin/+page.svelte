@@ -16,8 +16,10 @@
 		listNutritionCategories,
 		getMetricDetail,
 		getMetricPlacements,
+		getMetricsForExport,
 		validateAdminKey
 	} from '$lib/metrics-admin/db';
+	import { buildMetricsCsv } from '$lib/metrics-admin/csv-import';
 	import { safeMarkdownHtml } from '$lib/safe-markdown';
 	import ScorePill from '$lib/components/atoms/ScorePill.svelte';
 	import MetricEditForm from '$lib/components/metrics-admin/MetricEditForm.svelte';
@@ -28,27 +30,42 @@
 	import PublishDiffModal from '$lib/components/metrics-admin/PublishDiffModal.svelte';
 	import NewMetricWizard from '$lib/components/metrics-admin/NewMetricWizard.svelte';
 	import ModelsPanel from '$lib/components/metrics-admin/ModelsPanel.svelte';
+	import ImportCsvPanel from '$lib/components/metrics-admin/ImportCsvPanel.svelte';
 	import OpsRunsPanel from '$lib/components/metrics-admin/OpsRunsPanel.svelte';
-	import type {
-		Benchmark,
-		MetricDetail,
-		MetricListItem,
-		MetricPlacements,
-		MetricStatus,
-		Model,
-		NutritionCategory,
-		TaxonomyArea,
-		TaxonomySubarea
+	import MassActionModal from '$lib/components/metrics-admin/MassActionModal.svelte';
+	import {
+		METRIC_STATUS_ORDER,
+		type Benchmark,
+		type MetricDetail,
+		type MetricListItem,
+		type MetricPlacements,
+		type MetricStatus,
+		type Model,
+		type NutritionCategory,
+		type TaxonomyArea,
+		type TaxonomySubarea
 	} from '$lib/metrics-admin/types';
 
+	// The one test/smoke-test model a "Run Test Simulation" action uses —
+	// intentionally a single fixed model, not the full model matrix (that's
+	// the per-model evaluation phase, still undesigned — see the status
+	// column comment in metrics_schema.sql).
+	const TEST_SIMULATION_MODEL_LABEL = 'Claude Haiku 4.5';
+
 	type Phase = 'need-key' | 'validating' | 'ready' | 'invalid' | 'error';
-	type Tab = 'dashboard' | 'wizard' | 'ops';
-	type SortMode = 'name' | 'status' | 'score';
+	type Tab = 'dashboard' | 'add' | 'ops';
+	// Sub-mode within the merged "Add Metrics" tab. 'new' (the single-metric
+	// wizard) is disabled for now — see the button below — so this never
+	// actually changes yet, but the branch stays wired up for when it's
+	// re-enabled.
+	type AddMode = 'csv' | 'new';
+	type SortMode = 'name' | 'status' | 'benchmark';
 
 	let phase = $state<Phase>('need-key');
 	let errorMessage = $state('');
 	let keyInput = $state('');
 	let activeTab = $state<Tab>('dashboard');
+	let addMode = $state<AddMode>('csv');
 
 	let benchmarks = $state<Benchmark[]>([]);
 	let metrics = $state<MetricListItem[]>([]);
@@ -63,7 +80,7 @@
 	let selectedAreaId = $state<string | null>(null);
 	let selectedSubareaId = $state<string | null>(null);
 	let search = $state('');
-	let sortMode = $state<SortMode>('name');
+	let sortMode = $state<SortMode>('status');
 
 	let selectedMetricId = $state<string | null>(null);
 	let metricDetail = $state<MetricDetail | null>(null);
@@ -75,10 +92,19 @@
 	let simulateStale = $state(false);
 	let publishOpen = $state(false);
 
-	// Which workflow-action modal is open, if any. One shared modal
-	// component (RegenerateModal) covers Generate Scenarios / Run Simulation
-	// / Run Evaluation / Regenerate — only phases/copy differ.
+	// Which single-metric workflow-action modal is open, if any. One shared
+	// modal component (RegenerateModal) covers Generate Scenarios / Run Test
+	// Simulation / Regenerate — only phases/copy differ. Demo-only, but on
+	// completion this DOES advance the metric's status in local state (see
+	// applyStatusTransition) so the flow feels real even though nothing is
+	// persisted — reload and it reverts.
 	let actionModal = $state<null | 'generate' | 'simulate' | 'regenerate'>(null);
+
+	// Mass selection, for running an action across many metrics at once.
+	// Always reassigned wholesale (never mutated in place), so a plain Set
+	// triggers Svelte reactivity the same way replacing an array would.
+	let selectedMetricIds = $state<Set<string>>(new Set());
+	let massAction = $state<null | { kind: 'generate' | 'simulate'; items: MetricListItem[] }>(null);
 
 	const staleCount = $derived.by(() => {
 		const detail = metricDetail;
@@ -87,21 +113,30 @@
 		return detail.scenarios.filter((s) => s.metric_version_id !== detail.current_version.id).length;
 	});
 
+	const submittedSeedTitles = $derived(
+		(metricDetail?.scenarios ?? []).filter((s) => s.source === 'submitted').map((s) => s.title)
+	);
+
 	const actionModalConfig = $derived.by(() => {
 		if (actionModal === 'generate') {
 			return {
 				title: 'Generating scenarios',
 				doneTitle: 'Scenarios generated',
-				description: 'Simulated for this demo — no pipeline was actually run.',
-				phases: [{ key: 'gen_scenarios', label: 'Generating scenarios' }]
+				description:
+					submittedSeedTitles.length > 0
+						? `Simulated for this demo — using ${submittedSeedTitles.length} submitted example scenario${submittedSeedTitles.length === 1 ? '' : 's'} as seed input. No pipeline was actually run.`
+						: 'Simulated for this demo — no pipeline was actually run.',
+				phases: [{ key: 'gen_scenarios', label: 'Generating scenarios' }],
+				seedTitles: submittedSeedTitles
 			};
 		}
 		if (actionModal === 'simulate') {
 			return {
-				title: 'Running simulation',
-				doneTitle: 'Simulation complete',
-				description: 'Simulated for this demo — no models were actually called.',
-				phases: [{ key: 'simulate', label: 'Simulating conversations' }]
+				title: 'Running test simulation',
+				doneTitle: 'Test simulation complete',
+				description: `Simulated for this demo — running one scenario pass with ${TEST_SIMULATION_MODEL_LABEL} as a smoke test. No model was actually called.`,
+				phases: [{ key: 'simulate', label: `Simulating with ${TEST_SIMULATION_MODEL_LABEL}` }],
+				seedTitles: []
 			};
 		}
 		return {
@@ -110,11 +145,29 @@
 			description: `Simulated for this demo — ${staleCount} scenario${staleCount === 1 ? '' : 's'} would be regenerated. No pipeline was actually run.`,
 			phases: [
 				{ key: 'gen_scenarios', label: 'Generating scenarios' },
-				{ key: 'simulate', label: 'Simulating conversations' },
-				{ key: 'evaluate', label: 'Evaluating' }
-			]
+				{ key: 'simulate', label: 'Simulating conversations' }
+			],
+			seedTitles: []
 		};
 	});
+
+	/** Local-only status transition, so the demo flow feels real. Never
+	 * persisted — a reload reverts to whatever's actually in the database. */
+	function applyStatusTransition(ids: Set<string> | string[], newStatus: MetricStatus) {
+		const idSet = ids instanceof Set ? ids : new Set(ids);
+		metrics = metrics.map((m) => (idSet.has(m.id) ? { ...m, status: newStatus } : m));
+		if (metricDetail && idSet.has(metricDetail.id)) {
+			metricDetail = { ...metricDetail, status: newStatus };
+		}
+	}
+
+	function toggleMetricSelection(id: string) {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local scratch copy, discarded after reassigning selectedMetricIds below
+		const next = new Set(selectedMetricIds);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		selectedMetricIds = next;
+	}
 
 	const currentSubareasForFilter = $derived(
 		selectedAreaId ? taxonomySubareas.filter((s) => s.area_id === selectedAreaId) : []
@@ -124,8 +177,13 @@
 		const list = metrics.filter((m) => {
 			if (selectedBenchmarkSlug && m.benchmark.slug !== selectedBenchmarkSlug) return false;
 			if (selectedStatus && m.status !== selectedStatus) return false;
-			if (selectedSubareaId && !m.subareas.some((s) => s.subarea_id === selectedSubareaId)) return false;
-			if (selectedAreaId && !selectedSubareaId && !m.subareas.some((s) => s.area_id === selectedAreaId))
+			if (selectedSubareaId && !m.subareas.some((s) => s.subarea_id === selectedSubareaId))
+				return false;
+			if (
+				selectedAreaId &&
+				!selectedSubareaId &&
+				!m.subareas.some((s) => s.area_id === selectedAreaId)
+			)
 				return false;
 			if (search.trim()) {
 				const q = search.trim().toLowerCase();
@@ -136,15 +194,73 @@
 		});
 		const sorted = [...list];
 		if (sortMode === 'name') {
-			sorted.sort((a, b) => (a.current_version?.name ?? a.slug).localeCompare(b.current_version?.name ?? b.slug));
+			sorted.sort((a, b) =>
+				(a.current_version?.name ?? a.slug).localeCompare(b.current_version?.name ?? b.slug)
+			);
 		} else if (sortMode === 'status') {
-			sorted.sort((a, b) => a.status.localeCompare(b.status));
+			sorted.sort(
+				(a, b) => METRIC_STATUS_ORDER.indexOf(a.status) - METRIC_STATUS_ORDER.indexOf(b.status)
+			);
 		} else {
-			const rate = (m: MetricListItem) => (m.total_count ? m.passed_count / m.total_count : -1);
-			sorted.sort((a, b) => rate(b) - rate(a));
+			sorted.sort((a, b) => a.benchmark.name.localeCompare(b.benchmark.name));
 		}
 		return sorted;
 	});
+
+	const allFilteredSelected = $derived(
+		filteredMetrics.length > 0 && filteredMetrics.every((m) => selectedMetricIds.has(m.id))
+	);
+	const eligibleForGenerate = $derived(
+		filteredMetrics.filter((m) => selectedMetricIds.has(m.id) && m.status === 'draft')
+	);
+	const eligibleForSimulate = $derived(
+		filteredMetrics.filter((m) => selectedMetricIds.has(m.id) && m.status === 'ready_to_simulate')
+	);
+
+	function toggleSelectAllFiltered() {
+		if (allFilteredSelected) {
+			selectedMetricIds = new Set();
+		} else {
+			selectedMetricIds = new Set(filteredMetrics.map((m) => m.id));
+		}
+	}
+
+	function metricLabel(m: MetricListItem): string {
+		return m.current_version?.name ?? m.slug;
+	}
+
+	const massActionConfig = $derived.by(() => {
+		if (!massAction) return null;
+		const items = massAction.items.map((m) => ({ id: m.id, label: metricLabel(m) }));
+		if (massAction.kind === 'generate') {
+			return {
+				title: 'Generating scenarios',
+				doneTitle: 'Scenarios generated',
+				description: `Simulated for this demo — generating scenarios for ${items.length} draft metric${items.length === 1 ? '' : 's'}, seeded from each metric's submitted examples. No pipeline was actually run.`,
+				actionLabel: 'Generating scenarios',
+				items,
+				nextStatus: 'ready_to_simulate' as MetricStatus
+			};
+		}
+		return {
+			title: 'Running test simulations',
+			doneTitle: 'Test simulations complete',
+			description: `Simulated for this demo — running a ${TEST_SIMULATION_MODEL_LABEL} smoke test across ${items.length} metric${items.length === 1 ? '' : 's'}. No model was actually called.`,
+			actionLabel: `Simulating with ${TEST_SIMULATION_MODEL_LABEL}`,
+			items,
+			nextStatus: 'ready_to_publish' as MetricStatus
+		};
+	});
+
+	function startMassAction(kind: 'generate' | 'simulate') {
+		const items = kind === 'generate' ? eligibleForGenerate : eligibleForSimulate;
+		massAction = { kind, items };
+	}
+
+	function closeMassAction() {
+		massAction = null;
+		selectedMetricIds = new Set();
+	}
 
 	function statusLabel(status: MetricStatus): string {
 		return status
@@ -157,6 +273,55 @@
 		if (status === 'published') return 'background:#e0f7f7;color:#038d8f';
 		if (status === 'draft') return 'background:#f3f4f6;color:#6b7280';
 		return 'background:#fff7ed;color:#c2410c';
+	}
+
+	// Which single benchmark's export is in flight, if any (for that row's
+	// spinner) — separate from exportingAll since they're different buttons,
+	// but only one of the two ever runs at a time.
+	let exportingBenchmarkId = $state<string | null>(null);
+	let exportingAll = $state(false);
+	let exportError = $state('');
+
+	function downloadCsv(filename: string, contents: string) {
+		const blob = new Blob([contents], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
+	/** Exports one benchmark's current metrics in the same CSV column shape
+	 * the Import tab expects (see $lib/metrics-admin/csv-import.ts), so it
+	 * can be hand-edited and re-imported later. */
+	async function exportBenchmarkCsv(bm: Benchmark) {
+		exportError = '';
+		exportingBenchmarkId = bm.id;
+		try {
+			const rows = await getMetricsForExport(bm.id);
+			downloadCsv(`${bm.slug}-metrics-export.csv`, buildMetricsCsv(rows));
+		} catch (e) {
+			exportError = e instanceof Error ? e.message : String(e);
+		} finally {
+			exportingBenchmarkId = null;
+		}
+	}
+
+	/** Every benchmark's metrics in one combined CSV — unlike a per-benchmark
+	 * YAML file, CSV rows naturally combine, so this is a single download
+	 * rather than one-per-benchmark. */
+	async function exportAllBenchmarksCsv() {
+		exportError = '';
+		exportingAll = true;
+		try {
+			const rows = await getMetricsForExport();
+			downloadCsv('impactbench-metrics-export.csv', buildMetricsCsv(rows));
+		} catch (e) {
+			exportError = e instanceof Error ? e.message : String(e);
+		} finally {
+			exportingAll = false;
+		}
 	}
 
 	async function loadDashboard() {
@@ -267,7 +432,7 @@
 		{#if phase === 'ready'}
 			<div class="flex items-center gap-4">
 				<nav class="flex items-center gap-[3px]">
-					{#each [['dashboard', 'Dashboard', 'fa-table-list'], ['wizard', 'New Metric', 'fa-wand-magic-sparkles'], ['ops', 'Models & Ops', 'fa-gears']] as [tab, label, icon] (tab)}
+					{#each [['dashboard', 'Dashboard', 'fa-table-list'], ['add', 'Add Metrics', 'fa-square-plus'], ['ops', 'Models & Ops', 'fa-gears']] as [tab, label, icon] (tab)}
 						<button
 							class="inline-flex items-center gap-[6px] rounded-[6px] px-[12px] py-[6px] text-[12px] font-medium transition-colors duration-150
 								{activeTab === tab
@@ -301,8 +466,8 @@
 					<h1 class="text-[18px] font-[800] tracking-[-0.01em]">Admin key required</h1>
 				</div>
 				<p class="mb-5 text-[13px] leading-[1.6] text-[#6b7280]">
-					Paste your admin capability key to view the metrics dashboard. The key is held in
-					memory only — it is never saved, so you'll re-enter it after a reload.
+					Paste your admin capability key to view the metrics dashboard. The key is held in memory
+					only — it is never saved, so you'll re-enter it after a reload.
 				</p>
 
 				{#if phase === 'invalid'}
@@ -344,9 +509,41 @@
 				</div>
 			</div>
 		</div>
-	{:else if activeTab === 'wizard'}
+	{:else if activeTab === 'add'}
 		<div class="flex-1 overflow-y-auto">
-			<NewMetricWizard {benchmarks} areas={taxonomyAreas} subareas={taxonomySubareas} {nutritionCategories} />
+			<div class="mx-auto w-full max-w-[760px] px-6 pt-6">
+				<div class="inline-flex rounded-[10px] border border-[#e5e7eb] bg-white p-[3px]">
+					<button
+						class="rounded-[7px] px-4 py-[6px] text-[12px] font-semibold transition-colors duration-150
+							{addMode === 'csv' ? 'bg-[#e0f7f7] text-[#00b3b0]' : 'text-[#6b7280] hover:bg-[#f3f4f6]'}"
+						onclick={() => (addMode = 'csv')}
+					>
+						<i class="fa-solid fa-file-csv text-[10px]"></i> Import CSV
+					</button>
+					<button
+						class="cursor-not-allowed rounded-[7px] px-4 py-[6px] text-[12px] font-semibold text-[#c4c9d1]"
+						disabled
+						title="Coming soon — use Import CSV for now"
+					>
+						<i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> New Metric
+						<span
+							class="ml-1 rounded-full bg-[#f3f4f6] px-[6px] py-[1px] text-[9px] font-bold text-[#9ca3af]"
+							>Soon</span
+						>
+					</button>
+				</div>
+			</div>
+
+			{#if addMode === 'csv'}
+				<ImportCsvPanel onImported={loadDashboard} />
+			{:else}
+				<NewMetricWizard
+					{benchmarks}
+					areas={taxonomyAreas}
+					subareas={taxonomySubareas}
+					{nutritionCategories}
+				/>
+			{/if}
 		</div>
 	{:else if activeTab === 'ops'}
 		<div class="flex-1 overflow-y-auto">
@@ -364,8 +561,7 @@
 					<div class="flex items-baseline justify-between">
 						<h2 class="text-[13px] font-[800] tracking-[-0.01em] text-[#1a1a1a]">Filters</h2>
 						<span class="text-[11px] text-[#9ca3af]"
-							>{filteredMetrics.length}<span class="text-[#c4c9d1]"> / {metrics.length}</span
-							></span
+							>{filteredMetrics.length}<span class="text-[#c4c9d1]"> / {metrics.length}</span></span
 						>
 					</div>
 				</div>
@@ -453,7 +649,7 @@
 						>
 							All Statuses
 						</button>
-						{#each ['draft', 'scenarios_generating', 'ready_to_simulate', 'evaluating', 'ready_to_publish', 'published'] as const as status (status)}
+						{#each METRIC_STATUS_ORDER as status (status)}
 							<button
 								class="flex w-full items-center gap-[7px] px-4 py-[5px] text-left text-[12px] transition-colors duration-100
 									{selectedStatus === status
@@ -467,10 +663,23 @@
 					</div>
 
 					<div class="mt-2 border-t-[4px] border-[#f3f4f6] pt-2 pb-3">
-						<div
-							class="px-4 pb-[5px] text-[10px] font-[700] tracking-[0.08em] text-[#b0b8c4] uppercase"
-						>
-							Benchmark
+						<div class="flex items-center justify-between px-4 pb-[5px]">
+							<span class="text-[10px] font-[700] tracking-[0.08em] text-[#b0b8c4] uppercase"
+								>Benchmark</span
+							>
+							<button
+								class="text-[9px] font-semibold text-[#9ca3af] hover:text-[#00b3b0] disabled:opacity-40"
+								disabled={exportingBenchmarkId !== null || exportingAll || benchmarks.length === 0}
+								onclick={exportAllBenchmarksCsv}
+								title="Download every benchmark's metrics as one CSV"
+							>
+								{#if exportingAll}
+									<i class="fa-solid fa-spinner fa-spin"></i>
+								{:else}
+									<i class="fa-solid fa-file-export"></i>
+								{/if}
+								Export all</button
+							>
 						</div>
 						<button
 							class="w-full px-4 py-[5px] text-left text-[12px] transition-colors duration-100
@@ -480,15 +689,34 @@
 							onclick={() => (selectedBenchmarkSlug = null)}>All Benchmarks</button
 						>
 						{#each benchmarks as bm (bm.id)}
-							<button
-								class="w-full truncate px-4 py-[5px] text-left text-[12px] transition-colors duration-100
-									{selectedBenchmarkSlug === bm.slug
-									? 'bg-[#e0f7f7] font-semibold text-[#00b3b0]'
-									: 'text-[#4b5563] hover:bg-[#f3f4f6]'}"
-								title={bm.name}
-								onclick={() => (selectedBenchmarkSlug = bm.slug)}>{bm.name}</button
+							<div
+								class="group flex items-center gap-[2px] px-4 transition-colors duration-100
+									{selectedBenchmarkSlug === bm.slug ? 'bg-[#e0f7f7]' : 'hover:bg-[#f3f4f6]'}"
 							>
+								<button
+									class="min-w-0 flex-1 truncate py-[5px] text-left text-[12px]
+										{selectedBenchmarkSlug === bm.slug ? 'font-semibold text-[#00b3b0]' : 'text-[#4b5563]'}"
+									title={bm.name}
+									onclick={() => (selectedBenchmarkSlug = bm.slug)}>{bm.name}</button
+								>
+								<button
+									class="flex-shrink-0 rounded-[4px] p-[4px] text-[10px] text-[#c4c9d1] opacity-0 transition-opacity duration-100 group-hover:opacity-100 hover:text-[#00b3b0] disabled:opacity-40
+										{exportingBenchmarkId === bm.id ? '!opacity-100' : ''}"
+									disabled={exportingBenchmarkId !== null || exportingAll}
+									onclick={() => exportBenchmarkCsv(bm)}
+									title="Download {bm.name}'s metrics as CSV"
+								>
+									{#if exportingBenchmarkId === bm.id}
+										<i class="fa-solid fa-spinner fa-spin"></i>
+									{:else}
+										<i class="fa-solid fa-download"></i>
+									{/if}
+								</button>
+							</div>
 						{/each}
+						{#if exportError}
+							<p class="mt-1 px-4 text-[10px] font-medium text-[#dc2626]">{exportError}</p>
+						{/if}
 					</div>
 				</div>
 			</aside>
@@ -511,7 +739,7 @@
 					</div>
 					<div class="flex items-center gap-[5px]">
 						<span class="text-[10px] text-[#9ca3af]">Sort</span>
-						{#each [['name', 'A–Z'], ['status', 'Status'], ['score', 'Score']] as [mode, label] (mode)}
+						{#each [['status', 'Status'], ['name', 'A–Z'], ['benchmark', 'Benchmark']] as [mode, label] (mode)}
 							<button
 								class="rounded-[10px] border-[1.5px] px-[8px] py-[2px] text-[10px] font-medium transition-all duration-150
 									{sortMode === mode
@@ -520,7 +748,53 @@
 								onclick={() => (sortMode = mode as SortMode)}>{label}</button
 							>
 						{/each}
+						<span class="ml-auto flex items-center gap-[10px]">
+							<span class="text-[10px] text-[#9ca3af]"
+								>{filteredMetrics.length} metric{filteredMetrics.length === 1 ? '' : 's'}</span
+							>
+							<button
+								class="flex items-center gap-[5px] text-[10px] font-medium text-[#6b7280] hover:text-[#00b3b0]"
+								onclick={toggleSelectAllFiltered}
+							>
+								<span
+									class="flex h-[13px] w-[13px] items-center justify-center rounded-[3px] border-[1.5px]
+										{allFilteredSelected ? 'border-[#00b3b0] bg-[#00b3b0]' : 'border-[#d1d5db] bg-white'}"
+								>
+									{#if allFilteredSelected}<i class="fa-solid fa-check text-[8px] text-white"
+										></i>{/if}
+								</span>
+								Select all
+							</button>
+						</span>
 					</div>
+
+					{#if selectedMetricIds.size > 0}
+						<div
+							class="flex flex-wrap items-center gap-[6px] rounded-[8px] border border-[#80d8d7] bg-[#e0f7f7] px-[10px] py-[6px]"
+						>
+							<span class="text-[11px] font-semibold text-[#038d8f]"
+								>{selectedMetricIds.size} selected</span
+							>
+							<button
+								class="rounded-[6px] bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-[8px] py-[3px] text-[10px] font-semibold text-white transition-[filter] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40"
+								disabled={eligibleForGenerate.length === 0}
+								onclick={() => startMassAction('generate')}
+							>
+								<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> Generate Scenarios ({eligibleForGenerate.length})
+							</button>
+							<button
+								class="rounded-[6px] bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-[8px] py-[3px] text-[10px] font-semibold text-white transition-[filter] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40"
+								disabled={eligibleForSimulate.length === 0}
+								onclick={() => startMassAction('simulate')}
+							>
+								<i class="fa-solid fa-play text-[9px]"></i> Run Test Simulation ({eligibleForSimulate.length})
+							</button>
+							<button
+								class="ml-auto text-[10px] font-medium text-[#038d8f] hover:underline"
+								onclick={() => (selectedMetricIds = new Set())}>Clear</button
+							>
+						</div>
+					{/if}
 				</div>
 
 				<div class="flex-1 overflow-y-auto">
@@ -533,34 +807,54 @@
 						</div>
 					{:else}
 						{#each filteredMetrics as m (m.id)}
-							<button
+							<div
 								class="flex w-full items-center gap-[10px] border-b border-[#f3f4f6] px-4 py-[9px] text-left
 									{selectedMetricId === m.id ? 'bg-[#f3f4f6]' : 'hover:bg-[#f9fafb]'}"
-								onclick={() => selectMetric(m.id)}
 							>
-								<span
-									class="inline-flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[10px] leading-none font-[800]"
-									style={m.current_version?.type === 'negative'
-										? 'border:1.5px solid #dc2626;color:#dc2626'
-										: 'border:1.5px solid #16a34a;color:#16a34a'}
-									>{m.current_version?.type === 'negative' ? '×' : '+'}</span
+								<button
+									class="flex h-[15px] w-[15px] flex-shrink-0 items-center justify-center rounded-[3px] border-[1.5px]
+										{selectedMetricIds.has(m.id) ? 'border-[#00b3b0] bg-[#00b3b0]' : 'border-[#d1d5db] bg-white'}"
+									onclick={(e) => {
+										e.stopPropagation();
+										toggleMetricSelection(m.id);
+									}}
+									aria-label="Select {metricLabel(m)}"
 								>
-								<div class="min-w-0 flex-1">
-									<div class="truncate text-[12px] font-medium text-[#1a1a1a]">
-										{m.current_version?.name ?? m.slug}
-									</div>
-									<div class="mt-[1px] truncate text-[10px] text-[#9ca3af]">
-										{m.benchmark.name} · {m.slug}
-									</div>
-								</div>
-								<span
-									class="flex-shrink-0 rounded-full px-2 py-[1px] text-[10px] font-bold"
-									style={statusStyle(m.status)}>{statusLabel(m.status)}</span
+									{#if selectedMetricIds.has(m.id)}<i
+											class="fa-solid fa-check text-[9px] text-white"
+										></i>{/if}
+								</button>
+								<button
+									class="flex min-w-0 flex-1 items-center gap-[10px] text-left"
+									onclick={() => selectMetric(m.id)}
 								>
-								{#if m.total_count > 0}
-									<ScorePill score={m.total_count ? m.passed_count / m.total_count : 0} size="sm" />
-								{/if}
-							</button>
+									<span
+										class="inline-flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[10px] leading-none font-[800]"
+										style={m.current_version?.type === 'negative'
+											? 'border:1.5px solid #dc2626;color:#dc2626'
+											: 'border:1.5px solid #16a34a;color:#16a34a'}
+										>{m.current_version?.type === 'negative' ? '×' : '+'}</span
+									>
+									<div class="min-w-0 flex-1">
+										<div class="truncate text-[12px] font-medium text-[#1a1a1a]">
+											{m.current_version?.name ?? m.slug}
+										</div>
+										<div class="mt-[1px] truncate text-[10px] text-[#9ca3af]">
+											{m.benchmark.name} · {m.slug}
+										</div>
+									</div>
+									<span
+										class="flex-shrink-0 rounded-full px-2 py-[1px] text-[10px] font-bold"
+										style={statusStyle(m.status)}>{statusLabel(m.status)}</span
+									>
+									{#if m.total_count > 0}
+										<ScorePill
+											score={m.total_count ? m.passed_count / m.total_count : 0}
+											size="sm"
+										/>
+									{/if}
+								</button>
+							</div>
 						{/each}
 					{/if}
 				</div>
@@ -585,13 +879,17 @@
 				{:else if metricDetail}
 					{@const v = metricDetail.current_version}
 					<div class="flex-shrink-0 border-b border-[#e5e7eb] px-6 pt-[12px] pb-[10px]">
-						<div class="mb-[3px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase">
+						<div
+							class="mb-[3px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase"
+						>
 							{#if placements.taxonomy.length}
-								{placements.taxonomy.map((t) => `${t.subarea.area.name} · ${t.subarea.name}`).join(' · ')}
-								<span class="normal-case text-[#c4c9d1]"> — {metricDetail.benchmark.name}</span>
+								{placements.taxonomy
+									.map((t) => `${t.subarea.area.name} · ${t.subarea.name}`)
+									.join(' · ')}
+								<span class="text-[#c4c9d1] normal-case"> — {metricDetail.benchmark.name}</span>
 							{:else}
 								{metricDetail.benchmark.name} · {metricDetail.slug}
-								<span class="normal-case text-[#c4c9d1]"> — not placed in the taxonomy yet</span>
+								<span class="text-[#c4c9d1] normal-case"> — not placed in the taxonomy yet</span>
 							{/if}
 						</div>
 						<div class="flex items-start justify-between gap-3">
@@ -606,14 +904,15 @@
 										: 'background:#dcfce7;color:#16a34a'}
 								>
 									<i
-										class="fa-solid {v.type === 'negative' ? 'fa-shield-halved' : 'fa-star'} text-[9px]"
+										class="fa-solid {v.type === 'negative'
+											? 'fa-shield-halved'
+											: 'fa-star'} text-[9px]"
 									></i>
 									{v.type === 'negative' ? 'Avoiding bad behavior' : 'Promoting good behavior'}
 								</span>
 								<span
 									class="rounded-full px-2 py-[2px] text-[10px] font-bold"
-									style={statusStyle(metricDetail.status)}
-									>{statusLabel(metricDetail.status)}</span
+									style={statusStyle(metricDetail.status)}>{statusLabel(metricDetail.status)}</span
 								>
 							</div>
 						</div>
@@ -634,21 +933,14 @@
 								>
 									<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> Generate Scenarios
 								</button>
-							{:else if metricDetail.status === 'scenarios_generating'}
-								<span class="inline-flex items-center gap-[6px] text-[11px] font-medium text-[#9ca3af]">
-									<i class="fa-solid fa-spinner fa-spin"></i> Generating scenarios…
-								</span>
 							{:else if metricDetail.status === 'ready_to_simulate'}
 								<button
 									class="rounded-[6px] bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-3 py-[4px] text-[11px] font-semibold text-white hover:brightness-105"
 									onclick={() => (actionModal = 'simulate')}
 								>
-									<i class="fa-solid fa-play text-[9px]"></i> Run Simulation
+									<i class="fa-solid fa-play text-[9px]"></i> Run Test Simulation
 								</button>
-							{:else if metricDetail.status === 'evaluating'}
-								<span class="inline-flex items-center gap-[6px] text-[11px] font-medium text-[#9ca3af]">
-									<i class="fa-solid fa-spinner fa-spin"></i> Evaluating…
-								</span>
+								<span class="text-[10px] text-[#9ca3af]">with {TEST_SIMULATION_MODEL_LABEL}</span>
 							{:else if metricDetail.status === 'ready_to_publish'}
 								<button
 									class="rounded-[6px] bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-3 py-[4px] text-[11px] font-semibold text-white hover:brightness-105"
@@ -670,7 +962,9 @@
 								</div>
 							{/if}
 
-							<div class="mb-[4px] text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
+							<div
+								class="mb-[4px] text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+							>
 								Description
 							</div>
 							<div
@@ -724,7 +1018,9 @@
 								onRegenerate={() => (actionModal = 'regenerate')}
 							/>
 
-							<div class="mb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
+							<div
+								class="mb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+							>
 								Scenarios <span class="font-normal text-[#c4c9d1] normal-case"
 									>({metricDetail.scenarios.length})</span
 								>
@@ -734,7 +1030,8 @@
 									<button
 										class="flex w-full items-center gap-[8px] px-3 py-[8px] text-left"
 										onclick={() =>
-											(expandedScenarioId = expandedScenarioId === scenario.id ? null : scenario.id)}
+											(expandedScenarioId =
+												expandedScenarioId === scenario.id ? null : scenario.id)}
 									>
 										<div class="min-w-0 flex-1">
 											<div class="truncate text-[12px] font-medium text-[#1a1a1a]">
@@ -757,8 +1054,7 @@
 													style={conv.score.passed
 														? 'background:#dcfce7;color:#16a34a'
 														: 'background:#fee2e2;color:#dc2626'}
-													title={conv.model.display_name}
-													>{conv.score.passed ? '✓' : '✗'}</span
+													title={conv.model.display_name}>{conv.score.passed ? '✓' : '✗'}</span
 												>
 											{/if}
 										{/each}
@@ -834,7 +1130,14 @@
 						description={actionModalConfig.description}
 						phases={actionModalConfig.phases}
 						doneTitle={actionModalConfig.doneTitle}
+						seedTitles={actionModalConfig.seedTitles}
 						onClose={() => (actionModal = null)}
+						onDone={() => {
+							if (actionModal === 'generate')
+								applyStatusTransition([v.metric_id], 'ready_to_simulate');
+							else if (actionModal === 'simulate')
+								applyStatusTransition([v.metric_id], 'ready_to_publish');
+						}}
 					/>
 					<PublishDiffModal
 						open={publishOpen}
@@ -847,3 +1150,16 @@
 		</div>
 	{/if}
 </div>
+
+{#if massActionConfig}
+	<MassActionModal
+		open={massAction !== null}
+		title={massActionConfig.title}
+		description={massActionConfig.description}
+		actionLabel={massActionConfig.actionLabel}
+		items={massActionConfig.items}
+		doneTitle={massActionConfig.doneTitle}
+		onClose={closeMassAction}
+		onDone={(ids) => applyStatusTransition(ids, massActionConfig.nextStatus)}
+	/>
+{/if}

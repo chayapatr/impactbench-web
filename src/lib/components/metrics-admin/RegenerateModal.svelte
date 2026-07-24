@@ -18,10 +18,27 @@
 		description: string;
 		phases: Phase[];
 		doneTitle?: string;
+		/** Titles fed in as seed input (e.g. submitted scenario titles feeding
+		 * a Generate Scenarios run). Purely informational — shown above the
+		 * phase timeline so the action doesn't look like it's inventing input
+		 * from nothing. */
+		seedTitles?: string[];
 		onClose: () => void;
+		/** Fires exactly once, the moment the simulated run finishes — before
+		 * the user clicks Close. Callers use this to advance local status. */
+		onDone?: () => void;
 	}
 
-	let { open, title, description, phases, doneTitle = 'Done', onClose }: Props = $props();
+	let {
+		open,
+		title,
+		description,
+		phases,
+		doneTitle = 'Done',
+		seedTitles = [],
+		onClose,
+		onDone
+	}: Props = $props();
 
 	let phaseIndex = $state(-1);
 	let progress = $state(0);
@@ -43,6 +60,7 @@
 					done = true;
 					phaseIndex = phases.length - 1;
 					progress = 100;
+					onDone?.();
 				}
 			}
 		}, 150);
@@ -56,7 +74,9 @@
 
 {#if open}
 	<div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 px-6">
-		<div class="w-full max-w-[420px] rounded-[16px] border border-[#e5e7eb] bg-white p-6 shadow-[0_10px_32px_rgba(15,23,42,0.15)]">
+		<div
+			class="w-full max-w-[420px] rounded-[16px] border border-[#e5e7eb] bg-white p-6 shadow-[0_10px_32px_rgba(15,23,42,0.15)]"
+		>
 			<div class="mb-3 flex items-center gap-2">
 				<i class="fa-solid fa-arrows-rotate text-[#00b3b0]"></i>
 				<h2 class="text-[15px] font-[800] tracking-[-0.01em] text-[#111827]">
@@ -64,6 +84,23 @@
 				</h2>
 			</div>
 			<p class="mb-4 text-[11px] leading-[1.6] text-[#9ca3af]">{description}</p>
+
+			{#if seedTitles.length}
+				<div class="mb-4 rounded-[8px] border border-[#e5e7eb] bg-[#fafaf9] p-2.5">
+					<div class="mb-1.5 text-[9px] font-[700] tracking-[0.08em] text-[#b0b8c4] uppercase">
+						Seed input
+					</div>
+					<ul class="space-y-1">
+						{#each seedTitles as t (t)}
+							<li class="flex items-start gap-1.5 text-[11px] leading-[1.5] text-[#4b5563]">
+								<i class="fa-solid fa-file-lines mt-[3px] flex-shrink-0 text-[8px] text-[#c4c9d1]"
+								></i>
+								<span class="truncate">{t}</span>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
 
 			<div class="space-y-3">
 				{#each phases as phase, i (phase.key)}

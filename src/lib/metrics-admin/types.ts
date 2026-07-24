@@ -3,13 +3,23 @@
 // (metric + its current version, scenarios with their conversations/scores).
 import type { ChatTurn } from '$lib/types';
 
-export type MetricStatus =
-	| 'draft'
-	| 'scenarios_generating'
-	| 'ready_to_simulate'
-	| 'evaluating'
-	| 'ready_to_publish'
-	| 'published';
+// Workflow order — also the order /metrics-admin's sidebar filter and the
+// "Status" sort use. No "generating"/"simulating" in-progress statuses:
+// those are transient (a modal's local progress state while an action
+// runs), not worth persisting — a row lands on the next status below once
+// the action completes. There's also no separate "ready to evaluate" /
+// "evaluating" status: real per-model evaluation is still undesigned (it's
+// inherently per-model, so a single metric-level status can't capture it),
+// so a metric that's passed its test simulation is just 'ready_to_publish'
+// already — evaluation results will layer on top once that's designed.
+export const METRIC_STATUS_ORDER = [
+	'draft',
+	'ready_to_simulate',
+	'ready_to_publish',
+	'published'
+] as const;
+
+export type MetricStatus = (typeof METRIC_STATUS_ORDER)[number];
 
 export type MetricType = 'positive' | 'negative';
 export type ScenarioAge = 'adult' | 'child';
@@ -203,6 +213,8 @@ export interface MetricDetail {
  * subarea/category display names. Empty arrays are a genuine, honest
  * "not placed yet" state — not a loading/error state. */
 export interface MetricPlacements {
-	taxonomy: (TaxonomyPlacement & { subarea: Pick<TaxonomySubarea, 'name'> & { area: Pick<TaxonomyArea, 'name'> } })[];
+	taxonomy: (TaxonomyPlacement & {
+		subarea: Pick<TaxonomySubarea, 'name'> & { area: Pick<TaxonomyArea, 'name'> };
+	})[];
 	nutrition: (NutritionPlacement & { category: Pick<NutritionCategory, 'name'> })[];
 }
