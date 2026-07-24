@@ -21,11 +21,13 @@
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@tailwindcss/vite": "^4.2.2",
 		"@types/d3": "^7.4.3",
+		"@types/js-yaml": "^4.0.9",
 		"@types/node": "^22",
 		"eslint": "^10.2.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.17.0",
 		"globals": "^17.4.0",
+		"playwright": "^1.61.1",
 		"prettier": "^3.8.1",
 		"prettier-plugin-svelte": "^3.5.1",
 		"prettier-plugin-tailwindcss": "^0.7.2",
@@ -42,6 +44,7 @@
 		"d3": "^7.9.0",
 		"html2canvas": "^1.4.1",
 		"isomorphic-dompurify": "^3.19.0",
+		"js-yaml": "^5.2.2",
 		"jspdf": "^4.2.1",
 		"marked": "^18.0.3"
 	}
