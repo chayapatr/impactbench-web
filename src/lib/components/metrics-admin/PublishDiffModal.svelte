@@ -1,20 +1,20 @@
 <script lang="ts">
-	import type { MetricVersion } from '$lib/metrics-admin/types';
+	import type { Metric } from '$lib/metrics-admin/types';
 
 	// DEMO ONLY. The diff below is a hand-written example, not a real
 	// comparison against what's live on R2 — that needs a publish RPC that
-	// projects metrics/metric_versions/scenarios into the same 6 data.json
-	// files impactbench-data's tools/publish.py builds today (see backend
-	// gaps). Publish doesn't upload anything.
+	// projects metrics/scenarios into the same 6 data.json files
+	// impactbench-data's tools/publish.py builds today (see backend gaps).
+	// Publish doesn't upload anything.
 
 	interface Props {
 		open: boolean;
-		version: MetricVersion;
+		metric: Metric;
 		benchmarkName: string;
 		onClose: () => void;
 	}
 
-	let { open, version, benchmarkName, onClose }: Props = $props();
+	let { open, metric, benchmarkName, onClose }: Props = $props();
 
 	let publishing = $state(false);
 	let publishedNote = $state('');
@@ -24,7 +24,8 @@
 		publishedNote = '';
 		await new Promise((r) => setTimeout(r, 800));
 		publishing = false;
-		publishedNote = 'Demo only — nothing was uploaded to R2. Needs a publish RPC + projection query.';
+		publishedNote =
+			'Demo only — nothing was uploaded to R2. Needs a publish RPC + projection query.';
 	}
 </script>
 
@@ -45,19 +46,21 @@
 
 			<div class="flex-1 overflow-y-auto px-6 py-4">
 				<pre class="overflow-x-auto rounded-[8px] bg-[#0d1117] p-3 text-[11px] leading-[1.6]"><code
-						><span class="text-[#7ee787]">+ "metric_versions.{version.id}"</span>: {'{'}
-  <span class="text-[#7ee787]">+ "name"</span>: "{version.name}",
-  <span class="text-[#7ee787]">+ "type"</span>: "{version.type}",
-  <span class="text-[#7ee787]">+ "content_hash"</span>: "{version.content_hash.slice(0, 12)}…"
+						><span class="text-[#7ee787]">+ "metrics.{metric.id}"</span>: {'{'}
+  <span class="text-[#7ee787]">+ "name"</span>: "{metric.name}",
+  <span class="text-[#7ee787]">+ "type"</span>: "{metric.type}",
+  <span class="text-[#7ee787]">+ "content_hash"</span>: "{metric.content_hash.slice(0, 12)}…"
 }
 <span class="text-[#8b949e]">  "scenario-index.json"</span>: <span class="text-[#8b949e]"
-						>unchanged (0 rows affected)</span
-					></code
-				></pre>
+							>unchanged (0 rows affected)</span
+						></code
+					></pre>
 			</div>
 
 			{#if publishedNote}
-				<div class="mx-6 mb-3 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[11px] text-[#6b7280]">
+				<div
+					class="mx-6 mb-3 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[11px] text-[#6b7280]"
+				>
 					{publishedNote}
 				</div>
 			{/if}

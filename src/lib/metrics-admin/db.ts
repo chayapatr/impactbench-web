@@ -7,8 +7,10 @@ import type {
 	MetricListItem,
 	MetricPlacements,
 	MetricType,
-	MetricVersion,
 	NutritionCategory,
+	PipelineRole,
+	PipelineRoleModel,
+	Provider,
 	Score,
 	ScenarioWithConversations,
 	TaxonomyArea,
@@ -21,8 +23,6 @@ import type { ImportPayload, MetricExportRow } from './csv-import';
 // read access" section of supabase/metrics_schema.sql), so a plain
 // `.from(...).select(...)` is the correct, minimal-indirection way to read
 // them, same as the public /metrics page reads its R2 JSON directly.
-
-const CURRENT_VERSION_FK = 'metrics_current_version_fk';
 
 // PostgREST returns a one-to-one embed (scores.conversation_id is unique) as
 // a single object on recent versions, but as a one-item array on some setups
@@ -90,6 +90,58 @@ export async function listModels(): Promise<Model[]> {
 	return (data ?? []) as Model[];
 }
 
+/** Providers hold the api key, so — unlike models — they're not public-read;
+ * this goes through admin_list_providers (SECURITY DEFINER), which never
+ * returns the raw key, only api_key_set. See supabase/metrics_schema.sql. */
+export async function listProviders(adminKey: string): Promise<Provider[]> {
+	const supabase = getSupabase();
+	const { data, error } = await supabase.rpc('admin_list_providers', { p_admin_key: adminKey });
+	if (error) throw new Error(error.message);
+	return (data ?? []) as Provider[];
+}
+
+/** Sets (or clears, if apiKey is blank) one provider's api key via
+ * admin_set_provider_api_key. The key is never read back — only
+ * api_key_set (from listProviders) reflects whether it's configured. */
+export async function setProviderApiKey(
+	adminKey: string,
+	providerId: string,
+	apiKey: string
+): Promise<void> {
+	const supabase = getSupabase();
+	const { error } = await supabase.rpc('admin_set_provider_api_key', {
+		p_admin_key: adminKey,
+		p_provider_id: providerId,
+		p_api_key: apiKey
+	});
+	if (error) throw new Error(error.message);
+}
+
+/** Public-read like models/benchmarks — no secrets here, just which
+ * provider + model string plays each pipeline role. */
+export async function listPipelineRoleModels(): Promise<PipelineRoleModel[]> {
+	const supabase = getSupabase();
+	const { data, error } = await supabase.from('pipeline_role_models').select('*');
+	if (error) throw new Error(error.message);
+	return (data ?? []) as PipelineRoleModel[];
+}
+
+export async function setPipelineRoleModel(
+	adminKey: string,
+	role: PipelineRole,
+	providerId: string,
+	model: string
+): Promise<void> {
+	const supabase = getSupabase();
+	const { error } = await supabase.rpc('admin_set_pipeline_role_model', {
+		p_admin_key: adminKey,
+		p_role: role,
+		p_provider_id: providerId,
+		p_model: model
+	});
+	if (error) throw new Error(error.message);
+}
+
 export async function listTaxonomyAreas(): Promise<TaxonomyArea[]> {
 	const supabase = getSupabase();
 	const { data, error } = await supabase.from('taxonomy_areas').select('*').order('sort_order');
@@ -115,33 +167,30 @@ export async function listNutritionCategories(): Promise<NutritionCategory[]> {
 }
 
 interface RawMetricExportRow {
+	name: string;
+	type: MetricType;
+	definition: string;
+	examples: string[];
+	raw: Record<string, unknown>;
 	suggested_placements: string[] | null;
 	benchmark: Pick<Benchmark, 'name'> | null;
-	current_version:
-		| (Pick<MetricVersion, 'name' | 'type' | 'definition' | 'examples' | 'raw'> & {
-				scenarios: { title: string; source: string; generated_at: string }[];
-		  })
-		| null;
+	scenarios: { title: string; source: string; generated_at: string }[];
 }
 
-/** Every metric's current content, shaped as rows in the exact CSV column
- * format import_metrics_csv.py / parseImportPlan expect (see
+/** Every metric's content, shaped as rows in the exact CSV column format
+ * import_metrics_csv.py / parseImportPlan expect (see
  * $lib/metrics-admin/csv-import.ts) — so exporting, hand-editing, and
  * re-importing round-trips. Pass a benchmark id to export just that
- * benchmark, or omit it to export everything. Draft metrics with no
- * current_version are skipped (there's nothing to export yet). */
+ * benchmark, or omit it to export everything. */
 export async function getMetricsForExport(benchmarkId?: string): Promise<MetricExportRow[]> {
 	const supabase = getSupabase();
 	let query = supabase
 		.from('metrics')
 		.select(
 			`
-			suggested_placements,
+			name, type, definition, examples, raw, suggested_placements,
 			benchmark:benchmarks(name),
-			current_version:metric_versions!${CURRENT_VERSION_FK}(
-				name, type, definition, examples, raw,
-				scenarios(title, source, generated_at)
-			)
+			scenarios(title, source, generated_at)
 		`
 		)
 		.order('slug');
@@ -149,29 +198,25 @@ export async function getMetricsForExport(benchmarkId?: string): Promise<MetricE
 	const { data, error } = await query;
 	if (error) throw new Error(error.message);
 
-	return ((data ?? []) as unknown as RawMetricExportRow[])
-		.filter((row) => row.current_version !== null)
-		.map((row) => {
-			const v = row.current_version!;
-			const scenarios = [...v.scenarios].sort((a, b) => {
-				if (a.source !== b.source) return a.source === 'submitted' ? -1 : 1;
-				return a.generated_at.localeCompare(b.generated_at);
-			});
-			const raw = v.raw as Record<string, unknown>;
-			const internalCategory = raw.internal_category;
-			const submittedDate = raw.submitted_date;
-			return {
-				benchmarkName: row.benchmark?.name ?? '',
-				metricName: v.name,
-				definition: v.definition,
-				type: v.type,
-				examples: v.examples,
-				suggestedPlacements: row.suggested_placements ?? [],
-				internalCategory: typeof internalCategory === 'string' ? internalCategory : null,
-				submittedDate: typeof submittedDate === 'string' ? submittedDate : null,
-				scenarioTitles: scenarios.slice(0, 3).map((s) => s.title)
-			} satisfies MetricExportRow;
+	return ((data ?? []) as unknown as RawMetricExportRow[]).map((row) => {
+		const scenarios = [...row.scenarios].sort((a, b) => {
+			if (a.source !== b.source) return a.source === 'submitted' ? -1 : 1;
+			return a.generated_at.localeCompare(b.generated_at);
 		});
+		const internalCategory = row.raw.internal_category;
+		const submittedDate = row.raw.submitted_date;
+		return {
+			benchmarkName: row.benchmark?.name ?? '',
+			metricName: row.name,
+			definition: row.definition,
+			type: row.type,
+			examples: row.examples,
+			suggestedPlacements: row.suggested_placements ?? [],
+			internalCategory: typeof internalCategory === 'string' ? internalCategory : null,
+			submittedDate: typeof submittedDate === 'string' ? submittedDate : null,
+			scenarioTitles: scenarios.slice(0, 3).map((s) => s.title)
+		} satisfies MetricExportRow;
+	});
 }
 
 /** Real placements for a metric — genuinely empty until either a curator
@@ -204,16 +249,14 @@ interface RawListRow {
 	id: string;
 	slug: string;
 	status: MetricListItem['status'];
+	name: string;
+	type: MetricType;
 	benchmark: Pick<Benchmark, 'slug' | 'name'> | null;
 	taxonomy_placements: {
 		subarea_id: string;
 		subarea: { name: string; area: { id: string; name: string } | null } | null;
 	}[];
-	current_version: {
-		name: string;
-		type: MetricType;
-		scenarios: { conversations: { score: { passed: boolean } | { passed: boolean }[] | null }[] }[];
-	} | null;
+	scenarios: { conversations: { score: { passed: boolean } | { passed: boolean }[] | null }[] }[];
 }
 
 export async function listMetrics(): Promise<MetricListItem[]> {
@@ -222,15 +265,12 @@ export async function listMetrics(): Promise<MetricListItem[]> {
 		.from('metrics')
 		.select(
 			`
-			id, slug, status,
+			id, slug, status, name, type,
 			benchmark:benchmarks(slug, name),
 			taxonomy_placements(subarea_id, subarea:taxonomy_subareas(name, area:taxonomy_areas(id, name))),
-			current_version:metric_versions!${CURRENT_VERSION_FK}(
-				name, type,
-				scenarios(
-					conversations(
-						score:scores(passed)
-					)
+			scenarios(
+				conversations(
+					score:scores(passed)
 				)
 			)
 		`
@@ -241,7 +281,7 @@ export async function listMetrics(): Promise<MetricListItem[]> {
 	return ((data ?? []) as unknown as RawListRow[]).map((row) => {
 		let passed = 0;
 		let total = 0;
-		for (const scenario of row.current_version?.scenarios ?? []) {
+		for (const scenario of row.scenarios ?? []) {
 			for (const conversation of scenario.conversations) {
 				const score = firstOrNull(conversation.score);
 				if (!score) continue;
@@ -265,10 +305,9 @@ export async function listMetrics(): Promise<MetricListItem[]> {
 			id: row.id,
 			slug: row.slug,
 			status: row.status,
+			name: row.name,
+			type: row.type,
 			benchmark: row.benchmark ?? { slug: '', name: '(unknown benchmark)' },
-			current_version: row.current_version
-				? { name: row.current_version.name, type: row.current_version.type }
-				: null,
 			subareas,
 			passed_count: passed,
 			total_count: total
@@ -282,16 +321,9 @@ interface RawConversationEmbed extends Omit<ConversationWithResult, 'score'> {
 interface RawScenarioEmbed extends Omit<ScenarioWithConversations, 'conversations'> {
 	conversations: RawConversationEmbed[];
 }
-interface RawDetailRow {
-	id: string;
-	benchmark_id: string;
-	slug: string;
-	status: MetricDetail['status'];
-	suggested_placements: string[] | null;
-	created_at: string;
-	updated_at: string;
+interface RawDetailRow extends Omit<MetricDetail, 'benchmark' | 'scenarios'> {
 	benchmark: MetricDetail['benchmark'] | null;
-	current_version: (MetricVersion & { scenarios: RawScenarioEmbed[] }) | null;
+	scenarios: RawScenarioEmbed[];
 }
 
 export async function getMetricDetail(metricId: string): Promise<MetricDetail | null> {
@@ -300,18 +332,17 @@ export async function getMetricDetail(metricId: string): Promise<MetricDetail | 
 		.from('metrics')
 		.select(
 			`
-			id, benchmark_id, slug, status, suggested_placements, created_at, updated_at,
+			id, benchmark_id, slug, status, name, type, definition, examples,
+			matters_because, contributor, raw, content_hash, suggested_placements,
+			created_at, updated_at,
 			benchmark:benchmarks(slug, name),
-			current_version:metric_versions!${CURRENT_VERSION_FK}(
-				id, metric_id, version_number, name, type, definition, examples,
-				matters_because, contributor, raw, content_hash, created_at, created_by,
-				scenarios(
-					id, metric_version_id, age, title, persona, user_goal, source_id, source, raw, generated_at,
-					conversations(
-						id, scenario_id, model_id, transcript, generated_at,
-						model:models(id, slug, display_name),
-						score:scores(id, conversation_id, present, passed, justification, created_at)
-					)
+			scenarios(
+				id, metric_id, demographic, title, persona, user_goal,
+				latent_adversarial_goal, landmarks, source_id, source, raw, generated_at,
+				conversations(
+					id, scenario_id, model_id, sample_index, transcript, generated_at,
+					model:models(id, slug, display_name),
+					score:scores(id, conversation_id, present, passed, justification, created_at)
 				)
 			)
 		`
@@ -321,9 +352,9 @@ export async function getMetricDetail(metricId: string): Promise<MetricDetail | 
 	if (error) throw new Error(error.message);
 
 	const row = data as unknown as RawDetailRow | null;
-	if (!row?.current_version) return null;
+	if (!row) return null;
 
-	const scenarios: ScenarioWithConversations[] = row.current_version.scenarios.map((scenario) => ({
+	const scenarios: ScenarioWithConversations[] = row.scenarios.map((scenario) => ({
 		...scenario,
 		conversations: scenario.conversations.map(
 			(conversation): ConversationWithResult => ({
@@ -334,15 +365,8 @@ export async function getMetricDetail(metricId: string): Promise<MetricDetail | 
 	}));
 
 	return {
-		id: row.id,
-		benchmark_id: row.benchmark_id,
-		slug: row.slug,
-		status: row.status,
-		suggested_placements: row.suggested_placements,
-		created_at: row.created_at,
-		updated_at: row.updated_at,
+		...row,
 		benchmark: row.benchmark ?? { slug: '', name: '(unknown benchmark)' },
-		current_version: row.current_version,
 		scenarios
 	};
 }

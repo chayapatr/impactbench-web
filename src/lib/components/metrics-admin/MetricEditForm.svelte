@@ -1,34 +1,34 @@
 <script lang="ts">
-	import type { MetricVersion } from '$lib/metrics-admin/types';
+	import type { Metric } from '$lib/metrics-admin/types';
 
 	// DEMO ONLY: there is no update_metric_draft RPC yet (see the backend-gap
 	// list). Save simulates a request and discards the result — nothing here
 	// is persisted. Swap the body of save() for a real RPC call once it exists.
 
 	interface Props {
-		version: MetricVersion;
+		metric: Metric;
 		onCancel: () => void;
 	}
 
-	let { version, onCancel }: Props = $props();
+	let { metric, onCancel }: Props = $props();
 
-	let name = $state(version.name);
-	let type = $state(version.type);
-	let definition = $state(version.definition);
-	let mattersBecause = $state(version.matters_because ?? '');
-	let contributor = $state(version.contributor ?? '');
-	let examples = $state([...version.examples]);
+	let name = $state(metric.name);
+	let type = $state(metric.type);
+	let definition = $state(metric.definition);
+	let mattersBecause = $state(metric.matters_because ?? '');
+	let contributor = $state(metric.contributor ?? '');
+	let examples = $state([...metric.examples]);
 	let newExample = $state('');
 
-	// Reset the edit buffer whenever handed a different version, rather than
+	// Reset the edit buffer whenever handed a different metric, rather than
 	// relying on the caller always unmounting this component between metrics.
 	$effect(() => {
-		name = version.name;
-		type = version.type;
-		definition = version.definition;
-		mattersBecause = version.matters_because ?? '';
-		contributor = version.contributor ?? '';
-		examples = [...version.examples];
+		name = metric.name;
+		type = metric.type;
+		definition = metric.definition;
+		mattersBecause = metric.matters_because ?? '';
+		contributor = metric.contributor ?? '';
+		examples = [...metric.examples];
 	});
 
 	let saving = $state(false);
@@ -50,12 +50,15 @@
 		savedNote = '';
 		await new Promise((r) => setTimeout(r, 600));
 		saving = false;
-		savedNote = 'Demo only — nothing was saved. Needs an update_metric_draft RPC (see backend gaps).';
+		savedNote =
+			'Demo only — nothing was saved. Needs an update_metric_draft RPC (see backend gaps).';
 	}
 </script>
 
 <div class="flex-1 overflow-y-auto px-6 py-4">
-	<div class="mb-4 flex items-center gap-2 rounded-[8px] border border-[#fed7aa] bg-[#fff7ed] px-3 py-2">
+	<div
+		class="mb-4 flex items-center gap-2 rounded-[8px] border border-[#fed7aa] bg-[#fff7ed] px-3 py-2"
+	>
 		<i class="fa-solid fa-flask text-[11px] text-[#c2410c]"></i>
 		<span class="text-[11px] font-medium text-[#c2410c]"
 			>Demo edit form — Save doesn't persist yet.</span
@@ -63,7 +66,8 @@
 	</div>
 
 	<label class="mb-3 block">
-		<span class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+		<span
+			class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
 			>Name</span
 		>
 		<input
@@ -73,7 +77,8 @@
 	</label>
 
 	<label class="mb-3 block">
-		<span class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+		<span
+			class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
 			>Type</span
 		>
 		<div class="flex gap-2">
@@ -99,7 +104,8 @@
 	</label>
 
 	<label class="mb-3 block">
-		<span class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+		<span
+			class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
 			>Description</span
 		>
 		<textarea
@@ -110,7 +116,8 @@
 	</label>
 
 	<label class="mb-3 block">
-		<span class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+		<span
+			class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
 			>Why this matters</span
 		>
 		<textarea
@@ -121,7 +128,8 @@
 	</label>
 
 	<label class="mb-3 block">
-		<span class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+		<span
+			class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
 			>Contributor</span
 		>
 		<input
@@ -131,7 +139,8 @@
 	</label>
 
 	<div class="mb-4">
-		<span class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
+		<span
+			class="mb-[4px] block text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
 			>Examples</span
 		>
 		<ul class="mb-2 space-y-[6px]">
@@ -167,7 +176,9 @@
 	</div>
 
 	{#if savedNote}
-		<div class="mb-3 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[11px] text-[#6b7280]">
+		<div
+			class="mb-3 rounded-[8px] border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[11px] text-[#6b7280]"
+		>
 			{savedNote}
 		</div>
 	{/if}

@@ -12,8 +12,8 @@
 	// entirely in the browser, then admin_import_metrics_csv (a SECURITY
 	// DEFINER RPC, see supabase/metrics_schema.sql) merges it in. Never
 	// deletes: a metric already in the database that isn't in this CSV is
-	// left untouched; a matching metric only gets a new version if its
-	// content actually changed.
+	// left untouched; a matching metric's content is only updated in place
+	// if it actually changed.
 
 	interface Props {
 		onImported: () => void;
@@ -116,8 +116,8 @@
 			</div>
 			<p class="text-[11px] text-[#9ca3af]">
 				Parses a metrics CSV in your browser, then merges it in: new metrics are added, existing
-				ones (matched by benchmark + metric name) get a new version only if their content changed,
-				and anything not in this file is left alone.
+				ones (matched by benchmark + metric name) are updated in place only if their content
+				changed, and anything not in this file is left alone.
 			</p>
 		</div>
 		<button
@@ -137,7 +137,7 @@
 			<ul class="space-y-[2px] text-[12px] text-[#166534]">
 				<li>
 					{importResult.metrics_created} new metric{importResult.metrics_created === 1 ? '' : 's'}
-					added, {importResult.metrics_updated} updated with a new version, {importResult.metrics_unchanged}
+					added, {importResult.metrics_updated} updated in place, {importResult.metrics_unchanged}
 					already up to date.
 				</li>
 				<li>
@@ -258,10 +258,10 @@
 				<span class="text-[12px] font-[800]">This merges into the existing data</span>
 			</div>
 			<p class="text-[12px] leading-[1.6] text-[#075985]">
-				Metrics here that already exist (matched by benchmark + metric name) get a new version only
-				if their content changed — old scenarios stay put and get flagged stale, same as a manual
-				edit. New metrics are added as drafts. Nothing already in the database is deleted, including
-				anything not in this file.
+				Metrics here that already exist (matched by benchmark + metric name) are updated in place
+				only if their content changed — existing scenarios are left as they are. New metrics are
+				added as drafts. Nothing already in the database is deleted, including anything not in this
+				file.
 			</p>
 		</div>
 

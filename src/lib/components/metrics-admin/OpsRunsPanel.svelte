@@ -9,7 +9,7 @@
 	const exampleRuns: (GenerationRun & { metric_slug: string; model_label: string })[] = [
 		{
 			id: 'demo-1',
-			metric_version_id: '',
+			metric_id: '',
 			model_id: null,
 			metric_slug: 'm04',
 			model_label: '(all models)',
@@ -25,7 +25,7 @@
 		},
 		{
 			id: 'demo-2',
-			metric_version_id: '',
+			metric_id: '',
 			model_id: null,
 			metric_slug: 'm04',
 			model_label: 'claude-haiku-4-5',
@@ -41,7 +41,7 @@
 		},
 		{
 			id: 'demo-3',
-			metric_version_id: '',
+			metric_id: '',
 			model_id: null,
 			metric_slug: 'm05',
 			model_label: 'gpt-4o',
@@ -70,20 +70,26 @@
 <div class="mx-auto w-full max-w-[760px] px-6 py-8">
 	<div class="mb-2 flex items-center gap-2">
 		<h2 class="text-[15px] font-[800] tracking-[-0.01em] text-[#111827]">Generation runs & cost</h2>
-		<span class="rounded-full bg-[#fff7ed] px-2 py-[1px] text-[9px] font-bold text-[#c2410c]">Illustrative</span>
+		<span class="rounded-full bg-[#fff7ed] px-2 py-[1px] text-[9px] font-bold text-[#c2410c]"
+			>Illustrative</span
+		>
 	</div>
 	<p class="mb-4 text-[11px] text-[#9ca3af]">
-		Example rows — generation_runs is empty and admin-locked today; a job runner and a
-		read RPC are both needed before this can show real data (see backend gaps).
+		Example rows — generation_runs is empty and admin-locked today; a job runner and a read RPC are
+		both needed before this can show real data (see backend gaps).
 	</p>
 
 	<div class="mb-4 grid grid-cols-3 gap-3">
 		<div class="rounded-[10px] border border-[#e5e7eb] p-3">
-			<div class="text-[10px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">Runs shown</div>
+			<div class="text-[10px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
+				Runs shown
+			</div>
 			<div class="mt-1 text-[18px] font-[800] text-[#1a1a1a]">{exampleRuns.length}</div>
 		</div>
 		<div class="rounded-[10px] border border-[#e5e7eb] p-3">
-			<div class="text-[10px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">Example cost</div>
+			<div class="text-[10px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase">
+				Example cost
+			</div>
 			<div class="mt-1 text-[18px] font-[800] text-[#1a1a1a]">${totalCost.toFixed(2)}</div>
 		</div>
 		<div class="rounded-[10px] border border-[#e5e7eb] p-3">
@@ -97,7 +103,9 @@
 	<div class="overflow-hidden rounded-[10px] border border-[#e5e7eb]">
 		<table class="w-full text-left text-[12px]">
 			<thead>
-				<tr class="border-b border-[#e5e7eb] bg-[#f9fafb] text-[10px] tracking-[0.06em] text-[#9ca3af] uppercase">
+				<tr
+					class="border-b border-[#e5e7eb] bg-[#f9fafb] text-[10px] tracking-[0.06em] text-[#9ca3af] uppercase"
+				>
 					<th class="px-4 py-[8px] font-semibold">Metric</th>
 					<th class="px-4 py-[8px] font-semibold">Model</th>
 					<th class="px-4 py-[8px] font-semibold">Phase</th>
@@ -113,19 +121,18 @@
 						<td class="px-4 py-[8px] text-[#6b7280]">{run.model_label}</td>
 						<td class="px-4 py-[8px] text-[#6b7280]">{run.phase}</td>
 						<td class="px-4 py-[8px]">
-							<span class="rounded-full px-2 py-[1px] text-[10px] font-bold" style={statusStyle(run.status)}
-								>{run.status}</span
+							<span
+								class="rounded-full px-2 py-[1px] text-[10px] font-bold"
+								style={statusStyle(run.status)}>{run.status}</span
 							>
 							{#if run.error_message}
 								<div class="mt-[2px] text-[10px] text-[#dc2626]">{run.error_message}</div>
 							{/if}
 						</td>
-						<td class="px-4 py-[8px] tabular-nums text-[#6b7280]">
+						<td class="px-4 py-[8px] text-[#6b7280] tabular-nums">
 							{(run.input_tokens ?? 0) + (run.output_tokens ?? 0)}
 						</td>
-						<td class="px-4 py-[8px] tabular-nums text-[#6b7280]"
-							>${(run.cost ?? 0).toFixed(2)}</td
-						>
+						<td class="px-4 py-[8px] text-[#6b7280] tabular-nums">${(run.cost ?? 0).toFixed(2)}</td>
 					</tr>
 				{/each}
 			</tbody>

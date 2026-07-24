@@ -289,8 +289,8 @@ export interface MetricExportRow {
 	suggestedPlacements: string[];
 	internalCategory: string | null;
 	submittedDate: string | null;
-	/** Up to 3 scenario titles for the metric's current version — submitted-
-	 * source ones first, since those are the closest thing to this format's
+	/** Up to 3 scenario titles for the metric — submitted-source ones first,
+	 * since those are the closest thing to this format's
 	 * original scen_1/2/3 columns. Anything beyond 3 (e.g. after Generate
 	 * Scenarios ran) is simply not representable in this row shape. */
 	scenarioTitles: string[];

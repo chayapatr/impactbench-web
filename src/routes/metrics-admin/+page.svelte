@@ -23,9 +23,7 @@
 	import { safeMarkdownHtml } from '$lib/safe-markdown';
 	import ScorePill from '$lib/components/atoms/ScorePill.svelte';
 	import MetricEditForm from '$lib/components/metrics-admin/MetricEditForm.svelte';
-	import StalenessBanner from '$lib/components/metrics-admin/StalenessBanner.svelte';
 	import RegenerateModal from '$lib/components/metrics-admin/RegenerateModal.svelte';
-	import VersionHistory from '$lib/components/metrics-admin/VersionHistory.svelte';
 	import LiveRelationships from '$lib/components/metrics-admin/LiveRelationships.svelte';
 	import PublishDiffModal from '$lib/components/metrics-admin/PublishDiffModal.svelte';
 	import NewMetricWizard from '$lib/components/metrics-admin/NewMetricWizard.svelte';
@@ -33,6 +31,11 @@
 	import ImportCsvPanel from '$lib/components/metrics-admin/ImportCsvPanel.svelte';
 	import OpsRunsPanel from '$lib/components/metrics-admin/OpsRunsPanel.svelte';
 	import MassActionModal from '$lib/components/metrics-admin/MassActionModal.svelte';
+	import PipelineRunModal from '$lib/components/metrics-admin/PipelineRunModal.svelte';
+	import PipelineMassRunModal, {
+		type BenchmarkGroup
+	} from '$lib/components/metrics-admin/PipelineMassRunModal.svelte';
+	import { checkPipelineHealth } from '$lib/metrics-admin/pipeline';
 	import {
 		METRIC_STATUS_ORDER,
 		type Benchmark,
@@ -89,16 +92,25 @@
 	let expandedScenarioId = $state<string | null>(null);
 	let placements = $state<MetricPlacements>({ taxonomy: [], nutrition: [] });
 	let editing = $state(false);
-	let simulateStale = $state(false);
 	let publishOpen = $state(false);
 
 	// Which single-metric workflow-action modal is open, if any. One shared
 	// modal component (RegenerateModal) covers Generate Scenarios / Run Test
-	// Simulation / Regenerate — only phases/copy differ. Demo-only, but on
-	// completion this DOES advance the metric's status in local state (see
+	// Simulation — only phases/copy differ. Demo-only, but on completion this
+	// DOES advance the metric's status in local state (see
 	// applyStatusTransition) so the flow feels real even though nothing is
 	// persisted — reload and it reverts.
-	let actionModal = $state<null | 'generate' | 'simulate' | 'regenerate'>(null);
+	let actionModal = $state<null | 'generate' | 'simulate'>(null);
+
+	// Whether the local pipeline bridge (sibling impactbench repo + venv) is
+	// configured on this machine at all — checked once on mount, never
+	// depends on the admin key. When true, "Generate Scenarios" on a single
+	// metric runs the real bench-py pipeline (PipelineRunModal) instead of
+	// RegenerateModal's local-timer demo. "Run Test Simulation" and mass
+	// actions still use the demo modal either way — real simulate/evaluate
+	// runs are a separate, costlier integration (see backend gaps).
+	let pipelineAvailable = $state(false);
+	let pipelineRunOpen = $state(false);
 
 	// Mass selection, for running an action across many metrics at once.
 	// Always reassigned wholesale (never mutated in place), so a plain Set
@@ -106,30 +118,11 @@
 	let selectedMetricIds = $state<Set<string>>(new Set());
 	let massAction = $state<null | { kind: 'generate' | 'simulate'; items: MetricListItem[] }>(null);
 
-	const staleCount = $derived.by(() => {
-		const detail = metricDetail;
-		if (!detail) return 0;
-		if (simulateStale) return detail.scenarios.length;
-		return detail.scenarios.filter((s) => s.metric_version_id !== detail.current_version.id).length;
-	});
-
 	const submittedSeedTitles = $derived(
 		(metricDetail?.scenarios ?? []).filter((s) => s.source === 'submitted').map((s) => s.title)
 	);
 
 	const actionModalConfig = $derived.by(() => {
-		if (actionModal === 'generate') {
-			return {
-				title: 'Generating scenarios',
-				doneTitle: 'Scenarios generated',
-				description:
-					submittedSeedTitles.length > 0
-						? `Simulated for this demo — using ${submittedSeedTitles.length} submitted example scenario${submittedSeedTitles.length === 1 ? '' : 's'} as seed input. No pipeline was actually run.`
-						: 'Simulated for this demo — no pipeline was actually run.',
-				phases: [{ key: 'gen_scenarios', label: 'Generating scenarios' }],
-				seedTitles: submittedSeedTitles
-			};
-		}
 		if (actionModal === 'simulate') {
 			return {
 				title: 'Running test simulation',
@@ -140,14 +133,14 @@
 			};
 		}
 		return {
-			title: 'Regenerating scenarios',
-			doneTitle: 'Regeneration complete',
-			description: `Simulated for this demo — ${staleCount} scenario${staleCount === 1 ? '' : 's'} would be regenerated. No pipeline was actually run.`,
-			phases: [
-				{ key: 'gen_scenarios', label: 'Generating scenarios' },
-				{ key: 'simulate', label: 'Simulating conversations' }
-			],
-			seedTitles: []
+			title: 'Generating scenarios',
+			doneTitle: 'Scenarios generated',
+			description:
+				submittedSeedTitles.length > 0
+					? `Simulated for this demo — using ${submittedSeedTitles.length} submitted example scenario${submittedSeedTitles.length === 1 ? '' : 's'} as seed input. No pipeline was actually run.`
+					: 'Simulated for this demo — no pipeline was actually run.',
+			phases: [{ key: 'gen_scenarios', label: 'Generating scenarios' }],
+			seedTitles: submittedSeedTitles
 		};
 	});
 
@@ -187,16 +180,13 @@
 				return false;
 			if (search.trim()) {
 				const q = search.trim().toLowerCase();
-				const name = m.current_version?.name ?? '';
-				if (!name.toLowerCase().includes(q) && !m.slug.toLowerCase().includes(q)) return false;
+				if (!m.name.toLowerCase().includes(q) && !m.slug.toLowerCase().includes(q)) return false;
 			}
 			return true;
 		});
 		const sorted = [...list];
 		if (sortMode === 'name') {
-			sorted.sort((a, b) =>
-				(a.current_version?.name ?? a.slug).localeCompare(b.current_version?.name ?? b.slug)
-			);
+			sorted.sort((a, b) => a.name.localeCompare(b.name));
 		} else if (sortMode === 'status') {
 			sorted.sort(
 				(a, b) => METRIC_STATUS_ORDER.indexOf(a.status) - METRIC_STATUS_ORDER.indexOf(b.status)
@@ -226,7 +216,7 @@
 	}
 
 	function metricLabel(m: MetricListItem): string {
-		return m.current_version?.name ?? m.slug;
+		return m.name;
 	}
 
 	const massActionConfig = $derived.by(() => {
@@ -255,6 +245,35 @@
 	function startMassAction(kind: 'generate' | 'simulate') {
 		const items = kind === 'generate' ? eligibleForGenerate : eligibleForSimulate;
 		massAction = { kind, items };
+	}
+
+	// Real mass "Generate Scenarios" only — "Run Test Simulation" stays the
+	// demo modal regardless of pipelineAvailable (real simulate/evaluate is a
+	// separate, costlier integration). A benchmark run always covers every
+	// metric in that benchmark with seed scenarios (see PipelineRunModal), so
+	// a multi-benchmark selection becomes one real run per distinct
+	// benchmark represented, not one run per selected metric.
+	const useRealMassGenerate = $derived(massAction?.kind === 'generate' && pipelineAvailable);
+
+	const massGenerateGroups = $derived.by((): BenchmarkGroup[] => {
+		if (!massAction || massAction.kind !== 'generate') return [];
+		const map = new Map<string, BenchmarkGroup>();
+		for (const m of massAction.items) {
+			const g = map.get(m.benchmark.slug) ?? {
+				slug: m.benchmark.slug,
+				name: m.benchmark.name,
+				metricIds: []
+			};
+			g.metricIds.push(m.id);
+			map.set(m.benchmark.slug, g);
+		}
+		return [...map.values()];
+	});
+
+	async function onMassGenerateDone() {
+		if (metricDetail) await selectMetric(metricDetail.id);
+		await loadDashboard();
+		closeMassAction();
 	}
 
 	function closeMassAction() {
@@ -388,7 +407,6 @@
 		detailError = '';
 		detailLoading = true;
 		editing = false;
-		simulateStale = false;
 		actionModal = null;
 		publishOpen = false;
 		placements = { taxonomy: [], nutrition: [] };
@@ -402,8 +420,15 @@
 		}
 	}
 
+	async function onScenarioGenerationDone() {
+		pipelineRunOpen = false;
+		if (metricDetail) await selectMetric(metricDetail.id);
+		await loadDashboard();
+	}
+
 	onMount(() => {
 		if (!browser) return;
+		checkPipelineHealth().then((available) => (pipelineAvailable = available));
 		if (metricsAdminState.key) {
 			validateAndLoad(metricsAdminState.key);
 		}
@@ -830,14 +855,14 @@
 								>
 									<span
 										class="inline-flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[10px] leading-none font-[800]"
-										style={m.current_version?.type === 'negative'
+										style={m.type === 'negative'
 											? 'border:1.5px solid #dc2626;color:#dc2626'
 											: 'border:1.5px solid #16a34a;color:#16a34a'}
-										>{m.current_version?.type === 'negative' ? '×' : '+'}</span
+										>{m.type === 'negative' ? '×' : '+'}</span
 									>
 									<div class="min-w-0 flex-1">
 										<div class="truncate text-[12px] font-medium text-[#1a1a1a]">
-											{m.current_version?.name ?? m.slug}
+											{m.name}
 										</div>
 										<div class="mt-[1px] truncate text-[10px] text-[#9ca3af]">
 											{m.benchmark.name} · {m.slug}
@@ -877,7 +902,7 @@
 				{:else if detailError}
 					<p class="p-6 text-[13px] text-[#dc2626]">{detailError}</p>
 				{:else if metricDetail}
-					{@const v = metricDetail.current_version}
+					{@const v = metricDetail}
 					<div class="flex-shrink-0 border-b border-[#e5e7eb] px-6 pt-[12px] pb-[10px]">
 						<div
 							class="mb-[3px] text-[10px] font-semibold tracking-[0.08em] text-[#9ca3af] uppercase"
@@ -929,7 +954,8 @@
 							{#if metricDetail.status === 'draft'}
 								<button
 									class="rounded-[6px] bg-gradient-to-br from-[#00b3b0] to-[#038d8f] px-3 py-[4px] text-[11px] font-semibold text-white hover:brightness-105"
-									onclick={() => (actionModal = 'generate')}
+									onclick={() =>
+										pipelineAvailable ? (pipelineRunOpen = true) : (actionModal = 'generate')}
 								>
 									<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> Generate Scenarios
 								</button>
@@ -953,7 +979,7 @@
 					</div>
 
 					{#if editing}
-						<MetricEditForm version={v} onCancel={() => (editing = false)} />
+						<MetricEditForm metric={v} onCancel={() => (editing = false)} />
 					{:else}
 						<div class="flex-1 overflow-y-auto px-6 py-4">
 							{#if v.contributor}
@@ -1008,16 +1034,6 @@
 								/>
 							{/key}
 
-							<VersionHistory current={v} />
-
-							<StalenessBanner
-								{staleCount}
-								totalCount={metricDetail.scenarios.length}
-								simulated={simulateStale}
-								onToggleSimulate={() => (simulateStale = !simulateStale)}
-								onRegenerate={() => (actionModal = 'regenerate')}
-							/>
-
 							<div
 								class="mb-2 text-[11px] font-semibold tracking-[0.06em] text-[#9ca3af] uppercase"
 							>
@@ -1038,7 +1054,9 @@
 												{scenario.title}
 											</div>
 											<div class="mt-[1px] flex items-center gap-[6px] text-[10px] text-[#9ca3af]">
-												<span>{scenario.age === 'child' ? 'Child or teenager' : 'Adult'}</span>
+												{#if Object.keys(scenario.demographic).length > 0}
+													<span>{Object.values(scenario.demographic).join(', ')}</span>
+												{/if}
 												{#if scenario.source === 'submitted'}
 													<span
 														class="rounded-full px-[6px] py-[1px] font-bold"
@@ -1133,15 +1151,23 @@
 						seedTitles={actionModalConfig.seedTitles}
 						onClose={() => (actionModal = null)}
 						onDone={() => {
-							if (actionModal === 'generate')
-								applyStatusTransition([v.metric_id], 'ready_to_simulate');
+							if (actionModal === 'generate') applyStatusTransition([v.id], 'ready_to_simulate');
 							else if (actionModal === 'simulate')
-								applyStatusTransition([v.metric_id], 'ready_to_publish');
+								applyStatusTransition([v.id], 'ready_to_publish');
 						}}
+					/>
+					<PipelineRunModal
+						open={pipelineRunOpen}
+						benchmarkSlug={metricDetail.benchmark.slug}
+						benchmarkName={metricDetail.benchmark.name}
+						adminKey={metricsAdminState.key ?? ''}
+						seedTitles={submittedSeedTitles}
+						onClose={() => (pipelineRunOpen = false)}
+						onDone={onScenarioGenerationDone}
 					/>
 					<PublishDiffModal
 						open={publishOpen}
-						version={v}
+						metric={v}
 						benchmarkName={metricDetail.benchmark.name}
 						onClose={() => (publishOpen = false)}
 					/>
@@ -1151,7 +1177,15 @@
 	{/if}
 </div>
 
-{#if massActionConfig}
+{#if useRealMassGenerate}
+	<PipelineMassRunModal
+		open={massAction !== null}
+		groups={massGenerateGroups}
+		adminKey={metricsAdminState.key ?? ''}
+		onClose={closeMassAction}
+		onDone={onMassGenerateDone}
+	/>
+{:else if massActionConfig}
 	<MassActionModal
 		open={massAction !== null}
 		title={massActionConfig.title}

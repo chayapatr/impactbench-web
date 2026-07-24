@@ -3,9 +3,9 @@
 	// generation_runs row is written — there's no job runner yet (see the
 	// backend-gap list). This simulates the phase timeline purely with local
 	// timers so the UX can be seen before that integration exists.
-	// Reused for every workflow action (Generate Scenarios / Run Simulation /
-	// Run Evaluation / Regenerate stale scenarios) — only which phases run
-	// and the framing text differ per caller.
+	// Reused for every workflow action (Generate Scenarios / Run Test
+	// Simulation) — only which phases run and the framing text differ per
+	// caller.
 
 	export interface Phase {
 		key: string;

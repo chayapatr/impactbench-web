@@ -22,7 +22,6 @@ export const METRIC_STATUS_ORDER = [
 export type MetricStatus = (typeof METRIC_STATUS_ORDER)[number];
 
 export type MetricType = 'positive' | 'negative';
-export type ScenarioAge = 'adult' | 'child';
 export type ScenarioSource = 'generated' | 'submitted';
 export type ModelStatus = 'active' | 'retired';
 
@@ -30,10 +29,47 @@ export interface Model {
 	id: string;
 	slug: string;
 	display_name: string;
-	provider: string;
+	provider_id: string;
+	/** The real litellm model string (config.yaml's targets[].model) --
+	 * often different from slug (slug is the short run_dir id). Null for a
+	 * model row nobody's filled this in for yet; such rows are excluded from
+	 * the Pipeline roles dropdown in Models & Ops. */
+	litellm_model: string | null;
 	surfaces: string[];
 	status: ModelStatus;
 	created_at: string;
+	updated_at: string;
+}
+
+/** Real provider identity (anthropic/openai/deepinfra/xai/publicai) --
+ * deliberately separate from litellm's `source` dialect (config.yaml shows
+ * e.g. xAI and PublicAI both dialect as `source: openai`). Holds the api
+ * key server-side only: this shape (from admin_list_providers) never
+ * includes the raw key, just whether one is set. */
+export interface Provider {
+	id: string;
+	slug: string;
+	display_name: string;
+	source: string;
+	base_url: string | null;
+	extra_headers: Record<string, string>;
+	api_key_set: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+/** Which model plays each fixed pipeline role -- config.yaml's user_model
+ * (gen_metrics, gen_scenarios, demographic expansion, and the adversarial
+ * "user" simulator in `simulate`) and evaluator_model (evaluate). Public-read
+ * (no secrets here, just provider + model string); base URL/auth are
+ * resolved from the linked Provider at run time by the bridge, not
+ * duplicated here. */
+export type PipelineRole = 'user_model' | 'evaluator_model';
+
+export interface PipelineRoleModel {
+	role: PipelineRole;
+	provider_id: string;
+	model: string;
 	updated_at: string;
 }
 
@@ -48,21 +84,15 @@ export interface Benchmark {
 	updated_at: string;
 }
 
+/** A metric's identity, workflow state, and content are all one row now —
+ * there's no separate version history. An edit is just an update; the only
+ * thing content_hash is for is letting the CSV importer cheaply tell
+ * "actually changed" from "re-imported the same row". */
 export interface Metric {
 	id: string;
 	benchmark_id: string;
 	slug: string;
 	status: MetricStatus;
-	current_version_id: string | null;
-	suggested_placements: string[] | null;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface MetricVersion {
-	id: string;
-	metric_id: string;
-	version_number: number;
 	name: string;
 	type: MetricType;
 	definition: string;
@@ -72,17 +102,31 @@ export interface MetricVersion {
 	/** Escape hatch for source-specific fields that haven't earned a real column yet. */
 	raw: Record<string, unknown>;
 	content_hash: string;
+	suggested_placements: string[] | null;
 	created_at: string;
-	created_by: string | null;
+	updated_at: string;
+}
+
+export interface Landmark {
+	turn: number;
+	instruction: string;
 }
 
 export interface Scenario {
 	id: string;
-	metric_version_id: string;
-	age: ScenarioAge;
+	metric_id: string;
+	/** Arbitrary demographic-axis -> descriptive-value map, e.g.
+	 * { age: "Adult (18+)" } -- config.yaml's demographics block is an open
+	 * set of axes, not just age, so this isn't a fixed enum. */
+	demographic: Record<string, string>;
 	title: string;
 	persona: string | null;
 	user_goal: string | null;
+	/** What the user is implicitly trying to elicit -- not shown to the
+	 * target model. Null for submitted (not yet pipeline-generated) scenarios. */
+	latent_adversarial_goal: string | null;
+	/** Turn-by-turn adversarial pressure script. Empty for submitted scenarios. */
+	landmarks: Landmark[];
 	source_id: string | null;
 	source: ScenarioSource;
 	raw: Record<string, unknown>;
@@ -93,6 +137,9 @@ export interface Conversation {
 	id: string;
 	scenario_id: string;
 	model_id: string;
+	/** Which independent sample this is when generation.num_samples > 1 (see
+	 * the docs' "Reliability" section) -- 0 for the common single-sample case. */
+	sample_index: number;
 	transcript: ChatTurn[];
 	generated_at: string;
 }
@@ -148,7 +195,7 @@ export interface NutritionPlacement {
  * shape its placeholder rows against. See the "still needed" list. */
 export interface GenerationRun {
 	id: string;
-	metric_version_id: string;
+	metric_id: string;
 	model_id: string | null;
 	phase: 'gen_scenarios' | 'simulate' | 'evaluate' | 'aggregate';
 	status: 'pending' | 'running' | 'done' | 'error';
@@ -172,14 +219,15 @@ export interface MetricSubareaRef {
 	area_name: string;
 }
 
-/** One row in the metric list column: the metric plus its current version's
- * text and a pass-rate rollup across all its scenarios/conversations. */
+/** One row in the metric list column: the metric's name/type plus a
+ * pass-rate rollup across all its scenarios/conversations. */
 export interface MetricListItem {
 	id: string;
 	slug: string;
 	status: MetricStatus;
+	name: string;
+	type: MetricType;
 	benchmark: Pick<Benchmark, 'slug' | 'name'>;
-	current_version: Pick<MetricVersion, 'name' | 'type'> | null;
 	subareas: MetricSubareaRef[];
 	passed_count: number;
 	total_count: number;
@@ -194,18 +242,10 @@ export interface ScenarioWithConversations extends Scenario {
 	conversations: ConversationWithResult[];
 }
 
-/** Full detail panel payload: the metric, its current version in full, and
- * every scenario generated/submitted for that version. */
-export interface MetricDetail {
-	id: string;
-	benchmark_id: string;
-	slug: string;
-	status: MetricStatus;
-	suggested_placements: string[] | null;
-	created_at: string;
-	updated_at: string;
+/** Full detail panel payload: the metric (content and all) plus its
+ * benchmark and every scenario generated/submitted for it. */
+export interface MetricDetail extends Metric {
 	benchmark: Pick<Benchmark, 'slug' | 'name'>;
-	current_version: MetricVersion;
 	scenarios: ScenarioWithConversations[];
 }
 
